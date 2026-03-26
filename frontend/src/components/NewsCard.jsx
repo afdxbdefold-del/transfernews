@@ -42,6 +42,39 @@ function ArticleImage({ src, alt, className, articleId }) {
   );
 }
 
+// Transfer Status Badge Component
+function TransferBadge({ status }) {
+  const isConfirmed = status === "BESTÄTIGT";
+  return (
+    <div className={`text-[10px] font-black uppercase px-2 py-0.5 ${isConfirmed ? 'bg-[#79B92A] text-white' : 'bg-yellow-400 text-black'}`}>
+      {status || "GERÜCHT"}
+    </div>
+  );
+}
+
+// Transfer Probability Bar Component
+function ProbabilityBar({ probability }) {
+  if (!probability) return null;
+  
+  const getColor = (p) => {
+    if (p >= 80) return 'bg-[#79B92A]';
+    if (p >= 50) return 'bg-yellow-400';
+    return 'bg-orange-400';
+  };
+  
+  return (
+    <div className="flex items-center gap-2">
+      <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+        <div 
+          className={`h-full ${getColor(probability)} transition-all`}
+          style={{ width: `${probability}%` }}
+        />
+      </div>
+      <span className="text-[10px] font-bold text-gray-600">{probability}%</span>
+    </div>
+  );
+}
+
 // Hero Card - Big featured article with overlay text
 export function HeroCard({ article, isLive = false }) {
   if (!article) return null;
@@ -56,19 +89,29 @@ export function HeroCard({ article, isLive = false }) {
           articleId={article.id}
         />
         
-        {/* Live Badge */}
-        {isLive && (
-          <div className="absolute top-3 left-3 bg-[#e91e63] text-white text-xs font-bold px-2 py-1 flex items-center gap-1">
-            <Circle size={8} weight="fill" className="animate-pulse" />
-            LIVE
-          </div>
-        )}
+        {/* Status Badge - Top Left */}
+        <div className="absolute top-3 left-3 flex items-center gap-2">
+          {isLive && (
+            <div className="bg-[#e91e63] text-white text-xs font-bold px-2 py-1 flex items-center gap-1">
+              <Circle size={8} weight="fill" className="animate-pulse" />
+              LIVE
+            </div>
+          )}
+          <TransferBadge status={article.transfer_status} />
+        </div>
         
         {/* Gradient Overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
         
         {/* Content */}
         <div className="absolute bottom-0 left-0 right-0 p-4">
+          {/* Probability Bar */}
+          {article.transfer_probability && (
+            <div className="mb-3 max-w-[200px]">
+              <ProbabilityBar probability={article.transfer_probability} />
+            </div>
+          )}
+          
           <h2 className="text-white text-lg md:text-xl font-black uppercase leading-tight mb-3" style={{ fontFamily: "'Oswald', sans-serif" }}>
             {article.title}
           </h2>
@@ -100,6 +143,11 @@ export function NewsCardHorizontal({ article, showVideo = false }) {
           articleId={article.id}
         />
         
+        {/* Status Badge */}
+        <div className="absolute top-1 left-1">
+          <TransferBadge status={article.transfer_status} />
+        </div>
+        
         {/* Video Play Button & Duration */}
         {showVideo && (
           <>
@@ -119,13 +167,20 @@ export function NewsCardHorizontal({ article, showVideo = false }) {
           {article.title}
         </h3>
         
-        {/* Meta */}
-        <div className="flex items-center justify-between mt-2">
-          <div className="flex items-center gap-1.5">
-            <div className="w-4 h-4 bg-[#79B92A] rounded-full" />
-            <span className="text-[11px] text-gray-500 font-medium uppercase">{article.category || "TRANSFER"}</span>
+        {/* Probability Bar */}
+        {article.transfer_probability && (
+          <div className="my-1">
+            <ProbabilityBar probability={article.transfer_probability} />
           </div>
-          <span className="text-[11px] text-gray-400">{formatTime(article.published_at)}</span>
+        )}
+        
+        {/* Meta */}
+        <div className="flex items-center justify-between mt-1">
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-3 bg-[#79B92A] rounded-full" />
+            <span className="text-[10px] text-gray-500 font-medium uppercase">{article.category || "TRANSFER"}</span>
+          </div>
+          <span className="text-[10px] text-gray-400">{formatTime(article.published_at)}</span>
         </div>
       </div>
     </Link>

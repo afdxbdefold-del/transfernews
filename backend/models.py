@@ -424,6 +424,8 @@ class ArticleBase(BaseModel):
     linked_event_id: Optional[str] = None
     is_breaking: bool = False
     is_featured: bool = False
+    transfer_probability: Optional[int] = None  # 0-100%
+    transfer_status: Optional[str] = None  # GERÜCHT or BESTÄTIGT
 
 
 class ArticleCreate(ArticleBase):
