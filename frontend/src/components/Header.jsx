@@ -82,9 +82,6 @@ export default function Header() {
               >
                 <MagnifyingGlass size={22} />
               </button>
-              <Link to="/admin" className="w-10 h-10 flex items-center justify-center" data-testid="nav-admin">
-                <User size={22} />
-              </Link>
               <button
                 onClick={() => setMenuOpen(!menuOpen)}
                 className="w-10 h-10 flex items-center justify-center"
@@ -177,11 +174,6 @@ export default function Header() {
                   {item.label}
                 </Link>
               ))}
-              <div className="border-t border-gray-100 my-2" />
-              <Link to="/admin" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 h-12 px-4 text-gray-600">
-                <User size={18} />
-                Admin
-              </Link>
             </nav>
           </div>
         </>
