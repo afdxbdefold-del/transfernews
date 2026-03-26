@@ -7,7 +7,7 @@ Deutschsprachige Fußball-Transfer-News-Plattform auf der Domain transfernews.de
 - Automatische News-Generierung aus strukturierten Rohdaten (vorbereitet)
 - Aggressive Werbe-Monetarisierung
 - Zentrales Dashboard zur Verwaltung der Werbespots
-- Design wie Transfermarkt.de aber in Grün
+- **Layout: Pixel-perfekte Kopie von sport1.de** (User Requirement, März 2026)
 
 ## Technical Architecture
 - **Frontend:** React 19 mit Tailwind CSS, Shadcn UI, Phosphor Icons
@@ -24,9 +24,12 @@ Deutschsprachige Fußball-Transfer-News-Plattform auf der Domain transfernews.de
 ## Core Requirements (Implemented)
 
 ### Public Pages
-- [x] Startseite mit Breaking News Ticker, News Feed, Sidebar
-- [x] News-Übersicht mit Pagination
-- [x] News-Detailseite mit SEO-Struktur
+- [x] Startseite mit sport1.de-Style Layout
+- [x] Breaking News Ticker (rot, animiert)
+- [x] Hero-Teaser mit Gradient-Overlay
+- [x] Newsticker-Sidebar mit Zeit-Badges
+- [x] News-Übersicht mit Newsticker-Style
+- [x] News-Detailseite mit Share-Buttons
 - [x] Spielerseite mit Tabs (News, Transfers, Gerüchte)
 - [x] Vereinsseite mit Tabs (News, Transfers)
 - [x] Wettbewerbsseite mit Tabs (News, Vereine)
@@ -47,6 +50,18 @@ Deutschsprachige Fußball-Transfer-News-Plattform auf der Domain transfernews.de
 - [x] Gerüchteverwaltung (CRUD)
 - [x] **Ad-Management-System (34 Slots)**
 
+### Sport1.de-Style Layout (NEW - März 2026)
+- [x] Zweistufiger Header (weiß + grüne Nav-Bar)
+- [x] Logo: TRANSFERNEWS im sport1.de-Stil
+- [x] Sport-Navigation mit Tab-Links
+- [x] Hero-Teaser-Section mit großem Bild
+- [x] Newsticker-Sidebar mit grünen Zeit-Badges
+- [x] Breaking News Ticker (rot, animiert)
+- [x] Action-Buttons (Transfers, Gerüchte)
+- [x] Mobile Hamburger-Menü
+- [x] Responsive Design (Desktop + Mobile)
+- [x] Markenfarbe #79B92A beibehalten
+
 ### Ad-Slots System
 - 34 vorkonfigurierte Werbeplätze
 - Gruppiert nach Seitentyp (Homepage, News, Player, Club, etc.)
@@ -61,7 +76,9 @@ Deutschsprachige Fußball-Transfer-News-Plattform auf der Domain transfernews.de
 - Aliases für Entity-Erkennung
 - Ad-Slots, Users, Settings
 
-## What's Been Implemented (2026-03-26)
+## What's Been Implemented
+
+### März 2026 - Initial Build
 - Vollständiges Backend mit 70+ API-Endpoints
 - Vollständiges Frontend mit 10 Public Pages + 11 Admin Pages
 - JWT-Authentifizierung
@@ -69,19 +86,31 @@ Deutschsprachige Fußball-Transfer-News-Plattform auf der Domain transfernews.de
 - 34 Ad-Slots initialisiert
 - SEO-freundliche URLs
 - Responsive Design (Mobile/Desktop)
-- Transfermarkt-ähnliches Design in Grün
+- Custom SVG Logo
+- Markenfarbe #79B92A
+
+### März 2026 - Sport1.de Layout Redesign
+- Kompletter Frontend-Umbau im sport1.de-Stil
+- Neuer zweistufiger Header
+- Newsticker-Komponenten mit Zeit-Badges
+- Hero-Teaser mit Gradient-Overlay
+- Breaking News Ticker (rot)
+- Mobile Hamburger-Menü
+- Share-Buttons auf News-Detailseite
+- Responsive Layout für Desktop und Mobile
 
 ## Prioritized Backlog
 
-### P0 (Ready)
-- MVP komplett implementiert
+### P0 (Completed)
+- [x] MVP komplett implementiert
+- [x] Sport1.de-Style Layout Redesign
 
 ### P1 (Nächste Phase)
 - [ ] XML-Sitemap Generator
 - [ ] News-Sitemap für Google News
 - [ ] Strukturierte Daten (Schema.org)
+- [ ] Automatisierter Scraper-Cronjob
 - [ ] LLM-basierte Artikel-Generierung aktivieren
-- [ ] Scraper-Integration für Live-Daten
 
 ### P2 (Später)
 - [ ] Themenseiten (Deadline Day, Sommertransfers, etc.)
@@ -94,8 +123,12 @@ Deutschsprachige Fußball-Transfer-News-Plattform auf der Domain transfernews.de
 - Email: admin@transfernews.de
 - Password: admin123
 
-## Next Tasks
-1. Echte Inhalte über Admin-Dashboard erstellen
-2. Ad-Codes in Ad-Slots eintragen
-3. Sitemap-Generierung implementieren
-4. LLM-Integration für News-Generierung aktivieren
+## Key Files
+- `/app/frontend/src/components/Header.jsx` - Zweistufiger Header
+- `/app/frontend/src/components/NewsCard.jsx` - Teaser-Komponenten
+- `/app/frontend/src/pages/public/HomePage.jsx` - Homepage mit sport1.de-Layout
+- `/app/frontend/src/pages/public/NewsListPage.jsx` - Newsticker-Seite
+- `/app/frontend/src/index.css` - Globale Styles
+
+## Preview URL
+https://deploy-transfers.preview.emergentagent.com
