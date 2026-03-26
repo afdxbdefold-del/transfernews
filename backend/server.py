@@ -5,6 +5,7 @@ FastAPI Backend für die Fußball-Transfer-News-Plattform
 
 from fastapi import FastAPI, APIRouter, HTTPException, Depends, Query, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -53,6 +54,12 @@ security = HTTPBearer()
 
 # Create the main app
 app = FastAPI(title="TransferNews.de API", version="1.0.0")
+
+# Mount static files directory for images
+STATIC_DIR = ROOT_DIR / "static"
+STATIC_DIR.mkdir(exist_ok=True)
+(STATIC_DIR / "images").mkdir(exist_ok=True)
+app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")

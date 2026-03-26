@@ -543,15 +543,38 @@ ARTIKEL:
         slug = f"{slug}-{random.randint(1000, 9999)}"
     
     # Get image from event or search for one
-    image_url = event.get("image_url", "")
+    source_image_url = event.get("image_url", "")
+    article_id = generate_uuid()
     
-    # If no image from source, try to find one via image search
+    # Download and save image locally
+    if source_image_url:
+        image_url = await download_and_save_image(source_image_url, article_id)
+    else:
+        image_url = ""
+    
+    # If no image or download failed, get fallback
     if not image_url:
-        image_url = await find_article_image(title)
+        # Extract keywords from title for relevant image
+        keywords = "football,soccer"
+        title_lower = title.lower()
+        if "bayern" in title_lower:
+            keywords = "bayern,munich,football"
+        elif "dortmund" in title_lower:
+            keywords = "dortmund,football"
+        elif "liverpool" in title_lower:
+            keywords = "liverpool,football"
+        elif "champions" in title_lower:
+            keywords = "champions,league,football"
+        elif "bundesliga" in title_lower:
+            keywords = "bundesliga,stadium"
+        elif "nationalmannschaft" in title_lower or "dfb" in title_lower:
+            keywords = "germany,football,team"
+        
+        image_url = await download_fallback_image(article_id, keywords)
     
     # Create article
     article = Article(
-        id=generate_uuid(),
+        id=article_id,
         title=title,
         slug=slug,
         excerpt=excerpt,
@@ -790,3 +813,70 @@ async def import_rss_events(db) -> dict:
         result["new_events"] += 1
     
     return result
+
+
+# ============================================================================
+# IMAGE DOWNLOADER - Save images locally
+# ============================================================================
+
+import aiohttp
+import os
+from pathlib import Path
+
+IMAGES_DIR = Path("/app/backend/static/images")
+IMAGES_DIR.mkdir(parents=True, exist_ok=True)
+
+async def download_and_save_image(image_url: str, article_id: str) -> str:
+    """
+    Download image from URL and save locally
+    Returns the local path for the image
+    """
+    if not image_url:
+        return ""
+    
+    try:
+        # Generate filename from article ID
+        ext = "jpg"  # Default extension
+        if ".png" in image_url.lower():
+            ext = "png"
+        elif ".webp" in image_url.lower():
+            ext = "webp"
+        
+        filename = f"{article_id}.{ext}"
+        filepath = IMAGES_DIR / filename
+        
+        # Download image
+        async with aiohttp.ClientSession() as session:
+            headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+            }
+            async with session.get(image_url, headers=headers, timeout=30) as response:
+                if response.status == 200:
+                    content = await response.read()
+                    
+                    # Save to file
+                    with open(filepath, "wb") as f:
+                        f.write(content)
+                    
+                    # Return URL path (will be served by FastAPI static files)
+                    return f"/static/images/{filename}"
+                else:
+                    logger.warning(f"Failed to download image: {response.status}")
+                    return ""
+    
+    except Exception as e:
+        logger.error(f"Image download error: {e}")
+        return ""
+
+
+async def download_fallback_image(article_id: str, keywords: str = "football") -> str:
+    """
+    Download a fallback image from Unsplash based on keywords
+    """
+    import random
+    
+    # Use Unsplash Source (no API key needed)
+    rand = random.randint(1, 10000)
+    url = f"https://source.unsplash.com/800x600/?{keywords}&sig={rand}"
+    
+    return await download_and_save_image(url, article_id)
