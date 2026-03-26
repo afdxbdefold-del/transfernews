@@ -7,12 +7,10 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Brand */}
           <div>
-            <svg viewBox="0 0 280 60" className="h-8 w-auto mb-4">
-              <text x="0" y="42" fontFamily="Inter, Helvetica Neue, Arial, sans-serif" fontWeight="800" fontSize="36" letterSpacing="-1.5" fill="white">transfer</text>
-              <text x="156" y="42" fontFamily="Inter, Helvetica Neue, Arial, sans-serif" fontWeight="800" fontSize="36" letterSpacing="-1.5" fill="#79B92A">news</text>
-              <rect x="6" y="16" width="18" height="4" fill="#79B92A"/>
-              <polygon points="24,18 28,13 28,23" fill="#79B92A"/>
-            </svg>
+            <span className="text-xl font-extrabold tracking-tight block mb-4" style={{fontFamily: 'Inter, sans-serif'}}>
+              <span className="text-white">transfer</span>
+              <span className="text-[#79B92A]">news</span>
+            </span>
             <p className="text-sm text-white/70">
               Die schnellste Quelle für Fußball-Transfer-News, Gerüchte und offizielle Wechsel.
             </p>

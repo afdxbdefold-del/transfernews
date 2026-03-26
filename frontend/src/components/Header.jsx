@@ -51,13 +51,11 @@ export default function Header() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center space-x-2" data-testid="logo-link">
-            <svg viewBox="0 0 280 60" className="h-8 w-auto">
-              <text x="0" y="42" fontFamily="Inter, Helvetica Neue, Arial, sans-serif" fontWeight="800" fontSize="36" letterSpacing="-1.5" fill="#1a1a1a">transfer</text>
-              <text x="156" y="42" fontFamily="Inter, Helvetica Neue, Arial, sans-serif" fontWeight="800" fontSize="36" letterSpacing="-1.5" fill="#79B92A">news</text>
-              <rect x="6" y="16" width="18" height="4" fill="#79B92A"/>
-              <polygon points="24,18 28,13 28,23" fill="#79B92A"/>
-            </svg>
+          <Link to="/" className="flex items-center" data-testid="logo-link">
+            <span className="text-2xl font-extrabold tracking-tight" style={{fontFamily: 'Inter, sans-serif'}}>
+              <span className="text-gray-900">transfer</span>
+              <span className="text-[#79B92A]">news</span>
+            </span>
           </Link>
 
           {/* Desktop Nav */}
