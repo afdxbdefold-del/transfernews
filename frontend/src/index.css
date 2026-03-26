@@ -1,418 +1,87 @@
-@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Work+Sans:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Open+Sans:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 body {
-    margin: 0;
-    font-family: 'Work Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    background-color: #f5f5f5;
+  margin: 0;
+  font-family: 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  background-color: #f5f5f5;
 }
 
 h1, h2, h3, h4, h5, h6 {
-    font-family: 'Oswald', sans-serif;
-}
-
-code {
-    font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
+  font-family: 'Oswald', sans-serif;
 }
 
 @layer base {
-    :root {
-        --background: 0 0% 96%;
-        --foreground: 0 0% 4%;
-        --card: 0 0% 100%;
-        --card-foreground: 0 0% 4%;
-        --popover: 0 0% 100%;
-        --popover-foreground: 0 0% 4%;
-        --primary: 78 62% 44%;
-        --primary-foreground: 0 0% 100%;
-        --secondary: 240 5% 96%;
-        --secondary-foreground: 240 6% 15%;
-        --muted: 240 5% 89%;
-        --muted-foreground: 240 4% 46%;
-        --accent: 78 62% 50%;
-        --accent-foreground: 0 0% 100%;
-        --destructive: 0 84% 60%;
-        --destructive-foreground: 0 0% 98%;
-        --border: 240 6% 90%;
-        --input: 240 6% 90%;
-        --ring: 78 62% 44%;
-        --chart-1: 78 62% 44%;
-        --chart-2: 78 50% 50%;
-        --chart-3: 78 40% 55%;
-        --chart-4: 43 74% 66%;
-        --chart-5: 27 87% 67%;
-        --radius: 0rem;
-        
-        /* TransferNews Brand Colors */
-        --brand-primary: #79B92A;
-        --brand-primary-dark: #5a8a1f;
-        --brand-primary-light: #8bc34a;
-        --brand-secondary: #1a1a1a;
-        --brand-bg: #f5f5f5;
-    }
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 4%;
+    --primary: 78 62% 44%;
+    --primary-foreground: 0 0% 100%;
+    --brand-primary: #79B92A;
+    --brand-black: #1a1a1a;
+    --radius: 0rem;
+  }
 }
 
-@layer base {
-    * {
-        @apply border-border;
-    }
-    body {
-        @apply bg-background text-foreground;
-    }
-}
-
-/* Hide Scrollbar but allow scroll */
+/* Hide scrollbar */
 .hide-scrollbar {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 .hide-scrollbar::-webkit-scrollbar {
-    display: none;
+  display: none;
 }
 
-/* Custom scrollbar for main content */
-::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-}
-
-::-webkit-scrollbar-track {
-    background: #f1f1f1;
-}
-
-::-webkit-scrollbar-thumb {
-    background: #79B92A;
-    border-radius: 0;
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background: #6aa325;
-}
-
-/* Breaking news ticker animation */
-@keyframes ticker {
-    0% {
-        transform: translateX(0);
-    }
-    100% {
-        transform: translateX(-50%);
-    }
-}
-
-.ticker-wrap {
-    overflow: hidden;
-    white-space: nowrap;
-}
-
-.ticker {
-    display: inline-block;
-    animation: ticker 30s linear infinite;
-}
-
-.ticker:hover {
-    animation-play-state: paused;
-}
-
-/* Ad slot placeholder - Sport1 Style */
-.ad-slot {
-    background: #f8f8f8;
-    border: 1px solid #e5e5e5;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 90px;
-    position: relative;
-}
-
-.ad-slot::before {
-    content: 'Anzeige';
-    position: absolute;
-    top: 2px;
-    left: 4px;
-    font-size: 9px;
-    color: #999;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    font-family: 'Work Sans', sans-serif;
-}
-
-.ad-slot-leaderboard {
-    min-height: 90px;
-}
-
-.ad-slot-rectangle {
-    min-height: 250px;
-}
-
-.ad-slot-banner {
-    min-height: 60px;
-}
-
-/* Line Clamp Utilities */
+/* Line clamp */
 .line-clamp-2 {
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .line-clamp-3 {
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
-/* Transfer Table Styles */
-.transfer-table th {
-    background: #f8f8f8;
-    padding: 12px;
-    border-bottom: 1px solid #e5e5e5;
-    font-weight: 700;
-    text-transform: uppercase;
-    font-size: 11px;
-    letter-spacing: 0.5px;
-    font-family: 'Oswald', sans-serif;
+/* Ad slot placeholder */
+.ad-slot {
+  background: #f0f0f0;
+  border: 1px dashed #ddd;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 90px;
+  position: relative;
 }
 
-.transfer-table td {
-    padding: 12px;
-    border-bottom: 1px solid #f0f0f0;
+.ad-slot::before {
+  content: 'Anzeige';
+  font-size: 10px;
+  color: #999;
+  text-transform: uppercase;
 }
 
-.transfer-table tr:hover td {
-    background: #fafafa;
-}
-
-/* Badge styles */
-.badge-rumour {
-    background: #fef3c7;
-    color: #92400e;
-}
-
-.badge-confirmed {
-    background: #d1fae5;
-    color: #065f46;
-}
-
-.badge-official {
-    background: #dbeafe;
-    color: #1e40af;
-}
-
-.badge-breaking {
-    background: #fee2e2;
-    color: #991b1b;
-    animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-    0%, 100% {
-        opacity: 1;
-    }
-    50% {
-        opacity: 0.7;
-    }
-}
-
-/* Mobile sticky ad */
-.mobile-sticky-ad {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    z-index: 40;
-    background: white;
-    border-top: 1px solid #e5e5e5;
-    padding: 8px;
-}
-
-@media (min-width: 768px) {
-    .mobile-sticky-ad {
-        display: none;
-    }
-}
-
-/* Focus states */
-input:focus, textarea:focus, select:focus {
-    outline: none;
-}
-
-/* Admin dashboard specific */
+/* Admin styles */
 .admin-sidebar {
-    width: 260px;
-    min-height: 100vh;
-    background: #1a1a1a;
+  width: 260px;
+  min-height: 100vh;
+  background: #1a1a1a;
 }
 
 .admin-sidebar a {
-    color: rgba(255, 255, 255, 0.8);
-    transition: all 0.2s;
+  color: rgba(255, 255, 255, 0.8);
 }
 
 .admin-sidebar a:hover,
 .admin-sidebar a.active {
-    color: white;
-    background: rgba(121, 185, 42, 0.2);
-}
-
-/* Data table in admin */
-.admin-table {
-    width: 100%;
-}
-
-.admin-table th {
-    text-align: left;
-    padding: 12px 16px;
-    background: #f9fafb;
-    font-weight: 600;
-    font-size: 12px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    border-bottom: 2px solid #e5e7eb;
-}
-
-.admin-table td {
-    padding: 12px 16px;
-    border-bottom: 1px solid #f3f4f6;
-}
-
-.admin-table tr:hover td {
-    background: #f9fafb;
-}
-
-/* Sport1 Style Card Shadows */
-.sport1-card {
-    background: white;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-}
-
-.sport1-card:hover {
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-}
-
-/* Sport1 Style Buttons */
-.sport1-btn {
-    font-family: 'Oswald', sans-serif;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-/* Newsticker styles */
-.newsticker-entry {
-    transition: background-color 0.15s ease;
-}
-
-.newsticker-entry:hover {
-    background-color: #f8f8f8;
-}
-
-/* Image hover effects */
-.img-zoom {
-    overflow: hidden;
-}
-
-.img-zoom img {
-    transition: transform 0.3s ease;
-}
-
-.img-zoom:hover img {
-    transform: scale(1.05);
-}
-
-/* Aspect Ratios */
-.aspect-3-2 {
-    aspect-ratio: 3/2;
-}
-
-.aspect-16-9 {
-    aspect-ratio: 16/9;
-}
-
-.aspect-4-3 {
-    aspect-ratio: 4/3;
-}
-
-/* Bottom Navigation for Mobile */
-.bottom-nav {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: white;
-    border-top: 1px solid #e5e5e5;
-    z-index: 50;
-    padding-bottom: env(safe-area-inset-bottom);
-}
-
-@media (min-width: 1024px) {
-    .bottom-nav {
-        display: none;
-    }
-}
-
-/* Skeleton Loading */
-@keyframes shimmer {
-    0% {
-        background-position: -200% 0;
-    }
-    100% {
-        background-position: 200% 0;
-    }
-}
-
-.skeleton {
-    background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
-    background-size: 200% 100%;
-    animation: shimmer 1.5s infinite;
-}
-
-/* Category Pills */
-.category-pill {
-    display: inline-block;
-    padding: 4px 8px;
-    font-size: 10px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-/* Sport1 Green Accent */
-.accent-bar {
-    position: relative;
-}
-
-.accent-bar::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 4px;
-    background: #79B92A;
-}
-
-/* Responsive Typography */
-@media (max-width: 640px) {
-    .hero-headline {
-        font-size: 1.5rem;
-    }
-}
-
-@media (min-width: 641px) and (max-width: 1024px) {
-    .hero-headline {
-        font-size: 2rem;
-    }
-}
-
-@media (min-width: 1025px) {
-    .hero-headline {
-        font-size: 2.5rem;
-    }
+  color: white;
+  background: rgba(121, 185, 42, 0.2);
 }
