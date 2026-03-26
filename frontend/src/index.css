@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Work+Sans:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Work+Sans:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,9 +6,10 @@
 
 body {
     margin: 0;
-    font-family: 'Work Sans', sans-serif;
+    font-family: 'Work Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    background-color: #f5f5f5;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -21,7 +22,7 @@ code {
 
 @layer base {
     :root {
-        --background: 0 0% 100%;
+        --background: 0 0% 96%;
         --foreground: 0 0% 4%;
         --card: 0 0% 100%;
         --card-foreground: 0 0% 4%;
@@ -47,11 +48,12 @@ code {
         --chart-5: 27 87% 67%;
         --radius: 0rem;
         
-        /* Custom colors */
-        --header-bg: 78 50% 20%;
-        --header-text: 0 0% 100%;
-        --transfer-green: 78 62% 44%;
-        --transfer-dark: 78 50% 20%;
+        /* TransferNews Brand Colors */
+        --brand-primary: #79B92A;
+        --brand-primary-dark: #5a8a1f;
+        --brand-primary-light: #8bc34a;
+        --brand-secondary: #1a1a1a;
+        --brand-bg: #f5f5f5;
     }
 }
 
@@ -64,7 +66,16 @@ code {
     }
 }
 
-/* Custom scrollbar */
+/* Hide Scrollbar but allow scroll */
+.hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+
+/* Custom scrollbar for main content */
 ::-webkit-scrollbar {
     width: 8px;
     height: 8px;
@@ -76,7 +87,7 @@ code {
 
 ::-webkit-scrollbar-thumb {
     background: #79B92A;
-    border-radius: 4px;
+    border-radius: 0;
 }
 
 ::-webkit-scrollbar-thumb:hover {
@@ -107,10 +118,10 @@ code {
     animation-play-state: paused;
 }
 
-/* Ad slot placeholder */
+/* Ad slot placeholder - Sport1 Style */
 .ad-slot {
-    background: #f4f4f5;
-    border: 1px dashed #e4e4e7;
+    background: #f8f8f8;
+    border: 1px solid #e5e5e5;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -121,12 +132,13 @@ code {
 .ad-slot::before {
     content: 'Anzeige';
     position: absolute;
-    top: 4px;
+    top: 2px;
     left: 4px;
-    font-size: 10px;
-    color: #71717a;
+    font-size: 9px;
+    color: #999;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    font-family: 'Work Sans', sans-serif;
 }
 
 .ad-slot-leaderboard {
@@ -141,30 +153,36 @@ code {
     min-height: 60px;
 }
 
-/* News card hover effect */
-.news-card {
-    transition: all 0.2s ease-in-out;
+/* Line Clamp Utilities */
+.line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 
-.news-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+.line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 
-/* Table styles */
+/* Transfer Table Styles */
 .transfer-table th {
-    background: #f4f4f5;
+    background: #f8f8f8;
     padding: 12px;
-    border-bottom: 1px solid #e4e4e7;
+    border-bottom: 1px solid #e5e5e5;
     font-weight: 700;
     text-transform: uppercase;
     font-size: 11px;
     letter-spacing: 0.5px;
+    font-family: 'Oswald', sans-serif;
 }
 
 .transfer-table td {
     padding: 12px;
-    border-bottom: 1px solid #e4e4e7;
+    border-bottom: 1px solid #f0f0f0;
 }
 
 .transfer-table tr:hover td {
@@ -210,7 +228,7 @@ code {
     right: 0;
     z-index: 40;
     background: white;
-    border-top: 1px solid #e4e4e7;
+    border-top: 1px solid #e5e5e5;
     padding: 8px;
 }
 
@@ -220,27 +238,16 @@ code {
     }
 }
 
-/* Transitions */
-.transition-fast {
-    transition: all 0.15s ease-in-out;
-}
-
-.transition-normal {
-    transition: all 0.2s ease-in-out;
-}
-
 /* Focus states */
 input:focus, textarea:focus, select:focus {
     outline: none;
-    ring: 2px;
-    ring-color: #00a651;
 }
 
 /* Admin dashboard specific */
 .admin-sidebar {
     width: 260px;
     min-height: 100vh;
-    background: #3d5c1f;
+    background: #1a1a1a;
 }
 
 .admin-sidebar a {
@@ -251,7 +258,7 @@ input:focus, textarea:focus, select:focus {
 .admin-sidebar a:hover,
 .admin-sidebar a.active {
     color: white;
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(121, 185, 42, 0.2);
 }
 
 /* Data table in admin */
@@ -277,4 +284,135 @@ input:focus, textarea:focus, select:focus {
 
 .admin-table tr:hover td {
     background: #f9fafb;
+}
+
+/* Sport1 Style Card Shadows */
+.sport1-card {
+    background: white;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.sport1-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+/* Sport1 Style Buttons */
+.sport1-btn {
+    font-family: 'Oswald', sans-serif;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Newsticker styles */
+.newsticker-entry {
+    transition: background-color 0.15s ease;
+}
+
+.newsticker-entry:hover {
+    background-color: #f8f8f8;
+}
+
+/* Image hover effects */
+.img-zoom {
+    overflow: hidden;
+}
+
+.img-zoom img {
+    transition: transform 0.3s ease;
+}
+
+.img-zoom:hover img {
+    transform: scale(1.05);
+}
+
+/* Aspect Ratios */
+.aspect-3-2 {
+    aspect-ratio: 3/2;
+}
+
+.aspect-16-9 {
+    aspect-ratio: 16/9;
+}
+
+.aspect-4-3 {
+    aspect-ratio: 4/3;
+}
+
+/* Bottom Navigation for Mobile */
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    border-top: 1px solid #e5e5e5;
+    z-index: 50;
+    padding-bottom: env(safe-area-inset-bottom);
+}
+
+@media (min-width: 1024px) {
+    .bottom-nav {
+        display: none;
+    }
+}
+
+/* Skeleton Loading */
+@keyframes shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+.skeleton {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+}
+
+/* Category Pills */
+.category-pill {
+    display: inline-block;
+    padding: 4px 8px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Sport1 Green Accent */
+.accent-bar {
+    position: relative;
+}
+
+.accent-bar::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: #79B92A;
+}
+
+/* Responsive Typography */
+@media (max-width: 640px) {
+    .hero-headline {
+        font-size: 1.5rem;
+    }
+}
+
+@media (min-width: 641px) and (max-width: 1024px) {
+    .hero-headline {
+        font-size: 2rem;
+    }
+}
+
+@media (min-width: 1025px) {
+    .hero-headline {
+        font-size: 2.5rem;
+    }
 }

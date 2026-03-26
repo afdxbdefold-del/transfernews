@@ -26,22 +26,32 @@ export default function BreakingNewsTicker() {
   }
 
   return (
-    <div className="bg-[#fee2e2] border-b border-red-200" data-testid="breaking-ticker">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="bg-red-600" data-testid="breaking-ticker">
+      <div className="max-w-[1200px] mx-auto px-3">
         <div className="flex items-center h-10 overflow-hidden">
-          <div className="flex items-center flex-shrink-0 bg-red-600 text-white px-3 py-1 mr-4 text-xs font-bold uppercase">
-            <Lightning size={14} weight="fill" className="mr-1 animate-pulse" />
-            BREAKING
+          {/* Breaking Label */}
+          <div className="flex items-center flex-shrink-0 bg-white text-red-600 px-3 py-1 mr-4">
+            <Lightning size={14} weight="fill" className="mr-1" />
+            <span 
+              className="text-xs font-black uppercase"
+              style={{ fontFamily: "'Oswald', sans-serif" }}
+            >
+              BREAKING
+            </span>
           </div>
+          
+          {/* Ticker Content */}
           <div className="ticker-wrap flex-1">
             <div className="ticker">
               {[...breakingNews, ...breakingNews].map((news, idx) => (
                 <Link
                   key={idx}
                   to={`/news/${news.slug}`}
-                  className="inline-block text-red-800 text-sm font-medium hover:text-red-600 mr-12"
+                  className="inline-block text-white text-sm font-medium hover:text-white/80 transition-colors mr-16"
                 >
+                  <span className="mr-2">+++</span>
                   {news.title}
+                  <span className="ml-2">+++</span>
                 </Link>
               ))}
             </div>
