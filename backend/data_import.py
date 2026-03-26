@@ -467,10 +467,35 @@ async def find_article_image(title: str) -> str:
     return f"https://source.unsplash.com/800x600/?{search_term.replace(' ', ',')}&sig={rand}"
 
 
+async def find_related_events(db, event: dict, limit: int = 5) -> List[dict]:
+    """Find related events about the same topic from different sources"""
+    headline = event.get("headline_raw", "").lower()
+    
+    # Extract key entities (player names, club names)
+    words = headline.split()
+    key_terms = [w for w in words if len(w) > 4 and w[0].isupper()]
+    
+    if not key_terms:
+        return [event]
+    
+    # Search for related events
+    related = []
+    for term in key_terms[:3]:
+        cursor = db.events.find({
+            "headline_raw": {"$regex": term, "$options": "i"},
+            "id": {"$ne": event.get("id")}
+        }).limit(limit)
+        async for e in cursor:
+            if e not in related:
+                related.append(e)
+    
+    return [event] + related[:4]  # Max 5 sources
+
+
 async def generate_article_from_event(event: dict, db) -> dict:
     """
-    Generate a full article from a scraped event using LLM
-    Returns the generated article data
+    Generate a high-quality article from multiple sources using LLM
+    Suitable for Google Discover
     """
     from models import Article, ArticleType, ArticleStatus, generate_uuid
     
@@ -478,35 +503,57 @@ async def generate_article_from_event(event: dict, db) -> dict:
     if not api_key:
         raise ValueError("EMERGENT_LLM_KEY nicht konfiguriert")
     
-    headline = event.get("headline_raw", "")
-    source_url = event.get("source_url", "")
+    # Find related events from different sources
+    related_events = await find_related_events(db, event)
     
-    # Create LLM chat instance
+    # Build source information
+    sources_text = ""
+    for i, e in enumerate(related_events, 1):
+        sources_text += f"""
+QUELLE {i}:
+- Headline: {e.get('headline_raw', '')}
+- URL: {e.get('source_url', '')}
+- Summary: {e.get('summary', '')[:300]}
+"""
+    
+    headline = event.get("headline_raw", "")
+    
+    # Create LLM chat instance with strict instructions
     chat = LlmChat(
         api_key=api_key,
         session_id=f"article-gen-{event.get('id', 'new')}",
-        system_message="""Du bist ein erfahrener Sportjournalist für eine deutsche Fußball-Transfer-News-Website.
-Schreibe professionelle, sachliche und informative Artikel auf Deutsch.
-Verwende einen journalistischen Stil ähnlich wie Kicker oder Sport1.
-Erfinde keine Fakten - basiere alles auf der gegebenen Headline."""
+        system_message="""Du bist ein erfahrener Sportjournalist für transfernews.de.
+
+WICHTIGE REGELN:
+1. Verwende NUR Informationen aus den gegebenen Quellen
+2. ERFINDE KEINE Statistiken, Zahlen oder Zitate
+3. Wenn du etwas nicht weißt, lass es weg
+4. Schreibe im Stil von Kicker.de - professionell, sachlich, informativ
+5. Optimiere für Google Discover: Klarer Titel, starker Einstieg, Mehrwert für Leser
+6. Nenne die Quellen im Artikel (z.B. "Laut Berichten von...")"""
     ).with_model("openai", "gpt-4o")
     
-    # Generate title, excerpt and body
-    prompt = f"""Basierend auf dieser Transfer-Meldung, erstelle einen Artikel:
+    # Generate article from multiple sources
+    prompt = f"""Erstelle einen hochwertigen Transfer-Artikel aus diesen Quellen:
 
-HEADLINE: {headline}
-QUELLE: {source_url}
+{sources_text}
 
-Erstelle:
-1. TITEL: Ein packender, SEO-optimierter Titel (max 80 Zeichen)
-2. TEASER: Ein kurzer Teaser/Vorspann (max 200 Zeichen)
-3. ARTIKEL: Der vollständige Artikel (3-4 Absätze, ca. 200-300 Wörter)
+ANFORDERUNGEN:
+- TITEL: Packend, SEO-optimiert, max 70 Zeichen, enthält Hauptakteur
+- TEASER: Kernaussage in 1-2 Sätzen, max 160 Zeichen (für Google Discover)
+- ARTIKEL: 
+  * Starker Einstieg mit der wichtigsten Info
+  * 3-4 Absätze, ca. 250 Wörter
+  * Nur Fakten aus den Quellen
+  * Keine erfundenen Zitate oder Statistiken
+  * Erwähne woher die Info stammt ("Wie [Quelle] berichtet...")
+  * Einordnung und Kontext wo möglich
 
-Formatiere die Antwort EXAKT so:
-TITEL: [dein Titel]
-TEASER: [dein Teaser]
+Formatiere EXAKT so:
+TITEL: [titel]
+TEASER: [teaser]
 ARTIKEL:
-[dein Artikel]"""
+[artikel]"""
 
     user_message = UserMessage(text=prompt)
     response = await chat.send_message(user_message)
