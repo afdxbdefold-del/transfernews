@@ -1,52 +1,62 @@
-import { useEffect } from "react";
-import "@/App.css";
+import "@/index.css";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import axios from "axios";
+import { Toaster } from "@/components/ui/sonner";
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
+// Public Pages
+import HomePage from "@/pages/public/HomePage";
+import NewsListPage from "@/pages/public/NewsListPage";
+import NewsDetailPage from "@/pages/public/NewsDetailPage";
+import PlayerPage from "@/pages/public/PlayerPage";
+import ClubPage from "@/pages/public/ClubPage";
+import CompetitionPage from "@/pages/public/CompetitionPage";
+import RumoursPage from "@/pages/public/RumoursPage";
+import TransfersPage from "@/pages/public/TransfersPage";
+import SearchPage from "@/pages/public/SearchPage";
 
-const Home = () => {
-  const helloWorldApi = async () => {
-    try {
-      const response = await axios.get(`${API}/`);
-      console.log(response.data.message);
-    } catch (e) {
-      console.error(e, `errored out requesting / api`);
-    }
-  };
-
-  useEffect(() => {
-    helloWorldApi();
-  }, []);
-
-  return (
-    <div>
-      <header className="App-header">
-        <a
-          className="App-link"
-          href="https://emergent.sh"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <img src="https://avatars.githubusercontent.com/in/1201222?s=120&u=2686cf91179bbafbc7a71bfbc43004cf9ae1acea&v=4" />
-        </a>
-        <p className="mt-5">Building something incredible ~!</p>
-      </header>
-    </div>
-  );
-};
+// Admin Pages
+import AdminLogin from "@/pages/admin/AdminLogin";
+import AdminDashboard from "@/pages/admin/AdminDashboard";
+import AdminPlayers from "@/pages/admin/AdminPlayers";
+import AdminClubs from "@/pages/admin/AdminClubs";
+import AdminCompetitions from "@/pages/admin/AdminCompetitions";
+import AdminSources from "@/pages/admin/AdminSources";
+import AdminEvents from "@/pages/admin/AdminEvents";
+import AdminArticles from "@/pages/admin/AdminArticles";
+import AdminAdSlots from "@/pages/admin/AdminAdSlots";
+import AdminTransfers from "@/pages/admin/AdminTransfers";
+import AdminRumours from "@/pages/admin/AdminRumours";
 
 function App() {
   return (
-    <div className="App">
+    <div className="App min-h-screen">
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Home />}>
-            <Route index element={<Home />} />
-          </Route>
+          {/* Public Routes */}
+          <Route path="/" element={<HomePage />} />
+          <Route path="/news" element={<NewsListPage />} />
+          <Route path="/news/:slug" element={<NewsDetailPage />} />
+          <Route path="/spieler/:slug" element={<PlayerPage />} />
+          <Route path="/verein/:slug" element={<ClubPage />} />
+          <Route path="/wettbewerb/:slug" element={<CompetitionPage />} />
+          <Route path="/geruechte" element={<RumoursPage />} />
+          <Route path="/transfers" element={<TransfersPage />} />
+          <Route path="/suche" element={<SearchPage />} />
+          
+          {/* Admin Routes */}
+          <Route path="/admin/login" element={<AdminLogin />} />
+          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/admin/players" element={<AdminPlayers />} />
+          <Route path="/admin/clubs" element={<AdminClubs />} />
+          <Route path="/admin/competitions" element={<AdminCompetitions />} />
+          <Route path="/admin/sources" element={<AdminSources />} />
+          <Route path="/admin/events" element={<AdminEvents />} />
+          <Route path="/admin/articles" element={<AdminArticles />} />
+          <Route path="/admin/ad-slots" element={<AdminAdSlots />} />
+          <Route path="/admin/transfers" element={<AdminTransfers />} />
+          <Route path="/admin/rumours" element={<AdminRumours />} />
         </Routes>
       </BrowserRouter>
+      <Toaster position="top-right" />
     </div>
   );
 }
