@@ -1,6 +1,7 @@
 import "@/index.css";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
+import { HelmetProvider } from "react-helmet-async";
 
 // Public Pages
 import HomePage from "@/pages/public/HomePage";
@@ -28,36 +29,38 @@ import AdminRumours from "@/pages/admin/AdminRumours";
 
 function App() {
   return (
-    <div className="App min-h-screen">
-      <BrowserRouter>
-        <Routes>
-          {/* Public Routes */}
-          <Route path="/" element={<HomePage />} />
-          <Route path="/news" element={<NewsListPage />} />
-          <Route path="/news/:slug" element={<NewsDetailPage />} />
-          <Route path="/spieler/:slug" element={<PlayerPage />} />
-          <Route path="/verein/:slug" element={<ClubPage />} />
-          <Route path="/wettbewerb/:slug" element={<CompetitionPage />} />
-          <Route path="/geruechte" element={<RumoursPage />} />
-          <Route path="/transfers" element={<TransfersPage />} />
-          <Route path="/suche" element={<SearchPage />} />
-          
-          {/* Admin Routes */}
-          <Route path="/admin/login" element={<AdminLogin />} />
-          <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="/admin/players" element={<AdminPlayers />} />
-          <Route path="/admin/clubs" element={<AdminClubs />} />
-          <Route path="/admin/competitions" element={<AdminCompetitions />} />
-          <Route path="/admin/sources" element={<AdminSources />} />
-          <Route path="/admin/events" element={<AdminEvents />} />
-          <Route path="/admin/articles" element={<AdminArticles />} />
-          <Route path="/admin/ad-slots" element={<AdminAdSlots />} />
-          <Route path="/admin/transfers" element={<AdminTransfers />} />
-          <Route path="/admin/rumours" element={<AdminRumours />} />
-        </Routes>
-      </BrowserRouter>
-      <Toaster position="top-right" />
-    </div>
+    <HelmetProvider>
+      <div className="App min-h-screen">
+        <BrowserRouter>
+          <Routes>
+            {/* Public Routes */}
+            <Route path="/" element={<HomePage />} />
+            <Route path="/news" element={<NewsListPage />} />
+            <Route path="/news/:slug" element={<NewsDetailPage />} />
+            <Route path="/spieler/:slug" element={<PlayerPage />} />
+            <Route path="/verein/:slug" element={<ClubPage />} />
+            <Route path="/wettbewerb/:slug" element={<CompetitionPage />} />
+            <Route path="/geruechte" element={<RumoursPage />} />
+            <Route path="/transfers" element={<TransfersPage />} />
+            <Route path="/suche" element={<SearchPage />} />
+            
+            {/* Admin Routes */}
+            <Route path="/admin/login" element={<AdminLogin />} />
+            <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin/players" element={<AdminPlayers />} />
+            <Route path="/admin/clubs" element={<AdminClubs />} />
+            <Route path="/admin/competitions" element={<AdminCompetitions />} />
+            <Route path="/admin/sources" element={<AdminSources />} />
+            <Route path="/admin/events" element={<AdminEvents />} />
+            <Route path="/admin/articles" element={<AdminArticles />} />
+            <Route path="/admin/ad-slots" element={<AdminAdSlots />} />
+            <Route path="/admin/transfers" element={<AdminTransfers />} />
+            <Route path="/admin/rumours" element={<AdminRumours />} />
+          </Routes>
+        </BrowserRouter>
+        <Toaster position="top-right" />
+      </div>
+    </HelmetProvider>
   );
 }
 

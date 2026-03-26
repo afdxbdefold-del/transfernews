@@ -522,32 +522,78 @@ QUELLE {i}:
     chat = LlmChat(
         api_key=api_key,
         session_id=f"article-gen-{event.get('id', 'new')}",
-        system_message="""Du bist ein erfahrener Sportjournalist für transfernews.de.
+        system_message="""Du bist ein erfahrener Sportjournalist für transfernews.de - eine seriöse Fußball-Transfer-News-Plattform.
 
-WICHTIGE REGELN:
-1. Verwende NUR Informationen aus den gegebenen Quellen
-2. ERFINDE KEINE Statistiken, Zahlen oder Zitate
-3. Wenn du etwas nicht weißt, lass es weg
-4. Schreibe im Stil von Kicker.de - professionell, sachlich, informativ
-5. Optimiere für Google Discover: Klarer Titel, starker Einstieg, Mehrwert für Leser
-6. Nenne die Quellen im Artikel (z.B. "Laut Berichten von...")"""
+DEIN STIL:
+- Professionell wie Kicker.de oder Sport1.de
+- Sachlich, informativ, fundiert
+- Keine reißerischen Überschriften
+- Klare Struktur mit Absätzen
+
+GOOGLE DISCOVER REGELN:
+- Artikel müssen MINDESTENS 500 Wörter haben
+- Hochwertiger, origineller Content
+- Echten Mehrwert für Leser bieten
+- Quellenangaben einbauen
+
+ABSOLUTE VERBOTE:
+- KEINE erfundenen Statistiken oder Zahlen
+- KEINE erfundenen Zitate
+- KEINE Spekulationen als Fakten
+- KEIN Clickbait"""
     ).with_model("openai", "gpt-4o")
     
-    # Generate article from multiple sources
-    prompt = f"""Erstelle einen hochwertigen Transfer-Artikel aus diesen Quellen:
+    # Generate Discover-optimized article from multiple sources
+    prompt = f"""Erstelle einen GOOGLE DISCOVER geeigneten Transfer-Artikel aus diesen Quellen:
 
 {sources_text}
 
-ANFORDERUNGEN:
-- TITEL: Packend, SEO-optimiert, max 70 Zeichen, enthält Hauptakteur
-- TEASER: Kernaussage in 1-2 Sätzen, max 160 Zeichen (für Google Discover)
-- ARTIKEL: 
-  * Starker Einstieg mit der wichtigsten Info
-  * 3-4 Absätze, ca. 250 Wörter
-  * Nur Fakten aus den Quellen
-  * Keine erfundenen Zitate oder Statistiken
-  * Erwähne woher die Info stammt ("Wie [Quelle] berichtet...")
-  * Einordnung und Kontext wo möglich
+GOOGLE DISCOVER ANFORDERUNGEN:
+
+TITEL (60-70 Zeichen):
+- Klar und informativ, KEIN Clickbait
+- Enthält Hauptakteur (Spieler/Verein)
+- Weckt Interesse ohne zu übertreiben
+- Beispiel: "Mohamed Salah bestätigt Liverpool-Abschied zum Saisonende"
+
+TEASER (150-160 Zeichen):
+- Fasst die Kernaussage zusammen
+- Beantwortet WER, WAS, WANN
+- Eigenständig verständlich
+
+ARTIKEL (mindestens 500 Wörter, 5-6 Absätze):
+
+Absatz 1 - LEAD (80-100 Wörter):
+- Wichtigste Info zuerst (Wer, Was, Wann, Wo)
+- Quellenangabe ("Wie [Quelle] berichtet...")
+- Fesselnder Einstieg
+
+Absatz 2 - DETAILS (80-100 Wörter):
+- Hintergrundinformationen
+- Weitere Details aus den Quellen
+- Kontext zum Transfer
+
+Absatz 3 - EINORDNUNG (80-100 Wörter):
+- Bedeutung für Verein/Spieler
+- Sportliche Perspektive
+- Mögliche Auswirkungen
+
+Absatz 4 - HINTERGRUND (80-100 Wörter):
+- Karriere-Highlights des Spielers
+- Bisherige Erfolge
+- Statistiken NUR wenn in Quellen genannt
+
+Absatz 5 - AUSBLICK (60-80 Wörter):
+- Was passiert als nächstes?
+- Offene Fragen
+- Zeitrahmen
+
+WICHTIGE REGELN:
+- NUR Fakten aus den Quellen verwenden
+- KEINE erfundenen Zitate oder Statistiken
+- Quellenangaben einbauen
+- Professioneller, seriöser Ton
+- Keine Spekulationen als Fakten darstellen
 
 Formatiere EXAKT so:
 TITEL: [titel]
