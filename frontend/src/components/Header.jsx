@@ -52,9 +52,12 @@ export default function Header() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2" data-testid="logo-link">
-            <span className="text-2xl font-bold font-['Oswald'] uppercase tracking-tight">
-              Transfer<span className="text-[#79B92A]">News</span>
-            </span>
+            <svg viewBox="0 0 280 60" className="h-8 w-auto">
+              <text x="0" y="42" fontFamily="Inter, Helvetica Neue, Arial, sans-serif" fontWeight="800" fontSize="36" letterSpacing="-1.5" fill="#1a1a1a">transfer</text>
+              <text x="156" y="42" fontFamily="Inter, Helvetica Neue, Arial, sans-serif" fontWeight="800" fontSize="36" letterSpacing="-1.5" fill="#79B92A">news</text>
+              <rect x="6" y="16" width="18" height="4" fill="#79B92A"/>
+              <polygon points="24,18 28,13 28,23" fill="#79B92A"/>
+            </svg>
           </Link>
 
           {/* Desktop Nav */}

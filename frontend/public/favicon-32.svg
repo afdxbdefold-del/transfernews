@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- transfernews small favicon -->
+  <rect width="32" height="32" fill="#79B92A" rx="6"/>
+  <text x="4" y="23" font-family="Inter, Helvetica Neue, Arial, sans-serif" font-weight="800" font-size="19" letter-spacing="-1" fill="white">tn</text>
+  <rect x="6" y="11" width="7" height="2" fill="white"/>
+  <polygon points="13,12 15.5,9.5 15.5,14.5" fill="white"/>
+</svg>

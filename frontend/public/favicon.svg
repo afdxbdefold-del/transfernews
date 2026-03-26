@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- transfernews favicon/app icon - "tn" monogram -->
+  <style>
+    .icon-text { 
+      font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif; 
+      font-weight: 800; 
+      font-size: 38px;
+      letter-spacing: -2px;
+    }
+  </style>
+  
+  <!-- Background -->
+  <rect width="64" height="64" fill="#79B92A" rx="12"/>
+  
+  <!-- "tn" monogram in white -->
+  <text x="8" y="46" class="icon-text" fill="white">tn</text>
+  
+  <!-- Arrow accent on t crossbar -->
+  <rect x="12" y="22" width="14" height="3" fill="white"/>
+  <polygon points="26,23.5 30,19.5 30,27.5" fill="white"/>
+</svg>

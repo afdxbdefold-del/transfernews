@@ -42,9 +42,12 @@ export default function AdminLayout({ children, title }) {
       <aside className="admin-sidebar w-64 flex-shrink-0">
         <div className="p-4 border-b border-white/10">
           <Link to="/admin" className="block">
-            <h1 className="font-['Oswald'] text-xl font-bold text-white uppercase">
-              Transfer<span className="text-[#8FCC3D]">News</span>
-            </h1>
+            <svg viewBox="0 0 280 60" className="h-7 w-auto">
+              <text x="0" y="42" fontFamily="Inter, Helvetica Neue, Arial, sans-serif" fontWeight="800" fontSize="36" letterSpacing="-1.5" fill="white">transfer</text>
+              <text x="156" y="42" fontFamily="Inter, Helvetica Neue, Arial, sans-serif" fontWeight="800" fontSize="36" letterSpacing="-1.5" fill="#79B92A">news</text>
+              <rect x="6" y="16" width="18" height="4" fill="#79B92A"/>
+              <polygon points="24,18 28,13 28,23" fill="#79B92A"/>
+            </svg>
             <p className="text-xs text-white/50 mt-1">Admin-Dashboard</p>
           </Link>
         </div>

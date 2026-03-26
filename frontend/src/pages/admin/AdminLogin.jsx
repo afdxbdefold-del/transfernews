@@ -43,9 +43,12 @@ export default function AdminLogin() {
     <div className="min-h-screen flex items-center justify-center bg-gray-100" data-testid="admin-login">
       <div className="bg-white p-8 border border-gray-200 w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="font-['Oswald'] text-3xl font-bold uppercase">
-            Transfer<span className="text-[#79B92A]">News</span>
-          </h1>
+          <svg viewBox="0 0 280 60" className="h-10 w-auto mx-auto mb-2">
+            <text x="0" y="42" fontFamily="Inter, Helvetica Neue, Arial, sans-serif" fontWeight="800" fontSize="36" letterSpacing="-1.5" fill="#1a1a1a">transfer</text>
+            <text x="156" y="42" fontFamily="Inter, Helvetica Neue, Arial, sans-serif" fontWeight="800" fontSize="36" letterSpacing="-1.5" fill="#79B92A">news</text>
+            <rect x="6" y="16" width="18" height="4" fill="#79B92A"/>
+            <polygon points="24,18 28,13 28,23" fill="#79B92A"/>
+          </svg>
           <p className="text-gray-500 mt-2">Admin-Bereich</p>
         </div>
 
