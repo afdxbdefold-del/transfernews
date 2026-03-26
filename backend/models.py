@@ -296,6 +296,7 @@ class EventBase(BaseModel):
     source_published_at: Optional[datetime] = None
     confidence_score: Optional[int] = Field(default=50, ge=0, le=100)
     dedupe_key: Optional[str] = None
+    image_url: Optional[str] = None
 
 
 class EventCreate(EventBase):

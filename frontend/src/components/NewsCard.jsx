@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { Play, Circle } from "@phosphor-icons/react";
+import { useState } from "react";
 
 const formatTime = (dateString) => {
   if (!dateString) return "";
@@ -13,6 +14,34 @@ const formatTime = (dateString) => {
   return date.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" });
 };
 
+// Fallback images for different categories
+const FALLBACK_IMAGES = [
+  "https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=800",
+  "https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=800",
+  "https://images.unsplash.com/photo-1553778263-73a83bab9b0c?w=800",
+  "https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?w=800",
+];
+
+function getFallbackImage(id) {
+  const index = id ? id.charCodeAt(0) % FALLBACK_IMAGES.length : 0;
+  return FALLBACK_IMAGES[index];
+}
+
+// Image component with error handling
+function ArticleImage({ src, alt, className, articleId }) {
+  const [error, setError] = useState(false);
+  const fallback = getFallbackImage(articleId);
+  
+  return (
+    <img
+      src={error ? fallback : (src || fallback)}
+      alt={alt}
+      className={className}
+      onError={() => setError(true)}
+    />
+  );
+}
+
 // Hero Card - Big featured article with overlay text
 export function HeroCard({ article, isLive = false }) {
   if (!article) return null;
@@ -20,11 +49,12 @@ export function HeroCard({ article, isLive = false }) {
   return (
     <Link to={"/news/" + article.slug} className="block relative" data-testid={"hero-" + article.id}>
       <div className="relative aspect-[16/10] bg-gray-900">
-        {article.feature_image ? (
-          <img src={article.feature_image} alt={article.title} className="w-full h-full object-cover" />
-        ) : (
-          <div className="w-full h-full bg-gradient-to-br from-gray-800 to-gray-900" />
-        )}
+        <ArticleImage
+          src={article.feature_image}
+          alt={article.title}
+          className="w-full h-full object-cover"
+          articleId={article.id}
+        />
         
         {/* Live Badge */}
         {isLive && (
@@ -62,14 +92,13 @@ export function NewsCardHorizontal({ article, showVideo = false }) {
       data-testid={"news-card-" + article.id}
     >
       {/* Image */}
-      <div className="relative w-[140px] h-[95px] flex-shrink-0 bg-gray-100">
-        {article.feature_image ? (
-          <img src={article.feature_image} alt={article.title} className="w-full h-full object-cover" />
-        ) : (
-          <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
-            <span className="text-gray-400 text-2xl font-bold">TN</span>
-          </div>
-        )}
+      <div className="relative w-[140px] h-[95px] flex-shrink-0 bg-gray-100 overflow-hidden">
+        <ArticleImage
+          src={article.feature_image}
+          alt={article.title}
+          className="w-full h-full object-cover"
+          articleId={article.id}
+        />
         
         {/* Video Play Button & Duration */}
         {showVideo && (
@@ -93,7 +122,7 @@ export function NewsCardHorizontal({ article, showVideo = false }) {
         {/* Meta */}
         <div className="flex items-center justify-between mt-2">
           <div className="flex items-center gap-1.5">
-            <div className="w-4 h-4 bg-gray-200 rounded-full" />
+            <div className="w-4 h-4 bg-[#79B92A] rounded-full" />
             <span className="text-[11px] text-gray-500 font-medium uppercase">{article.category || "TRANSFER"}</span>
           </div>
           <span className="text-[11px] text-gray-400">{formatTime(article.published_at)}</span>
@@ -121,7 +150,7 @@ export function NewsTickerEntry({ article }) {
     >
       <span className="text-[13px] font-bold text-gray-900 w-12 flex-shrink-0">{getTime(article.published_at)}</span>
       <div className="flex-1 min-w-0">
-        <span className="text-[11px] font-bold text-gray-500 uppercase block mb-0.5">{article.category || "TRANSFER"}</span>
+        <span className="text-[11px] font-bold text-[#79B92A] uppercase block mb-0.5">{article.category || "TRANSFER"}</span>
         <span className="text-[13px] font-medium text-gray-900 line-clamp-2">{article.title}</span>
       </div>
     </Link>
@@ -134,21 +163,20 @@ export function NewsCard({ article }) {
   
   return (
     <Link to={"/news/" + article.slug} className="block bg-white" data-testid={"card-" + article.id}>
-      <div className="aspect-[4/3] bg-gray-100">
-        {article.feature_image ? (
-          <img src={article.feature_image} alt={article.title} className="w-full h-full object-cover" />
-        ) : (
-          <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
-            <span className="text-gray-400 text-3xl font-bold">TN</span>
-          </div>
-        )}
+      <div className="aspect-[4/3] bg-gray-100 overflow-hidden">
+        <ArticleImage
+          src={article.feature_image}
+          alt={article.title}
+          className="w-full h-full object-cover"
+          articleId={article.id}
+        />
       </div>
       <div className="p-3">
         <h3 className="text-[14px] font-bold text-gray-900 leading-snug line-clamp-2 mb-2" style={{ fontFamily: "'Oswald', sans-serif" }}>
           {article.title}
         </h3>
         <div className="flex items-center gap-1.5">
-          <div className="w-4 h-4 bg-gray-200 rounded-full" />
+          <div className="w-4 h-4 bg-[#79B92A] rounded-full" />
           <span className="text-[10px] text-gray-500 font-medium">{article.category || "Transfer"}</span>
           <span className="text-[10px] text-gray-400 ml-auto">{formatTime(article.published_at)}</span>
         </div>

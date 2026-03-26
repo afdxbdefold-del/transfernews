@@ -423,6 +423,50 @@ async def import_scraped_events(scraper: TransferNewsScraper, db) -> dict:
 import os
 from emergentintegrations.llm.chat import LlmChat, UserMessage
 
+
+async def find_article_image(title: str) -> str:
+    """
+    Find a relevant image for the article based on keywords in title
+    Uses Unsplash Source for free images
+    """
+    import re
+    import random
+    
+    # Extract keywords from title
+    title_lower = title.lower()
+    
+    # Map keywords to search terms
+    keyword_map = {
+        "bayern": "bayern munich football",
+        "dortmund": "borussia dortmund football",
+        "bundesliga": "bundesliga football stadium",
+        "champions league": "champions league football",
+        "nationalmannschaft": "germany national team football",
+        "dfb": "germany football team",
+        "transfer": "football player transfer",
+        "trainer": "football coach",
+        "tor": "football goal",
+        "spieler": "football player",
+        "fußball": "football soccer",
+        "liverpool": "liverpool football",
+        "real madrid": "real madrid football",
+        "barcelona": "barcelona football",
+        "premier league": "premier league football",
+    }
+    
+    # Find matching keyword
+    search_term = "football soccer match"  # default
+    for keyword, term in keyword_map.items():
+        if keyword in title_lower:
+            search_term = term
+            break
+    
+    # Use Unsplash Source (free, no API key needed)
+    # Add random number to avoid caching same image
+    rand = random.randint(1, 1000)
+    return f"https://source.unsplash.com/800x600/?{search_term.replace(' ', ',')}&sig={rand}"
+
+
 async def generate_article_from_event(event: dict, db) -> dict:
     """
     Generate a full article from a scraped event using LLM
@@ -498,6 +542,13 @@ ARTIKEL:
         import random
         slug = f"{slug}-{random.randint(1000, 9999)}"
     
+    # Get image from event or search for one
+    image_url = event.get("image_url", "")
+    
+    # If no image from source, try to find one via image search
+    if not image_url:
+        image_url = await find_article_image(title)
+    
     # Create article
     article = Article(
         id=generate_uuid(),
@@ -510,6 +561,7 @@ ARTIKEL:
         category="TRANSFER",
         source_event_id=event.get("id"),
         published_at=datetime.now(timezone.utc),
+        feature_image=image_url,
     )
     
     return article.model_dump()
@@ -604,6 +656,30 @@ class RSSFeedScraper:
         text = f"{title} {summary}".lower()
         return any(kw in text for kw in self.TRANSFER_KEYWORDS)
     
+    def _extract_image(self, entry) -> str:
+        """Extract image URL from RSS entry"""
+        # Try media_content first
+        media = entry.get('media_content', [])
+        if media and media[0].get('url'):
+            return media[0]['url']
+        
+        # Try enclosures
+        enclosures = entry.get('enclosures', [])
+        if enclosures and enclosures[0].get('href'):
+            return enclosures[0]['href']
+        
+        # Try links with image type
+        for link in entry.get('links', []):
+            if link.get('type', '').startswith('image'):
+                return link.get('href', '')
+        
+        # Try media_thumbnail
+        thumbs = entry.get('media_thumbnail', [])
+        if thumbs and thumbs[0].get('url'):
+            return thumbs[0]['url']
+        
+        return ""
+
     async def fetch_feed(self, feed_key: str) -> List[dict]:
         """Fetch and parse a single RSS feed"""
         events = []
@@ -618,6 +694,7 @@ class RSSFeedScraper:
                 title = entry.get("title", "")
                 summary = entry.get("summary", "")
                 link = entry.get("link", "")
+                image_url = self._extract_image(entry)
                 
                 # Filter for transfer-related news
                 if self._is_transfer_related(title, summary):
@@ -628,6 +705,7 @@ class RSSFeedScraper:
                         "source_key": feed_key,
                         "dedupe_key": self._generate_dedupe_key(title, feed_key),
                         "published": entry.get("published", ""),
+                        "image_url": image_url,
                     })
         except Exception as e:
             logger.error(f"RSS feed error for {feed_key}: {e}")
@@ -705,6 +783,7 @@ async def import_rss_events(db) -> dict:
             source_url=event_data.get("source_url", ""),
             dedupe_key=event_data["dedupe_key"],
             confidence_score=70 if event_type == EventType.OFFICIAL else 50,
+            image_url=event_data.get("image_url", ""),
         )
         
         await db.events.insert_one(event.model_dump())
