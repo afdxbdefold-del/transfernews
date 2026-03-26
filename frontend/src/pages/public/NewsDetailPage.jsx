@@ -168,8 +168,8 @@ export default function NewsDetailPage() {
             >
               Artikel nicht gefunden
             </h1>
-            <Link to="/news" className="text-[#79B92A] hover:underline font-bold">
-              Zurück zum Newsticker
+            <Link to="/" className="text-[#79B92A] hover:underline font-bold">
+              Zurück zur Startseite
             </Link>
           </div>
         </main>
@@ -221,12 +221,12 @@ export default function NewsDetailPage() {
             <article className="lg:col-span-2">
               {/* Back Link */}
               <Link
-                to="/news"
+                to="/"
                 className="inline-flex items-center gap-1 text-sm text-gray-600 hover:text-[#79B92A] mb-4 transition-colors"
                 data-testid="back-link"
               >
                 <CaretLeft size={16} weight="bold" />
-                <span className="font-medium">Zurück zum Newsticker</span>
+                <span className="font-medium">Zurück</span>
               </Link>
 
               {/* Article Card */}
