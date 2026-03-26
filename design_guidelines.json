@@ -1,0 +1,75 @@
+{
+  "theme": "light",
+  "archetype": "Archetype 4 (Swiss & High-Contrast) + Archetype 2 (Performance Pro)",
+  "colors": {
+    "background": "#ffffff",
+    "foreground": "#0a0a0a",
+    "primary": "#00a651",
+    "primary_foreground": "#ffffff",
+    "header_bg": "#053f2c",
+    "header_text": "#ffffff",
+    "secondary": "#f4f4f5",
+    "secondary_foreground": "#27272a",
+    "muted": "#e4e4e7",
+    "muted_foreground": "#71717a",
+    "border": "#e4e4e7",
+    "accent": "#00c853"
+  },
+  "typography": {
+    "fonts": {
+      "heading": "Oswald, sans-serif",
+      "body": "Work Sans, sans-serif"
+    },
+    "hierarchy": {
+      "h1": "text-4xl sm:text-5xl font-bold uppercase tracking-tight",
+      "h2": "text-2xl sm:text-3xl font-bold uppercase tracking-tight",
+      "h3": "text-xl sm:text-2xl font-semibold uppercase",
+      "body": "text-sm md:text-base",
+      "labels": "text-xs uppercase tracking-wide font-bold text-muted-foreground"
+    }
+  },
+  "layout_and_spacing": {
+    "strategy": "Dense grid bento layout for news, strict tabular layouts for transfer data.",
+    "containers": "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8",
+    "components": {
+      "header": "bg-[#053f2c] text-white border-b-4 border-[#00a651] sticky top-0 z-50",
+      "cards": "bg-white border border-border shadow-sm rounded-none",
+      "tables": "w-full text-left text-sm border-collapse",
+      "table_header": "bg-[#f4f4f5] p-3 border-b border-border font-bold uppercase text-xs",
+      "table_cell": "p-3 border-b border-border"
+    }
+  },
+  "ad_management": {
+    "strategy": "Aggressive monetization. No lazy loading.",
+    "slots": "Include multiple fixed-size ad containers (e.g. 728x90 leaderboard, 300x250 rectangle). Immediately render a placeholder with bg-gray-100 and a subtle 'Anzeige' label to prevent cumulative layout shift."
+  },
+  "media": {
+    "hero_stadium": {
+      "url": "https://images.unsplash.com/photo-1549923015-badf41b04831?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1OTN8MHwxfHNlYXJjaHwxfHxmb290YmFsbCUyMHN0YWRpdW0lMjBtYXRjaHxlbnwwfHx8fDE3NzQ1NDI2NDR8MA&ixlib=rb-4.1.0&q=85",
+      "description": "Aerial view of a football stadium, used for general backgrounds or competition pages."
+    },
+    "action_player_1": {
+      "url": "https://images.pexels.com/photos/221253/pexels-photo-221253.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "description": "Player running, used for news placeholders or player profile defaults."
+    },
+    "stadium_fans": {
+      "url": "https://images.pexels.com/photos/270085/pexels-photo-270085.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "description": "Packed stadium with fans, used for club pages or match day news."
+    }
+  },
+  "interactions": {
+    "hover": "Subtle background color shifts, borders changing to primary green. Example: hover:bg-[#f4f4f5] hover:border-[#00a651]",
+    "transitions": "transition-all duration-200 ease-in-out"
+  },
+  "testing": {
+    "attributes": "All interactive elements MUST include a data-testid attribute (e.g. data-testid='nav-news-link')."
+  },
+  "instructions_to_main_agent": [
+    "Install @phosphor-icons/react via yarn add @phosphor-icons/react",
+    "Update Tailwind configuration with the custom colors defined above. Ensure forms use green focus rings.",
+    "Implement Shadcn tabs for Player/Club profile views and dense data tables for the 'Bestätigte Transfers' section.",
+    "Add a Marquee for 'Breaking News/Live-Ticker' placed below the main header.",
+    "Develop the Admin Dashboard with strict modular grids for adcode management, news content generation, and transfer event tracking.",
+    "Do NOT use lazy loading for Ad slots to ensure immediate impression tracking."
+  ]
+}
