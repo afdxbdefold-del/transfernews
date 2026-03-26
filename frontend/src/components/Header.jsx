@@ -47,13 +47,13 @@ export default function Header() {
   };
 
   return (
-    <header className="bg-[#053f2c] text-white border-b-4 border-[#00a651] sticky top-0 z-50" data-testid="main-header">
+    <header className="bg-[#3d5c1f] text-white border-b-4 border-[#79B92A] sticky top-0 z-50" data-testid="main-header">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2" data-testid="logo-link">
             <span className="text-2xl font-bold font-['Oswald'] uppercase tracking-tight">
-              Transfer<span className="text-[#00c853]">News</span>
+              Transfer<span className="text-[#8FCC3D]">News</span>
             </span>
           </Link>
 
@@ -78,7 +78,7 @@ export default function Header() {
                 placeholder="Spieler, Verein..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-64 bg-white/10 border border-white/20 rounded px-4 py-2 text-sm placeholder-white/50 focus:outline-none focus:border-[#00c853]"
+                className="w-64 bg-white/10 border border-white/20 rounded px-4 py-2 text-sm placeholder-white/50 focus:outline-none focus:border-[#8FCC3D]"
                 data-testid="search-input"
               />
               <button type="submit" className="absolute right-2 top-1/2 -translate-y-1/2" data-testid="search-button">

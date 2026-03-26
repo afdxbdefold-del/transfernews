@@ -65,7 +65,7 @@ export default function NewsDetailPage() {
 
   const getTypeBadge = (type) => {
     const badges = {
-      news: { label: "News", class: "bg-[#00a651] text-white" },
+      news: { label: "News", class: "bg-[#79B92A] text-white" },
       rumour: { label: "Gerücht", class: "badge-rumour" },
       transfer: { label: "Transfer", class: "badge-confirmed" },
       analysis: { label: "Analyse", class: "bg-blue-100 text-blue-800" },
@@ -101,7 +101,7 @@ export default function NewsDetailPage() {
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <h1 className="text-2xl font-bold mb-4">Artikel nicht gefunden</h1>
-            <Link to="/news" className="text-[#00a651] hover:underline">
+            <Link to="/news" className="text-[#79B92A] hover:underline">
               Zurück zu den News
             </Link>
           </div>
@@ -133,7 +133,7 @@ export default function NewsDetailPage() {
               <div className="mb-6">
                 <Link
                   to="/news"
-                  className="text-sm text-gray-500 hover:text-[#00a651] flex items-center"
+                  className="text-sm text-gray-500 hover:text-[#79B92A] flex items-center"
                   data-testid="back-link"
                 >
                   <ArrowLeft size={14} className="mr-1" />
@@ -176,7 +176,7 @@ export default function NewsDetailPage() {
                       <Clock size={16} className="mr-1" />
                       {formatDate(article.published_at)}
                     </span>
-                    <button className="flex items-center hover:text-[#00a651]">
+                    <button className="flex items-center hover:text-[#79B92A]">
                       <Share size={16} className="mr-1" />
                       Teilen
                     </button>
@@ -184,7 +184,7 @@ export default function NewsDetailPage() {
 
                   {/* Excerpt */}
                   {article.excerpt && (
-                    <p className="text-lg text-gray-700 font-medium border-l-4 border-[#00a651] pl-4">
+                    <p className="text-lg text-gray-700 font-medium border-l-4 border-[#79B92A] pl-4">
                       {article.excerpt}
                     </p>
                   )}
@@ -227,7 +227,7 @@ export default function NewsDetailPage() {
                           to={`/spieler/${player.slug}`}
                           className="flex items-center px-3 py-2 bg-gray-100 hover:bg-gray-200 transition-colors"
                         >
-                          <User size={16} className="mr-2 text-[#00a651]" />
+                          <User size={16} className="mr-2 text-[#79B92A]" />
                           {player.name}
                         </Link>
                       ))}
@@ -237,7 +237,7 @@ export default function NewsDetailPage() {
                           to={`/verein/${club.slug}`}
                           className="flex items-center px-3 py-2 bg-gray-100 hover:bg-gray-200 transition-colors"
                         >
-                          <Buildings size={16} className="mr-2 text-[#00a651]" />
+                          <Buildings size={16} className="mr-2 text-[#79B92A]" />
                           {club.name}
                         </Link>
                       ))}

@@ -43,7 +43,7 @@ export default function AdminLayout({ children, title }) {
         <div className="p-4 border-b border-white/10">
           <Link to="/admin" className="block">
             <h1 className="font-['Oswald'] text-xl font-bold text-white uppercase">
-              Transfer<span className="text-[#00c853]">News</span>
+              Transfer<span className="text-[#8FCC3D]">News</span>
             </h1>
             <p className="text-xs text-white/50 mt-1">Admin-Dashboard</p>
           </Link>

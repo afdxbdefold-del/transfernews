@@ -61,10 +61,10 @@ export default function HomePage() {
                 <section data-testid="featured-news">
                   <div className="flex items-center justify-between mb-6">
                     <h2 className="font-['Oswald'] text-2xl font-bold uppercase flex items-center">
-                      <Newspaper size={24} className="mr-2 text-[#00a651]" />
+                      <Newspaper size={24} className="mr-2 text-[#79B92A]" />
                       Top-News
                     </h2>
-                    <Link to="/news" className="text-[#00a651] text-sm font-medium hover:underline flex items-center">
+                    <Link to="/news" className="text-[#79B92A] text-sm font-medium hover:underline flex items-center">
                       Alle News <ArrowRight size={16} className="ml-1" />
                     </Link>
                   </div>
@@ -123,10 +123,10 @@ export default function HomePage() {
               <div className="bg-white border border-gray-200 p-4" data-testid="transfers-widget">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="font-['Oswald'] text-lg font-bold uppercase flex items-center">
-                    <Handshake size={20} className="mr-2 text-[#00a651]" />
+                    <Handshake size={20} className="mr-2 text-[#79B92A]" />
                     Transfers
                   </h3>
-                  <Link to="/transfers" className="text-[#00a651] text-xs hover:underline">
+                  <Link to="/transfers" className="text-[#79B92A] text-xs hover:underline">
                     Alle
                   </Link>
                 </div>
@@ -163,7 +163,7 @@ export default function HomePage() {
                     <TrendUp size={20} className="mr-2 text-yellow-600" />
                     Gerüchte
                   </h3>
-                  <Link to="/geruechte" className="text-[#00a651] text-xs hover:underline">
+                  <Link to="/geruechte" className="text-[#79B92A] text-xs hover:underline">
                     Alle
                   </Link>
                 </div>

@@ -17,7 +17,7 @@ export function NewsCard({ article, featured = false }) {
 
   const getTypeBadge = (type) => {
     const badges = {
-      news: { label: "News", class: "bg-[#00a651] text-white" },
+      news: { label: "News", class: "bg-[#79B92A] text-white" },
       rumour: { label: "Gerücht", class: "badge-rumour" },
       transfer: { label: "Transfer", class: "badge-confirmed" },
       analysis: { label: "Analyse", class: "bg-blue-100 text-blue-800" },
@@ -42,7 +42,7 @@ export function NewsCard({ article, featured = false }) {
               className="w-full h-full object-cover"
             />
           ) : (
-            <div className="w-full h-full bg-gradient-to-br from-[#053f2c] to-[#00a651] flex items-center justify-center">
+            <div className="w-full h-full bg-gradient-to-br from-[#3d5c1f] to-[#79B92A] flex items-center justify-center">
               <span className="text-white/30 text-6xl font-bold">TN</span>
             </div>
           )}
@@ -54,7 +54,7 @@ export function NewsCard({ article, featured = false }) {
           </div>
         </div>
         <div className="p-6">
-          <h3 className="font-['Oswald'] text-2xl font-bold uppercase leading-tight mb-3 group-hover:text-[#00a651] transition-colors">
+          <h3 className="font-['Oswald'] text-2xl font-bold uppercase leading-tight mb-3 group-hover:text-[#79B92A] transition-colors">
             {article.title}
           </h3>
           {article.excerpt && (
@@ -72,7 +72,7 @@ export function NewsCard({ article, featured = false }) {
   return (
     <Link
       to={`/news/${article.slug}`}
-      className="news-card block bg-white border border-gray-200 p-4 group hover:border-[#00a651] transition-all"
+      className="news-card block bg-white border border-gray-200 p-4 group hover:border-[#79B92A] transition-all"
       data-testid={`news-card-${article.id}`}
     >
       <div className="flex gap-4">
@@ -92,7 +92,7 @@ export function NewsCard({ article, featured = false }) {
               <Badge className="text-xs badge-breaking">BREAKING</Badge>
             )}
           </div>
-          <h4 className="font-['Oswald'] text-lg font-bold uppercase leading-tight mb-2 group-hover:text-[#00a651] transition-colors line-clamp-2">
+          <h4 className="font-['Oswald'] text-lg font-bold uppercase leading-tight mb-2 group-hover:text-[#79B92A] transition-colors line-clamp-2">
             {article.title}
           </h4>
           <div className="flex items-center text-xs text-gray-500">
@@ -100,7 +100,7 @@ export function NewsCard({ article, featured = false }) {
             {formatDate(article.published_at)}
           </div>
         </div>
-        <ArrowRight size={20} className="text-gray-300 group-hover:text-[#00a651] transition-colors flex-shrink-0 self-center" />
+        <ArrowRight size={20} className="text-gray-300 group-hover:text-[#79B92A] transition-colors flex-shrink-0 self-center" />
       </div>
     </Link>
   );
@@ -122,7 +122,7 @@ export function NewsCardCompact({ article }) {
       className="block py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors group"
       data-testid={`news-compact-${article.id}`}
     >
-      <h5 className="text-sm font-medium group-hover:text-[#00a651] transition-colors line-clamp-2 mb-1">
+      <h5 className="text-sm font-medium group-hover:text-[#79B92A] transition-colors line-clamp-2 mb-1">
         {article.title}
       </h5>
       <span className="text-xs text-gray-400">{formatDate(article.published_at)}</span>

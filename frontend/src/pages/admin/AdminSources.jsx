@@ -59,7 +59,7 @@ export default function AdminSources() {
         <div className="flex items-center justify-between mb-6">
           <p className="text-gray-500">{sources.length} Quellen</p>
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild><Button onClick={resetForm} className="bg-[#00a651] hover:bg-[#008c45]" data-testid="create-source-btn"><Plus size={18} className="mr-2" />Neue Quelle</Button></DialogTrigger>
+            <DialogTrigger asChild><Button onClick={resetForm} className="bg-[#79B92A] hover:bg-[#6aa325]" data-testid="create-source-btn"><Plus size={18} className="mr-2" />Neue Quelle</Button></DialogTrigger>
             <DialogContent>
               <DialogHeader><DialogTitle className="font-['Oswald'] uppercase">{editing ? "Bearbeiten" : "Neu"}</DialogTitle></DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4 mt-4">
@@ -78,7 +78,7 @@ export default function AdminSources() {
                 <div className="flex items-center gap-2"><Switch checked={formData.active} onCheckedChange={(v) => setFormData({ ...formData, active: v })} /><span className="text-sm">Aktiv</span></div>
                 <div className="flex justify-end gap-2 pt-4">
                   <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>Abbrechen</Button>
-                  <Button type="submit" className="bg-[#00a651] hover:bg-[#008c45]">{editing ? "Aktualisieren" : "Erstellen"}</Button>
+                  <Button type="submit" className="bg-[#79B92A] hover:bg-[#6aa325]">{editing ? "Aktualisieren" : "Erstellen"}</Button>
                 </div>
               </form>
             </DialogContent>

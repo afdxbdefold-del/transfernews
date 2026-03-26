@@ -66,7 +66,7 @@ export default function PlayerPage() {
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <h1 className="text-2xl font-bold mb-4">Spieler nicht gefunden</h1>
-            <Link to="/" className="text-[#00a651] hover:underline">
+            <Link to="/" className="text-[#79B92A] hover:underline">
               Zur Startseite
             </Link>
           </div>
@@ -91,7 +91,7 @@ export default function PlayerPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Breadcrumb */}
           <div className="mb-6">
-            <Link to="/" className="text-sm text-gray-500 hover:text-[#00a651] flex items-center">
+            <Link to="/" className="text-sm text-gray-500 hover:text-[#79B92A] flex items-center">
               <ArrowLeft size={14} className="mr-1" />
               Zurück
             </Link>
@@ -102,7 +102,7 @@ export default function PlayerPage() {
             <div className="lg:col-span-2">
               {/* Player Profile Card */}
               <div className="bg-white border border-gray-200 mb-6">
-                <div className="bg-gradient-to-r from-[#053f2c] to-[#00a651] p-6">
+                <div className="bg-gradient-to-r from-[#3d5c1f] to-[#79B92A] p-6">
                   <div className="flex items-center gap-6">
                     <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center">
                       {player.image ? (
@@ -126,13 +126,13 @@ export default function PlayerPage() {
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {player.country && (
                       <div className="flex items-center text-sm">
-                        <MapPin size={16} className="mr-2 text-[#00a651]" />
+                        <MapPin size={16} className="mr-2 text-[#79B92A]" />
                         <span>{player.country}</span>
                       </div>
                     )}
                     {player.birthdate && (
                       <div className="flex items-center text-sm">
-                        <Calendar size={16} className="mr-2 text-[#00a651]" />
+                        <Calendar size={16} className="mr-2 text-[#79B92A]" />
                         <span>{player.birthdate}</span>
                       </div>
                     )}
@@ -146,13 +146,13 @@ export default function PlayerPage() {
               {/* Tabs */}
               <Tabs defaultValue="news" className="bg-white border border-gray-200">
                 <TabsList className="w-full justify-start border-b rounded-none bg-gray-50 p-0">
-                  <TabsTrigger value="news" className="rounded-none border-b-2 border-transparent data-[state=active]:border-[#00a651]">
+                  <TabsTrigger value="news" className="rounded-none border-b-2 border-transparent data-[state=active]:border-[#79B92A]">
                     News ({articles.length})
                   </TabsTrigger>
-                  <TabsTrigger value="transfers" className="rounded-none border-b-2 border-transparent data-[state=active]:border-[#00a651]">
+                  <TabsTrigger value="transfers" className="rounded-none border-b-2 border-transparent data-[state=active]:border-[#79B92A]">
                     Transfers ({transfers.length})
                   </TabsTrigger>
-                  <TabsTrigger value="rumours" className="rounded-none border-b-2 border-transparent data-[state=active]:border-[#00a651]">
+                  <TabsTrigger value="rumours" className="rounded-none border-b-2 border-transparent data-[state=active]:border-[#79B92A]">
                     Gerüchte ({rumours.length})
                   </TabsTrigger>
                 </TabsList>

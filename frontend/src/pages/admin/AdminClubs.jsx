@@ -61,7 +61,7 @@ export default function AdminClubs() {
           <p className="text-gray-500">{clubs.length} Vereine</p>
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
-              <Button onClick={resetForm} className="bg-[#00a651] hover:bg-[#008c45]" data-testid="create-club-btn"><Plus size={18} className="mr-2" />Neuer Verein</Button>
+              <Button onClick={resetForm} className="bg-[#79B92A] hover:bg-[#6aa325]" data-testid="create-club-btn"><Plus size={18} className="mr-2" />Neuer Verein</Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader><DialogTitle className="font-['Oswald'] uppercase">{editingClub ? "Verein bearbeiten" : "Neuer Verein"}</DialogTitle></DialogHeader>
@@ -78,7 +78,7 @@ export default function AdminClubs() {
                 <div><label className="block text-sm font-medium mb-1">Aliase</label><Input value={formData.aliases} onChange={(e) => setFormData({ ...formData, aliases: e.target.value })} placeholder="kommagetrennt" /></div>
                 <div className="flex justify-end gap-2 pt-4">
                   <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>Abbrechen</Button>
-                  <Button type="submit" className="bg-[#00a651] hover:bg-[#008c45]" data-testid="save-club-btn">{editingClub ? "Aktualisieren" : "Erstellen"}</Button>
+                  <Button type="submit" className="bg-[#79B92A] hover:bg-[#6aa325]" data-testid="save-club-btn">{editingClub ? "Aktualisieren" : "Erstellen"}</Button>
                 </div>
               </form>
             </DialogContent>

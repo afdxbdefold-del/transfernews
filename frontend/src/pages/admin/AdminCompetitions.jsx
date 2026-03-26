@@ -48,7 +48,7 @@ export default function AdminCompetitions() {
         <div className="flex items-center justify-between mb-6">
           <p className="text-gray-500">{competitions.length} Wettbewerbe</p>
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild><Button onClick={resetForm} className="bg-[#00a651] hover:bg-[#008c45]" data-testid="create-competition-btn"><Plus size={18} className="mr-2" />Neuer Wettbewerb</Button></DialogTrigger>
+            <DialogTrigger asChild><Button onClick={resetForm} className="bg-[#79B92A] hover:bg-[#6aa325]" data-testid="create-competition-btn"><Plus size={18} className="mr-2" />Neuer Wettbewerb</Button></DialogTrigger>
             <DialogContent>
               <DialogHeader><DialogTitle className="font-['Oswald'] uppercase">{editing ? "Bearbeiten" : "Neu"}</DialogTitle></DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4 mt-4">
@@ -58,7 +58,7 @@ export default function AdminCompetitions() {
                 <div><label className="block text-sm font-medium mb-1">Typ</label><Input value={formData.type} onChange={(e) => setFormData({ ...formData, type: e.target.value })} placeholder="league/cup/tournament" /></div>
                 <div className="flex justify-end gap-2 pt-4">
                   <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>Abbrechen</Button>
-                  <Button type="submit" className="bg-[#00a651] hover:bg-[#008c45]" data-testid="save-competition-btn">{editing ? "Aktualisieren" : "Erstellen"}</Button>
+                  <Button type="submit" className="bg-[#79B92A] hover:bg-[#6aa325]" data-testid="save-competition-btn">{editing ? "Aktualisieren" : "Erstellen"}</Button>
                 </div>
               </form>
             </DialogContent>

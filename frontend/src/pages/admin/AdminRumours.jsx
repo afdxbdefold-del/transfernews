@@ -75,7 +75,7 @@ export default function AdminRumours() {
         <div className="flex items-center justify-between mb-6">
           <p className="text-gray-500">{rumours.length} Gerüchte</p>
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild><Button onClick={resetForm} className="bg-[#00a651] hover:bg-[#008c45]" data-testid="create-rumour-btn"><Plus size={18} className="mr-2" />Neues Gerücht</Button></DialogTrigger>
+            <DialogTrigger asChild><Button onClick={resetForm} className="bg-[#79B92A] hover:bg-[#6aa325]" data-testid="create-rumour-btn"><Plus size={18} className="mr-2" />Neues Gerücht</Button></DialogTrigger>
             <DialogContent>
               <DialogHeader><DialogTitle className="font-['Oswald'] uppercase">{editing ? "Gerücht bearbeiten" : "Neues Gerücht"}</DialogTitle></DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4 mt-4">
@@ -97,7 +97,7 @@ export default function AdminRumours() {
                 <div><label className="block text-sm font-medium mb-1">Quellen-URL</label><Input value={formData.source_url} onChange={(e) => setFormData({ ...formData, source_url: e.target.value })} /></div>
                 <div className="flex justify-end gap-2 pt-4">
                   <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>Abbrechen</Button>
-                  <Button type="submit" className="bg-[#00a651] hover:bg-[#008c45]">{editing ? "Aktualisieren" : "Erstellen"}</Button>
+                  <Button type="submit" className="bg-[#79B92A] hover:bg-[#6aa325]">{editing ? "Aktualisieren" : "Erstellen"}</Button>
                 </div>
               </form>
             </DialogContent>

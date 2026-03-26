@@ -96,7 +96,7 @@ export default function TransfersPage() {
           {/* Page Title */}
           <div className="mb-8">
             <h1 className="font-['Oswald'] text-4xl font-bold uppercase flex items-center" data-testid="page-title">
-              <Handshake size={36} className="mr-3 text-[#00a651]" />
+              <Handshake size={36} className="mr-3 text-[#79B92A]" />
               Bestätigte Transfers
             </h1>
             <p className="text-gray-500 mt-2">
@@ -139,7 +139,7 @@ export default function TransfersPage() {
                                 {t.player ? (
                                   <Link
                                     to={`/spieler/${t.player.slug}`}
-                                    className="font-medium text-[#00a651] hover:underline"
+                                    className="font-medium text-[#79B92A] hover:underline"
                                   >
                                     {t.player.name}
                                   </Link>
@@ -151,7 +151,7 @@ export default function TransfersPage() {
                                 {t.fromClub ? (
                                   <Link
                                     to={`/verein/${t.fromClub.slug}`}
-                                    className="hover:text-[#00a651]"
+                                    className="hover:text-[#79B92A]"
                                   >
                                     {t.fromClub.name}
                                   </Link>
@@ -163,7 +163,7 @@ export default function TransfersPage() {
                                 {t.toClub ? (
                                   <Link
                                     to={`/verein/${t.toClub.slug}`}
-                                    className="hover:text-[#00a651]"
+                                    className="hover:text-[#79B92A]"
                                   >
                                     {t.toClub.name}
                                   </Link>

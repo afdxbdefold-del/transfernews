@@ -117,7 +117,7 @@ export default function AdminDashboard() {
         { label: "Events (Ausstehend)", value: stats.events_pending, icon: Lightning, color: "bg-red-500" },
         { label: "Events (Gesamt)", value: stats.events_total, icon: Lightning, color: "bg-orange-500" },
         { label: "Artikel (Entwürfe)", value: stats.articles_draft, icon: Newspaper, color: "bg-gray-500" },
-        { label: "Artikel (Veröffentlicht)", value: stats.articles_published, icon: Newspaper, color: "bg-[#00a651]" },
+        { label: "Artikel (Veröffentlicht)", value: stats.articles_published, icon: Newspaper, color: "bg-[#79B92A]" },
         { label: "Transfers", value: stats.transfers_total, icon: Handshake, color: "bg-teal-500" },
         { label: "Gerüchte (Aktiv)", value: stats.rumours_active, icon: TrendUp, color: "bg-amber-500" },
         { label: "Ad-Slots (Aktiv)", value: stats.ad_slots_active, icon: Megaphone, color: "bg-indigo-500" },
@@ -131,7 +131,7 @@ export default function AdminDashboard() {
         {/* Data Import Section */}
         <div className="bg-white border border-gray-200 p-6 mb-8">
           <h3 className="font-['Oswald'] text-xl font-bold uppercase mb-4 flex items-center">
-            <Download size={24} className="mr-2 text-[#00a651]" />
+            <Download size={24} className="mr-2 text-[#79B92A]" />
             Daten-Import
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -188,7 +188,7 @@ export default function AdminDashboard() {
         <div className="mb-8 flex gap-4">
           <Button
             onClick={handleInitAdSlots}
-            className="bg-[#00a651] hover:bg-[#008c45]"
+            className="bg-[#79B92A] hover:bg-[#6aa325]"
             data-testid="init-ad-slots-btn"
           >
             <Megaphone size={18} className="mr-2" />
@@ -237,7 +237,7 @@ export default function AdminDashboard() {
                 href="/admin/articles"
                 className="flex items-center gap-3 p-3 bg-gray-50 hover:bg-gray-100 transition-colors"
               >
-                <Newspaper size={20} className="text-[#00a651]" />
+                <Newspaper size={20} className="text-[#79B92A]" />
                 <span>Neuen Artikel erstellen</span>
               </a>
               <a

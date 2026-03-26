@@ -2,13 +2,13 @@ import { Link } from "react-router-dom";
 
 export default function Footer() {
   return (
-    <footer className="bg-[#053f2c] text-white mt-auto" data-testid="main-footer">
+    <footer className="bg-[#3d5c1f] text-white mt-auto" data-testid="main-footer">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Brand */}
           <div>
             <h3 className="text-xl font-bold font-['Oswald'] uppercase mb-4">
-              Transfer<span className="text-[#00c853]">News</span>
+              Transfer<span className="text-[#8FCC3D]">News</span>
             </h3>
             <p className="text-sm text-white/70">
               Die schnellste Quelle für Fußball-Transfer-News, Gerüchte und offizielle Wechsel.
@@ -17,7 +17,7 @@ export default function Footer() {
 
           {/* News */}
           <div>
-            <h4 className="font-['Oswald'] uppercase text-sm font-bold mb-4 text-[#00c853]">News</h4>
+            <h4 className="font-['Oswald'] uppercase text-sm font-bold mb-4 text-[#8FCC3D]">News</h4>
             <ul className="space-y-2 text-sm text-white/70">
               <li><Link to="/news" className="hover:text-white transition-colors">Alle News</Link></li>
               <li><Link to="/geruechte" className="hover:text-white transition-colors">Gerüchte</Link></li>
@@ -27,7 +27,7 @@ export default function Footer() {
 
           {/* Wettbewerbe */}
           <div>
-            <h4 className="font-['Oswald'] uppercase text-sm font-bold mb-4 text-[#00c853]">Wettbewerbe</h4>
+            <h4 className="font-['Oswald'] uppercase text-sm font-bold mb-4 text-[#8FCC3D]">Wettbewerbe</h4>
             <ul className="space-y-2 text-sm text-white/70">
               <li><Link to="/wettbewerb/bundesliga" className="hover:text-white transition-colors">Bundesliga</Link></li>
               <li><Link to="/wettbewerb/premier-league" className="hover:text-white transition-colors">Premier League</Link></li>
@@ -38,7 +38,7 @@ export default function Footer() {
 
           {/* Rechtliches */}
           <div>
-            <h4 className="font-['Oswald'] uppercase text-sm font-bold mb-4 text-[#00c853]">Rechtliches</h4>
+            <h4 className="font-['Oswald'] uppercase text-sm font-bold mb-4 text-[#8FCC3D]">Rechtliches</h4>
             <ul className="space-y-2 text-sm text-white/70">
               <li><Link to="/impressum" className="hover:text-white transition-colors">Impressum</Link></li>
               <li><Link to="/datenschutz" className="hover:text-white transition-colors">Datenschutz</Link></li>

@@ -44,7 +44,7 @@ export default function AdminLogin() {
       <div className="bg-white p-8 border border-gray-200 w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="font-['Oswald'] text-3xl font-bold uppercase">
-            Transfer<span className="text-[#00a651]">News</span>
+            Transfer<span className="text-[#79B92A]">News</span>
           </h1>
           <p className="text-gray-500 mt-2">Admin-Bereich</p>
         </div>
@@ -85,7 +85,7 @@ export default function AdminLogin() {
           <Button
             type="submit"
             disabled={loading}
-            className="w-full bg-[#00a651] hover:bg-[#008c45]"
+            className="w-full bg-[#79B92A] hover:bg-[#6aa325]"
             data-testid="login-button"
           >
             {loading ? "Wird angemeldet..." : "Anmelden"}

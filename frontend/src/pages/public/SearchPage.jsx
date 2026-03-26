@@ -66,7 +66,7 @@ export default function SearchPage() {
           {/* Search Form */}
           <div className="mb-8">
             <h1 className="font-['Oswald'] text-4xl font-bold uppercase flex items-center mb-6" data-testid="page-title">
-              <MagnifyingGlass size={36} className="mr-3 text-[#00a651]" />
+              <MagnifyingGlass size={36} className="mr-3 text-[#79B92A]" />
               Suche
             </h1>
             
@@ -79,7 +79,7 @@ export default function SearchPage() {
                 className="flex-1"
                 data-testid="search-input"
               />
-              <Button type="submit" className="bg-[#00a651] hover:bg-[#008c45]" data-testid="search-submit">
+              <Button type="submit" className="bg-[#79B92A] hover:bg-[#6aa325]" data-testid="search-submit">
                 Suchen
               </Button>
             </form>
@@ -105,16 +105,16 @@ export default function SearchPage() {
 
                   <Tabs defaultValue="all" className="bg-white border border-gray-200">
                     <TabsList className="w-full justify-start border-b rounded-none bg-gray-50 p-0 flex-wrap">
-                      <TabsTrigger value="all" className="rounded-none border-b-2 border-transparent data-[state=active]:border-[#00a651]">
+                      <TabsTrigger value="all" className="rounded-none border-b-2 border-transparent data-[state=active]:border-[#79B92A]">
                         Alle ({totalResults})
                       </TabsTrigger>
-                      <TabsTrigger value="players" className="rounded-none border-b-2 border-transparent data-[state=active]:border-[#00a651]">
+                      <TabsTrigger value="players" className="rounded-none border-b-2 border-transparent data-[state=active]:border-[#79B92A]">
                         Spieler ({results.players.length})
                       </TabsTrigger>
-                      <TabsTrigger value="clubs" className="rounded-none border-b-2 border-transparent data-[state=active]:border-[#00a651]">
+                      <TabsTrigger value="clubs" className="rounded-none border-b-2 border-transparent data-[state=active]:border-[#79B92A]">
                         Vereine ({results.clubs.length})
                       </TabsTrigger>
-                      <TabsTrigger value="articles" className="rounded-none border-b-2 border-transparent data-[state=active]:border-[#00a651]">
+                      <TabsTrigger value="articles" className="rounded-none border-b-2 border-transparent data-[state=active]:border-[#79B92A]">
                         News ({results.articles.length})
                       </TabsTrigger>
                     </TabsList>
@@ -125,7 +125,7 @@ export default function SearchPage() {
                         {results.players.length > 0 && (
                           <div>
                             <h3 className="font-['Oswald'] text-lg font-bold uppercase mb-3 flex items-center">
-                              <User size={20} className="mr-2 text-[#00a651]" />
+                              <User size={20} className="mr-2 text-[#79B92A]" />
                               Spieler
                             </h3>
                             <div className="space-y-2">
@@ -133,7 +133,7 @@ export default function SearchPage() {
                                 <Link
                                   key={player.id}
                                   to={`/spieler/${player.slug}`}
-                                  className="flex items-center justify-between p-3 border hover:border-[#00a651] transition-colors"
+                                  className="flex items-center justify-between p-3 border hover:border-[#79B92A] transition-colors"
                                 >
                                   <div>
                                     <span className="font-medium">{player.name}</span>
@@ -154,7 +154,7 @@ export default function SearchPage() {
                         {results.clubs.length > 0 && (
                           <div>
                             <h3 className="font-['Oswald'] text-lg font-bold uppercase mb-3 flex items-center">
-                              <Buildings size={20} className="mr-2 text-[#00a651]" />
+                              <Buildings size={20} className="mr-2 text-[#79B92A]" />
                               Vereine
                             </h3>
                             <div className="space-y-2">
@@ -162,7 +162,7 @@ export default function SearchPage() {
                                 <Link
                                   key={club.id}
                                   to={`/verein/${club.slug}`}
-                                  className="flex items-center justify-between p-3 border hover:border-[#00a651] transition-colors"
+                                  className="flex items-center justify-between p-3 border hover:border-[#79B92A] transition-colors"
                                 >
                                   <span className="font-medium">{club.name}</span>
                                   {club.country && (
@@ -178,7 +178,7 @@ export default function SearchPage() {
                         {results.articles.length > 0 && (
                           <div>
                             <h3 className="font-['Oswald'] text-lg font-bold uppercase mb-3 flex items-center">
-                              <Newspaper size={20} className="mr-2 text-[#00a651]" />
+                              <Newspaper size={20} className="mr-2 text-[#79B92A]" />
                               News
                             </h3>
                             <div className="space-y-3">
@@ -204,7 +204,7 @@ export default function SearchPage() {
                             <Link
                               key={player.id}
                               to={`/spieler/${player.slug}`}
-                              className="flex items-center justify-between p-3 border hover:border-[#00a651] transition-colors"
+                              className="flex items-center justify-between p-3 border hover:border-[#79B92A] transition-colors"
                             >
                               <div className="flex items-center gap-3">
                                 <User size={24} className="text-gray-400" />
@@ -233,7 +233,7 @@ export default function SearchPage() {
                             <Link
                               key={club.id}
                               to={`/verein/${club.slug}`}
-                              className="flex items-center justify-between p-3 border hover:border-[#00a651] transition-colors"
+                              className="flex items-center justify-between p-3 border hover:border-[#79B92A] transition-colors"
                             >
                               <div className="flex items-center gap-3">
                                 <Buildings size={24} className="text-gray-400" />

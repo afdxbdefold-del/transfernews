@@ -58,7 +58,7 @@ export default function NewsListPage() {
           {/* Page Title */}
           <div className="mb-8">
             <h1 className="font-['Oswald'] text-4xl font-bold uppercase flex items-center" data-testid="page-title">
-              <Newspaper size={36} className="mr-3 text-[#00a651]" />
+              <Newspaper size={36} className="mr-3 text-[#79B92A]" />
               Transfer-News
             </h1>
             <p className="text-gray-500 mt-2">
@@ -98,7 +98,7 @@ export default function NewsListPage() {
                       <button
                         onClick={loadMore}
                         disabled={loading}
-                        className="bg-[#00a651] text-white px-8 py-3 font-bold uppercase hover:bg-[#008c45] transition-colors disabled:opacity-50"
+                        className="bg-[#79B92A] text-white px-8 py-3 font-bold uppercase hover:bg-[#6aa325] transition-colors disabled:opacity-50"
                         data-testid="load-more-btn"
                       >
                         {loading ? "Lädt..." : "Mehr laden"}

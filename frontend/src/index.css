@@ -27,31 +27,31 @@ code {
         --card-foreground: 0 0% 4%;
         --popover: 0 0% 100%;
         --popover-foreground: 0 0% 4%;
-        --primary: 152 100% 32%;
+        --primary: 78 62% 44%;
         --primary-foreground: 0 0% 100%;
         --secondary: 240 5% 96%;
         --secondary-foreground: 240 6% 15%;
         --muted: 240 5% 89%;
         --muted-foreground: 240 4% 46%;
-        --accent: 152 100% 39%;
+        --accent: 78 62% 50%;
         --accent-foreground: 0 0% 100%;
         --destructive: 0 84% 60%;
         --destructive-foreground: 0 0% 98%;
         --border: 240 6% 90%;
         --input: 240 6% 90%;
-        --ring: 152 100% 32%;
-        --chart-1: 152 100% 32%;
-        --chart-2: 152 80% 40%;
-        --chart-3: 152 60% 50%;
+        --ring: 78 62% 44%;
+        --chart-1: 78 62% 44%;
+        --chart-2: 78 50% 50%;
+        --chart-3: 78 40% 55%;
         --chart-4: 43 74% 66%;
         --chart-5: 27 87% 67%;
         --radius: 0rem;
         
         /* Custom colors */
-        --header-bg: 160 82% 14%;
+        --header-bg: 78 50% 20%;
         --header-text: 0 0% 100%;
-        --transfer-green: 152 100% 32%;
-        --transfer-dark: 160 82% 14%;
+        --transfer-green: 78 62% 44%;
+        --transfer-dark: 78 50% 20%;
     }
 }
 
@@ -75,12 +75,12 @@ code {
 }
 
 ::-webkit-scrollbar-thumb {
-    background: #00a651;
+    background: #79B92A;
     border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: #008c45;
+    background: #6aa325;
 }
 
 /* Breaking news ticker animation */
@@ -240,7 +240,7 @@ input:focus, textarea:focus, select:focus {
 .admin-sidebar {
     width: 260px;
     min-height: 100vh;
-    background: #053f2c;
+    background: #3d5c1f;
 }
 
 .admin-sidebar a {

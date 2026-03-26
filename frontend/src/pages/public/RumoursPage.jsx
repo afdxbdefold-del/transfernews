@@ -130,7 +130,7 @@ export default function RumoursPage() {
                               {rumour.player ? (
                                 <Link
                                   to={`/spieler/${rumour.player.slug}`}
-                                  className="text-[#00a651] hover:underline"
+                                  className="text-[#79B92A] hover:underline"
                                 >
                                   {rumour.player.name}
                                 </Link>
@@ -142,7 +142,7 @@ export default function RumoursPage() {
                                   <ArrowRight size={20} className="text-gray-400" />
                                   <Link
                                     to={`/verein/${rumour.targetClub.slug}`}
-                                    className="text-[#00a651] hover:underline"
+                                    className="text-[#79B92A] hover:underline"
                                   >
                                     {rumour.targetClub.name}
                                   </Link>

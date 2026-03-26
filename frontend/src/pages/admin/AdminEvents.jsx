@@ -76,7 +76,7 @@ export default function AdminEvents() {
         <div className="flex items-center justify-between mb-6">
           <p className="text-gray-500">{events.length} Events</p>
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild><Button onClick={resetForm} className="bg-[#00a651] hover:bg-[#008c45]" data-testid="create-event-btn"><Plus size={18} className="mr-2" />Neues Event</Button></DialogTrigger>
+            <DialogTrigger asChild><Button onClick={resetForm} className="bg-[#79B92A] hover:bg-[#6aa325]" data-testid="create-event-btn"><Plus size={18} className="mr-2" />Neues Event</Button></DialogTrigger>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader><DialogTitle className="font-['Oswald'] uppercase">{editing ? "Event bearbeiten" : "Neues Event"}</DialogTitle></DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4 mt-4">
@@ -110,7 +110,7 @@ export default function AdminEvents() {
                 <div><label className="block text-sm font-medium mb-1">Quellen-URL</label><Input value={formData.source_url} onChange={(e) => setFormData({ ...formData, source_url: e.target.value })} /></div>
                 <div className="flex justify-end gap-2 pt-4">
                   <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>Abbrechen</Button>
-                  <Button type="submit" className="bg-[#00a651] hover:bg-[#008c45]">{editing ? "Aktualisieren" : "Erstellen"}</Button>
+                  <Button type="submit" className="bg-[#79B92A] hover:bg-[#6aa325]">{editing ? "Aktualisieren" : "Erstellen"}</Button>
                 </div>
               </form>
             </DialogContent>

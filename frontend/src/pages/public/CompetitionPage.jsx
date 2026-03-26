@@ -61,7 +61,7 @@ export default function CompetitionPage() {
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <h1 className="text-2xl font-bold mb-4">Wettbewerb nicht gefunden</h1>
-            <Link to="/" className="text-[#00a651] hover:underline">
+            <Link to="/" className="text-[#79B92A] hover:underline">
               Zur Startseite
             </Link>
           </div>
@@ -86,7 +86,7 @@ export default function CompetitionPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Breadcrumb */}
           <div className="mb-6">
-            <Link to="/" className="text-sm text-gray-500 hover:text-[#00a651] flex items-center">
+            <Link to="/" className="text-sm text-gray-500 hover:text-[#79B92A] flex items-center">
               <ArrowLeft size={14} className="mr-1" />
               Zurück
             </Link>
@@ -97,7 +97,7 @@ export default function CompetitionPage() {
             <div className="lg:col-span-2">
               {/* Competition Header */}
               <div className="bg-white border border-gray-200 mb-6">
-                <div className="bg-gradient-to-r from-[#053f2c] to-[#00a651] p-6">
+                <div className="bg-gradient-to-r from-[#3d5c1f] to-[#79B92A] p-6">
                   <div className="flex items-center gap-6">
                     <div className="w-24 h-24 bg-white rounded-lg flex items-center justify-center p-2">
                       {competition.logo ? (
@@ -127,10 +127,10 @@ export default function CompetitionPage() {
               {/* Tabs */}
               <Tabs defaultValue="news" className="bg-white border border-gray-200">
                 <TabsList className="w-full justify-start border-b rounded-none bg-gray-50 p-0">
-                  <TabsTrigger value="news" className="rounded-none border-b-2 border-transparent data-[state=active]:border-[#00a651]">
+                  <TabsTrigger value="news" className="rounded-none border-b-2 border-transparent data-[state=active]:border-[#79B92A]">
                     News ({articles.length})
                   </TabsTrigger>
-                  <TabsTrigger value="clubs" className="rounded-none border-b-2 border-transparent data-[state=active]:border-[#00a651]">
+                  <TabsTrigger value="clubs" className="rounded-none border-b-2 border-transparent data-[state=active]:border-[#79B92A]">
                     Vereine ({clubs.length})
                   </TabsTrigger>
                 </TabsList>
@@ -154,7 +154,7 @@ export default function CompetitionPage() {
                         <Link
                           key={club.id}
                           to={`/verein/${club.slug}`}
-                          className="flex items-center gap-3 p-3 border border-gray-200 hover:border-[#00a651] transition-colors"
+                          className="flex items-center gap-3 p-3 border border-gray-200 hover:border-[#79B92A] transition-colors"
                         >
                           <div className="w-12 h-12 bg-gray-100 rounded flex items-center justify-center">
                             {club.logo ? (

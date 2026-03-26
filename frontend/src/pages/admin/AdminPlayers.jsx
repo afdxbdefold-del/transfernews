@@ -120,7 +120,7 @@ export default function AdminPlayers() {
           <p className="text-gray-500">{players.length} Spieler</p>
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
-              <Button onClick={resetForm} className="bg-[#00a651] hover:bg-[#008c45]" data-testid="create-player-btn">
+              <Button onClick={resetForm} className="bg-[#79B92A] hover:bg-[#6aa325]" data-testid="create-player-btn">
                 <Plus size={18} className="mr-2" />
                 Neuer Spieler
               </Button>
@@ -185,7 +185,7 @@ export default function AdminPlayers() {
                   <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
                     Abbrechen
                   </Button>
-                  <Button type="submit" className="bg-[#00a651] hover:bg-[#008c45]" data-testid="save-player-btn">
+                  <Button type="submit" className="bg-[#79B92A] hover:bg-[#6aa325]" data-testid="save-player-btn">
                     {editingPlayer ? "Aktualisieren" : "Erstellen"}
                   </Button>
                 </div>

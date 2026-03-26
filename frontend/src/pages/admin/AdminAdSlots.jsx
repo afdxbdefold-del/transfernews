@@ -184,7 +184,7 @@ export default function AdminAdSlots() {
             <DialogTrigger asChild>
               <Button
                 onClick={resetForm}
-                className="bg-[#00a651] hover:bg-[#008c45]"
+                className="bg-[#79B92A] hover:bg-[#6aa325]"
                 data-testid="create-slot-btn"
               >
                 <Plus size={18} className="mr-2" />
@@ -347,7 +347,7 @@ export default function AdminAdSlots() {
                   <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
                     Abbrechen
                   </Button>
-                  <Button type="submit" className="bg-[#00a651] hover:bg-[#008c45]" data-testid="save-slot-btn">
+                  <Button type="submit" className="bg-[#79B92A] hover:bg-[#6aa325]" data-testid="save-slot-btn">
                     {editingSlot ? "Aktualisieren" : "Erstellen"}
                   </Button>
                 </div>
