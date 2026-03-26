@@ -185,20 +185,22 @@ export default function NewsDetailPage() {
   return (
     <div className="min-h-screen flex flex-col bg-[#f5f5f5]" data-testid="news-detail-page">
       {/* SEO Meta Tags for Google Discover */}
-      <Helmet>
-        <title>{article.title} | transfernews.de</title>
-        <meta name="description" content={article.excerpt || article.title} />
-        <meta property="og:title" content={article.title} />
-        <meta property="og:description" content={article.excerpt || article.title} />
-        <meta property="og:image" content={article.feature_image ? window.location.origin + article.feature_image : ''} />
-        <meta property="og:type" content="article" />
-        <meta property="article:published_time" content={article.published_at} />
-        <meta property="article:section" content="Transfer News" />
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={article.title} />
-        <meta name="twitter:description" content={article.excerpt || article.title} />
-        <meta name="robots" content="max-image-preview:large" />
-      </Helmet>
+      {article && (
+        <Helmet>
+          <title>{`${article.title || 'Transfer News'} | transfernews.de`}</title>
+          <meta name="description" content={article.excerpt || article.title || ''} />
+          <meta property="og:title" content={article.title || 'Transfer News'} />
+          <meta property="og:description" content={article.excerpt || article.title || ''} />
+          <meta property="og:image" content={article.feature_image ? window.location.origin + article.feature_image : ''} />
+          <meta property="og:type" content="article" />
+          <meta property="article:published_time" content={article.published_at || ''} />
+          <meta property="article:section" content="Transfer News" />
+          <meta name="twitter:card" content="summary_large_image" />
+          <meta name="twitter:title" content={article.title || 'Transfer News'} />
+          <meta name="twitter:description" content={article.excerpt || article.title || ''} />
+          <meta name="robots" content="max-image-preview:large" />
+        </Helmet>
+      )}
       
       {/* Schema.org NewsArticle */}
       <ArticleSchema article={article} />

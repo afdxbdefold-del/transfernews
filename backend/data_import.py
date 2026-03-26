@@ -424,47 +424,170 @@ import os
 from emergentintegrations.llm.chat import LlmChat, UserMessage
 
 
-async def find_article_image(title: str) -> str:
+def extract_player_names(title: str) -> List[str]:
     """
-    Find a relevant image for the article based on keywords in title
-    Uses Unsplash Source for free images
+    Extract potential player names from article title
+    Returns list of potential player names
     """
     import re
+    
+    # Common first names of famous footballers
+    common_names = [
+        "mohamed", "mo", "kylian", "erling", "jude", "harry", "robert", 
+        "lionel", "cristiano", "neymar", "vinicius", "marcus", "jamal",
+        "florian", "joshua", "serge", "leroy", "kai", "timo", "thomas",
+        "manuel", "marc-andre", "kevin", "ilkay", "julian", "nico",
+        "jadon", "bukayo", "declan", "martin", "cole", "alexander"
+    ]
+    
+    # Club name patterns to exclude
+    club_patterns = [
+        "fc", "bayern", "dortmund", "liverpool", "madrid", "barcelona", 
+        "manchester", "chelsea", "arsenal", "city", "united", "psg",
+        "juventus", "inter", "milan", "roma", "napoli", "atletico"
+    ]
+    
+    # Extract capitalized words that could be names
+    words = title.split()
+    potential_names = []
+    
+    i = 0
+    while i < len(words):
+        word = words[i]
+        # Clean the word
+        clean_word = re.sub(r'[^\w-]', '', word)
+        
+        # Skip short words or known club names
+        if len(clean_word) < 3 or clean_word.lower() in club_patterns:
+            i += 1
+            continue
+        
+        # Check if it starts with uppercase (potential name)
+        if clean_word and clean_word[0].isupper():
+            # Check for full name (First Last)
+            if i + 1 < len(words):
+                next_word = re.sub(r'[^\w-]', '', words[i + 1])
+                if next_word and next_word[0].isupper() and next_word.lower() not in club_patterns:
+                    full_name = f"{clean_word} {next_word}"
+                    potential_names.append(full_name)
+                    i += 2
+                    continue
+            
+            # Single name (like Neymar, Vinicius)
+            if clean_word.lower() in common_names or len(clean_word) > 5:
+                potential_names.append(clean_word)
+        
+        i += 1
+    
+    return potential_names[:3]  # Max 3 names
+
+
+async def search_player_image_unsplash(player_name: str) -> str:
+    """
+    Search for player image using Unsplash API
+    Returns image URL if found
+    """
     import random
     
-    # Extract keywords from title
-    title_lower = title.lower()
+    # Clean player name for search
+    search_query = f"{player_name} football soccer"
+    search_query = search_query.replace(" ", ",")
     
-    # Map keywords to search terms
+    # Use Unsplash Source (free, no API key)
+    rand = random.randint(1, 10000)
+    return f"https://source.unsplash.com/800x600/?{search_query}&sig={rand}"
+
+
+async def search_player_image_pexels(player_name: str) -> str:
+    """
+    Search for player image using Pexels API
+    Falls back to generic football if no results
+    """
+    import os
+    import aiohttp
+    
+    # Pexels requires API key - skip if not available
+    pexels_key = os.environ.get("PEXELS_API_KEY", "")
+    if not pexels_key:
+        return ""
+    
+    try:
+        search_query = f"{player_name} football"
+        
+        async with aiohttp.ClientSession() as session:
+            headers = {"Authorization": pexels_key}
+            url = f"https://api.pexels.com/v1/search?query={search_query}&per_page=1"
+            
+            async with session.get(url, headers=headers, timeout=10) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    photos = data.get("photos", [])
+                    if photos:
+                        return photos[0].get("src", {}).get("large", "")
+    except Exception as e:
+        logger.error(f"Pexels search error: {e}")
+    
+    return ""
+
+
+async def find_best_player_image(title: str, article_id: str) -> str:
+    """
+    Find the best available image for an article
+    1. Try to find player-specific image
+    2. Fallback to club/league image
+    3. Last resort: generic football image
+    """
+    
+    # Extract player names from title
+    player_names = extract_player_names(title)
+    
+    # Try to find image for each player name
+    for player_name in player_names:
+        logger.info(f"Searching image for player: {player_name}")
+        
+        # Try Pexels first (better quality)
+        image_url = await search_player_image_pexels(player_name)
+        if image_url:
+            saved_path = await download_and_save_image(image_url, article_id)
+            if saved_path:
+                logger.info(f"Found Pexels image for: {player_name}")
+                return saved_path
+        
+        # Try Unsplash
+        image_url = await search_player_image_unsplash(player_name)
+        if image_url:
+            saved_path = await download_and_save_image(image_url, article_id)
+            if saved_path:
+                logger.info(f"Found Unsplash image for: {player_name}")
+                return saved_path
+    
+    # Fallback: Search by club/league keywords
+    title_lower = title.lower()
     keyword_map = {
-        "bayern": "bayern munich football",
-        "dortmund": "borussia dortmund football",
-        "bundesliga": "bundesliga football stadium",
-        "champions league": "champions league football",
-        "nationalmannschaft": "germany national team football",
-        "dfb": "germany football team",
-        "transfer": "football player transfer",
-        "trainer": "football coach",
-        "tor": "football goal",
-        "spieler": "football player",
-        "fußball": "football soccer",
+        "bayern": "bayern munich stadium",
+        "dortmund": "dortmund football",
         "liverpool": "liverpool football",
-        "real madrid": "real madrid football",
+        "real madrid": "real madrid stadium",
         "barcelona": "barcelona football",
+        "manchester": "manchester football",
+        "chelsea": "chelsea football",
+        "arsenal": "arsenal football",
+        "bundesliga": "bundesliga football",
         "premier league": "premier league football",
+        "champions league": "champions league football",
     }
     
-    # Find matching keyword
-    search_term = "football soccer match"  # default
-    for keyword, term in keyword_map.items():
+    for keyword, search_term in keyword_map.items():
         if keyword in title_lower:
-            search_term = term
-            break
+            import random
+            rand = random.randint(1, 10000)
+            url = f"https://source.unsplash.com/800x600/?{search_term.replace(' ', ',')}&sig={rand}"
+            saved_path = await download_and_save_image(url, article_id)
+            if saved_path:
+                return saved_path
     
-    # Use Unsplash Source (free, no API key needed)
-    # Add random number to avoid caching same image
-    rand = random.randint(1, 1000)
-    return f"https://source.unsplash.com/800x600/?{search_term.replace(' ', ',')}&sig={rand}"
+    # Last resort: generic football
+    return await download_fallback_image(article_id, "football,soccer,stadium")
 
 
 async def find_related_events(db, event: dict, limit: int = 5) -> List[dict]:
@@ -646,10 +769,12 @@ ARTIKEL:
         if image_url:
             logger.info(f"Using original image for article: {title[:30]}")
     
-    # Only use fallback if original download completely failed
+    # If no original image, search for player-specific image
     if not image_url:
-        logger.warning(f"No original image, using fallback for: {title[:30]}")
-        image_url = await download_fallback_image(article_id, "football,soccer")
+        logger.info(f"Searching player image for: {title[:30]}")
+        image_url = await find_best_player_image(title, article_id)
+        if image_url:
+            logger.info(f"Found player-related image for: {title[:30]}")
     
     # Create article
     article = Article(

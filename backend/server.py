@@ -1206,6 +1206,46 @@ async def run_full_import_pipeline(current_user: dict = Depends(require_admin)):
     }
 
 
+@api_router.post("/import/refresh-images")
+async def refresh_article_images(limit: int = Query(10, ge=1, le=50), current_user: dict = Depends(require_admin)):
+    """
+    Refresh images for existing articles by searching for player-related images
+    """
+    from data_import import find_best_player_image
+    
+    result = {"updated": 0, "errors": []}
+    
+    # Get articles with no or placeholder images
+    articles = await db.articles.find(
+        {"$or": [
+            {"feature_image": {"$exists": False}},
+            {"feature_image": ""},
+            {"feature_image": {"$regex": "unsplash"}}
+        ]},
+        {"_id": 0}
+    ).limit(limit).to_list(limit)
+    
+    for article in articles:
+        try:
+            new_image = await find_best_player_image(article.get("title", ""), article.get("id"))
+            if new_image:
+                await db.articles.update_one(
+                    {"id": article["id"]},
+                    {"$set": {"feature_image": new_image, "updated_at": datetime.now(timezone.utc).isoformat()}}
+                )
+                result["updated"] += 1
+                logger.info(f"Updated image for: {article.get('title', '')[:40]}")
+        except Exception as e:
+            result["errors"].append(f"{article.get('id')}: {str(e)}")
+            logger.error(f"Image refresh error: {e}")
+    
+    return {
+        "message": f"{result['updated']} Artikel-Bilder aktualisiert",
+        "updated": result["updated"],
+        "errors": result["errors"]
+    }
+
+
 # =============================================================================
 # HEALTH CHECK
 # =============================================================================
