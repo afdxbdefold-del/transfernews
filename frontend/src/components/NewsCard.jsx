@@ -112,19 +112,30 @@ function ProbabilityBar({ probability }) {
   );
 }
 
-// Hero Card - Big featured article with overlay text
+// Hero Card - Featured article with smaller image
 export function HeroCard({ article, isLive = false }) {
   if (!article) return null;
   
+  const clubLogo = getClubLogo(article.title);
+  
   return (
     <Link to={"/news/" + article.slug} className="block relative" data-testid={"hero-" + article.id}>
-      <div className="relative aspect-[16/10] bg-gray-900">
+      <div className="relative aspect-[16/8] bg-gray-900">
         <ArticleImage
           src={article.feature_image}
           alt={article.title}
           className="w-full h-full object-cover"
           articleId={article.id}
         />
+        
+        {/* Club Logo - Top Right */}
+        {clubLogo && (
+          <img 
+            src={clubLogo} 
+            alt="" 
+            className="absolute top-3 right-3 w-12 h-12 object-contain drop-shadow-lg"
+          />
+        )}
         
         {/* Status Badge - Top Left */}
         <div className="absolute top-3 left-3 flex items-center gap-2">
@@ -138,21 +149,21 @@ export function HeroCard({ article, isLive = false }) {
         </div>
         
         {/* Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
         
         {/* Content */}
         <div className="absolute bottom-0 left-0 right-0 p-4">
           {/* Probability Bar */}
           {article.transfer_probability && (
-            <div className="mb-3 max-w-[200px]">
+            <div className="mb-2 max-w-[180px]">
               <ProbabilityBar probability={article.transfer_probability} />
             </div>
           )}
           
-          <h2 className="text-white text-lg md:text-xl font-black uppercase leading-tight mb-3" style={{ fontFamily: "'Oswald', sans-serif" }}>
+          <h2 className="text-white text-base md:text-lg font-black uppercase leading-tight mb-2" style={{ fontFamily: "'Oswald', sans-serif" }}>
             {article.title}
           </h2>
-          <button className="bg-[#00a8e8] text-white text-sm font-bold uppercase px-6 py-2">
+          <button className="bg-[#00a8e8] text-white text-xs font-bold uppercase px-4 py-1.5">
             ANSEHEN
           </button>
         </div>
@@ -174,7 +185,7 @@ export function NewsCardHorizontal({ article, showVideo = false }) {
       data-testid={"news-card-" + article.id}
     >
       {/* Image */}
-      <div className="relative w-[140px] h-[95px] flex-shrink-0 bg-gray-100 overflow-hidden">
+      <div className="relative w-[100px] h-[70px] flex-shrink-0 bg-gray-100 overflow-hidden rounded">
         <ArticleImage
           src={article.feature_image}
           alt={article.title}
@@ -187,49 +198,28 @@ export function NewsCardHorizontal({ article, showVideo = false }) {
           <img 
             src={clubLogo} 
             alt="" 
-            className="absolute top-1 right-1 w-8 h-8 object-contain drop-shadow-md"
+            className="absolute top-0.5 right-0.5 w-6 h-6 object-contain drop-shadow-md"
           />
-        )}
-        
-        {/* Status Badge */}
-        <div className="absolute top-1 left-1">
-          <TransferBadge status={article.transfer_status} />
-        </div>
-        
-        {/* Video Play Button & Duration */}
-        {showVideo && (
-          <>
-            <div className="absolute bottom-2 left-2 w-8 h-8 bg-[#00a8e8] flex items-center justify-center">
-              <Play size={16} weight="fill" className="text-white" />
-            </div>
-            <div className="absolute bottom-2 right-2 bg-black/80 text-white text-[10px] font-bold px-1.5 py-0.5">
-              00:48
-            </div>
-          </>
         )}
       </div>
       
       {/* Content */}
-      <div className="flex-1 flex flex-col justify-between py-0.5">
-        <h3 className="text-[15px] font-bold text-gray-900 leading-snug line-clamp-2" style={{ fontFamily: "'Oswald', sans-serif" }}>
+      <div className="flex-1 flex flex-col justify-center py-0.5">
+        <div className="flex items-center gap-2 mb-1">
+          <TransferBadge status={article.transfer_status} />
+          <span className="text-[10px] text-gray-400">{formatTime(article.published_at)}</span>
+        </div>
+        
+        <h3 className="text-[14px] font-bold text-gray-900 leading-snug line-clamp-2" style={{ fontFamily: "'Oswald', sans-serif" }}>
           {article.title}
         </h3>
         
-        {/* Probability Bar */}
+        {/* Probability Bar - smaller */}
         {article.transfer_probability && (
-          <div className="my-1">
+          <div className="mt-1.5 max-w-[150px]">
             <ProbabilityBar probability={article.transfer_probability} />
           </div>
         )}
-        
-        {/* Meta */}
-        <div className="flex items-center justify-between mt-1">
-          <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 bg-[#79B92A] rounded-full" />
-            <span className="text-[10px] text-gray-500 font-medium uppercase">{article.category || "TRANSFER"}</span>
-          </div>
-          <span className="text-[10px] text-gray-400">{formatTime(article.published_at)}</span>
-        </div>
       </div>
     </Link>
   );
