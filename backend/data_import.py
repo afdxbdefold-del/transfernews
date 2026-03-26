@@ -685,21 +685,26 @@ class RSSFeedScraper:
         "welt_sport": {
             "url": "https://www.welt.de/feeds/section/sport.rss",
             "name": "Welt Sport", 
-            "category": "tier_2",
-        },
-        "transfermarkt": {
-            "url": "https://www.transfermarkt.de/rss/news",
-            "name": "Transfermarkt",
             "category": "tier_1",
         },
-        "kicker_transfers": {
-            "url": "https://rss.kicker.de/news/aktuell",
-            "name": "Kicker Transfers",
+        "spiegel_sport": {
+            "url": "https://www.spiegel.de/sport/index.rss",
+            "name": "Spiegel Sport",
             "category": "tier_1",
         },
-        "sport_bild": {
-            "url": "https://feeds.bild.de/bild/sport.rss",
-            "name": "Sport Bild",
+        "faz_sport": {
+            "url": "https://www.faz.net/rss/aktuell/sport/",
+            "name": "FAZ Sport",
+            "category": "tier_1",
+        },
+        "sueddeutsche_sport": {
+            "url": "https://rss.sueddeutsche.de/rss/Sport",
+            "name": "Süddeutsche Sport",
+            "category": "tier_1",
+        },
+        "zeit_sport": {
+            "url": "https://newsfeed.zeit.de/sport/index",
+            "name": "Zeit Sport",
             "category": "tier_2",
         },
     }
