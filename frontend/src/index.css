@@ -85,3 +85,23 @@ h1, h2, h3, h4, h5, h6 {
   color: white;
   background: rgba(121, 185, 42, 0.2);
 }
+
+/* Breaking News Ticker Animation - Horizontal scroll */
+.ticker-wrap {
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.ticker {
+  display: inline-block;
+  animation: ticker-scroll 30s linear infinite;
+}
+
+@keyframes ticker-scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
