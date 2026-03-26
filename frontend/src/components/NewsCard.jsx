@@ -83,7 +83,7 @@ function getClubLogo(title) {
 function TransferBadge({ status }) {
   const isConfirmed = status === "BESTÄTIGT";
   return (
-    <div className={`text-[10px] font-black uppercase px-2 py-0.5 ${isConfirmed ? 'bg-[#79B92A] text-white' : 'bg-yellow-400 text-black'}`}>
+    <div className={`text-[10px] font-black uppercase px-2 py-0.5 ${isConfirmed ? 'bg-[#79B92A] text-white' : 'bg-black/80 text-white'}`}>
       {status || "GERÜCHT"}
     </div>
   );
@@ -94,9 +94,9 @@ function ProbabilityBar({ probability }) {
   if (!probability) return null;
   
   const getColor = (p) => {
-    if (p >= 80) return 'bg-[#79B92A]';
-    if (p >= 50) return 'bg-yellow-400';
-    return 'bg-orange-400';
+    if (p >= 80) return 'bg-[#79B92A]';  // Green - confirmed
+    if (p >= 50) return 'bg-[#79B92A]/70';  // Light green
+    return 'bg-gray-400';  // Gray - low probability
   };
   
   return (
@@ -107,7 +107,7 @@ function ProbabilityBar({ probability }) {
           style={{ width: `${probability}%` }}
         />
       </div>
-      <span className="text-[10px] font-bold text-gray-600">{probability}%</span>
+      <span className="text-[10px] font-bold text-gray-500">{probability}%</span>
     </div>
   );
 }
@@ -187,7 +187,7 @@ export function NewsCardHorizontal({ article, showVideo = false }) {
           <img 
             src={clubLogo} 
             alt="" 
-            className="absolute top-1 right-1 w-9 h-9 object-contain drop-shadow-lg bg-white/80 rounded-full p-0.5"
+            className="absolute top-1 right-1 w-8 h-8 object-contain drop-shadow-md"
           />
         )}
         
