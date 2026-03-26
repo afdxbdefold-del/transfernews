@@ -658,12 +658,14 @@ class RSSFeedScraper:
     }
     
     TRANSFER_KEYWORDS = [
-        "transfer", "wechsel", "verpflicht", "unterschreib", "unterschrieben",
-        "ablöse", "ablösefrei", "gerücht", "interesse zeigt", "interesse an",
-        "verhandl", "angebot", "vertrag verlänger", "vertrag bis",
-        "leihe", "leihgeschäft", "ausstiegsklausel", "klausel",
-        "millionen", "mio", "deal", "poker", "einigung",
-        "kommt von", "geht zu", "wechselt zu", "verlässt"
+        "transfer", "verpflichtet", "verpflichtung",
+        "wechselt zu", "wechselt von", "wechsel zu", "wechsel von",
+        "ablöse", "ablösefrei", "ablösesumme",
+        "unterschreibt bei", "unterschrieben bei", "vertrag unterschrieben",
+        "leihe von", "leihe zu", "leihgeschäft", "ausgeliehen",
+        "verkauft", "gekauft", "transfer-", "transfersumme",
+        "kommt von", "geht zu", "verlässt den",
+        "neuzugang", "abgang", "rückkehr zu"
     ]
     
     def _generate_dedupe_key(self, title: str, source: str) -> str:
@@ -672,22 +674,26 @@ class RSSFeedScraper:
         return hashlib.md5(content.encode()).hexdigest()
     
     def _is_transfer_related(self, title: str, summary: str = "") -> bool:
-        """Check if article is transfer-related AND football"""
+        """Check if article is a real TRANSFER news"""
         text = f"{title} {summary}".lower()
         
-        # Must be football related
-        football_terms = ["fußball", "fussball", "bundesliga", "premier league", 
-                         "la liga", "serie a", "champions league", "fc ", "sv ", 
-                         "bvb", "bayern", "dortmund", "liverpool", "real madrid",
-                         "barcelona", "stürmer", "torwart", "trainer", "spieler",
-                         "dfb", "nationalmannschaft", "kicker", "transfermarkt"]
+        # EXCLUDE non-transfer news
+        exclude_terms = ["testspiel", "auswechslung", "einwechslung", "spieltag",
+                        "tor geschossen", "torschütze", "ergebnis", "endergebnis",
+                        "halbzeit", "anpfiff", "abpfiff", "elfmeter", "freistoß",
+                        "rote karte", "gelbe karte", "verletzung", "verletzt",
+                        "marktwert", "marktwerte", "ranking", "statistik",
+                        "interview", "pressekonferenz", "pk"]
         
-        is_football = any(term in text for term in football_terms)
-        if not is_football:
+        if any(term in text for term in exclude_terms):
             return False
         
-        # Must have transfer keyword
-        return any(kw in text for kw in self.TRANSFER_KEYWORDS)
+        # Must have REAL transfer action word
+        must_have = ["transfer", "verpflichtet", "wechselt", "unterschreibt",
+                    "ablöse", "leihe", "verlässt", "neuzugang", "abgang",
+                    "verkauft", "gekauft", "kommt von", "geht zu"]
+        
+        return any(kw in text for kw in must_have)
     
     def _extract_image(self, entry) -> str:
         """Extract image URL from RSS entry"""
