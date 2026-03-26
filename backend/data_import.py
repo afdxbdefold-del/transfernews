@@ -640,19 +640,30 @@ class RSSFeedScraper:
             "name": "Welt Sport", 
             "category": "tier_2",
         },
-        "focus_fussball": {
-            "url": "https://rss.focus.de/fussball/",
-            "name": "Focus Fußball",
+        "transfermarkt": {
+            "url": "https://www.transfermarkt.de/rss/news",
+            "name": "Transfermarkt",
+            "category": "tier_1",
+        },
+        "kicker_transfers": {
+            "url": "https://rss.kicker.de/news/aktuell",
+            "name": "Kicker Transfers",
+            "category": "tier_1",
+        },
+        "sport_bild": {
+            "url": "https://feeds.bild.de/bild/sport.rss",
+            "name": "Sport Bild",
             "category": "tier_2",
         },
     }
     
     TRANSFER_KEYWORDS = [
-        "transfer", "wechsel", "verpflicht", "unterschr", "ablöse",
-        "gerücht", "interesse", "verhandl", "angebot", "vertrag",
-        "leihe", "ausstieg", "klausel", "millionen", "deal",
-        "bundesliga", "dfb", "nationalmannschaft", "bayern", "dortmund",
-        "fußball", "trainer", "spieler", "tor", "sieg", "niederlage"
+        "transfer", "wechsel", "verpflicht", "unterschreib", "unterschrieben",
+        "ablöse", "ablösefrei", "gerücht", "interesse zeigt", "interesse an",
+        "verhandl", "angebot", "vertrag verlänger", "vertrag bis",
+        "leihe", "leihgeschäft", "ausstiegsklausel", "klausel",
+        "millionen", "mio", "deal", "poker", "einigung",
+        "kommt von", "geht zu", "wechselt zu", "verlässt"
     ]
     
     def _generate_dedupe_key(self, title: str, source: str) -> str:
@@ -661,8 +672,21 @@ class RSSFeedScraper:
         return hashlib.md5(content.encode()).hexdigest()
     
     def _is_transfer_related(self, title: str, summary: str = "") -> bool:
-        """Check if article is transfer-related"""
+        """Check if article is transfer-related AND football"""
         text = f"{title} {summary}".lower()
+        
+        # Must be football related
+        football_terms = ["fußball", "fussball", "bundesliga", "premier league", 
+                         "la liga", "serie a", "champions league", "fc ", "sv ", 
+                         "bvb", "bayern", "dortmund", "liverpool", "real madrid",
+                         "barcelona", "stürmer", "torwart", "trainer", "spieler",
+                         "dfb", "nationalmannschaft", "kicker", "transfermarkt"]
+        
+        is_football = any(term in text for term in football_terms)
+        if not is_football:
+            return False
+        
+        # Must have transfer keyword
         return any(kw in text for kw in self.TRANSFER_KEYWORDS)
     
     def _extract_image(self, entry) -> str:
