@@ -414,3 +414,300 @@ async def import_scraped_events(scraper: TransferNewsScraper, db) -> dict:
         result["new_events"] += 1
     
     return result
+
+
+# ============================================================================
+# LLM ARTICLE GENERATOR
+# ============================================================================
+
+import os
+from emergentintegrations.llm.chat import LlmChat, UserMessage
+
+async def generate_article_from_event(event: dict, db) -> dict:
+    """
+    Generate a full article from a scraped event using LLM
+    Returns the generated article data
+    """
+    from models import Article, ArticleType, ArticleStatus, generate_uuid
+    
+    api_key = os.environ.get("EMERGENT_LLM_KEY")
+    if not api_key:
+        raise ValueError("EMERGENT_LLM_KEY nicht konfiguriert")
+    
+    headline = event.get("headline_raw", "")
+    source_url = event.get("source_url", "")
+    
+    # Create LLM chat instance
+    chat = LlmChat(
+        api_key=api_key,
+        session_id=f"article-gen-{event.get('id', 'new')}",
+        system_message="""Du bist ein erfahrener Sportjournalist für eine deutsche Fußball-Transfer-News-Website.
+Schreibe professionelle, sachliche und informative Artikel auf Deutsch.
+Verwende einen journalistischen Stil ähnlich wie Kicker oder Sport1.
+Erfinde keine Fakten - basiere alles auf der gegebenen Headline."""
+    ).with_model("openai", "gpt-4o")
+    
+    # Generate title, excerpt and body
+    prompt = f"""Basierend auf dieser Transfer-Meldung, erstelle einen Artikel:
+
+HEADLINE: {headline}
+QUELLE: {source_url}
+
+Erstelle:
+1. TITEL: Ein packender, SEO-optimierter Titel (max 80 Zeichen)
+2. TEASER: Ein kurzer Teaser/Vorspann (max 200 Zeichen)
+3. ARTIKEL: Der vollständige Artikel (3-4 Absätze, ca. 200-300 Wörter)
+
+Formatiere die Antwort EXAKT so:
+TITEL: [dein Titel]
+TEASER: [dein Teaser]
+ARTIKEL:
+[dein Artikel]"""
+
+    user_message = UserMessage(text=prompt)
+    response = await chat.send_message(user_message)
+    
+    # Parse response
+    title = headline  # Fallback
+    excerpt = ""
+    body = response
+    
+    lines = response.split("\n")
+    current_section = None
+    body_lines = []
+    
+    for line in lines:
+        if line.startswith("TITEL:"):
+            title = line.replace("TITEL:", "").strip()
+        elif line.startswith("TEASER:"):
+            excerpt = line.replace("TEASER:", "").strip()
+        elif line.startswith("ARTIKEL:"):
+            current_section = "body"
+        elif current_section == "body":
+            body_lines.append(line)
+    
+    if body_lines:
+        body = "\n".join(body_lines).strip()
+    
+    # Generate slug
+    slug = generate_slug(title)
+    
+    # Check if slug exists, append number if needed
+    existing = await db.articles.find_one({"slug": slug})
+    if existing:
+        import random
+        slug = f"{slug}-{random.randint(1000, 9999)}"
+    
+    # Create article
+    article = Article(
+        id=generate_uuid(),
+        title=title,
+        slug=slug,
+        excerpt=excerpt,
+        body=body,
+        article_type=ArticleType.NEWS,
+        status=ArticleStatus.PUBLISHED,
+        category="TRANSFER",
+        source_event_id=event.get("id"),
+        published_at=datetime.now(timezone.utc),
+    )
+    
+    return article.model_dump()
+
+
+async def process_pending_events(db, limit: int = 5) -> dict:
+    """
+    Process pending events and generate articles
+    Returns summary of processed events
+    """
+    from models import EventStatus, ArticleStatus
+    
+    result = {"processed": 0, "articles_created": 0, "errors": []}
+    
+    # Get pending events
+    cursor = db.events.find({"status": "pending"}).limit(limit)
+    events = await cursor.to_list(length=limit)
+    
+    for event in events:
+        try:
+            # Generate article
+            article_data = await generate_article_from_event(event, db)
+            
+            # Save article
+            await db.articles.insert_one(article_data)
+            result["articles_created"] += 1
+            
+            # Update event status
+            await db.events.update_one(
+                {"id": event["id"]},
+                {"$set": {"status": "processed", "generated_article_id": article_data["id"]}}
+            )
+            result["processed"] += 1
+            
+        except Exception as e:
+            logger.error(f"Error processing event {event.get('id')}: {e}")
+            result["errors"].append(str(e))
+            
+            # Mark as error
+            await db.events.update_one(
+                {"id": event["id"]},
+                {"$set": {"status": "error", "error_message": str(e)}}
+            )
+    
+    return result
+
+
+# ============================================================================
+# RSS FEED SCRAPER (More reliable than HTML scraping)
+# ============================================================================
+
+import feedparser
+
+class RSSFeedScraper:
+    """
+    RSS Feed Scraper für Transfer-News
+    """
+    
+    FEEDS = {
+        "t_online_sport": {
+            "url": "https://www.t-online.de/sport/feed.rss",
+            "name": "T-Online Sport",
+            "category": "tier_1",
+        },
+        "welt_sport": {
+            "url": "https://www.welt.de/feeds/section/sport.rss",
+            "name": "Welt Sport", 
+            "category": "tier_2",
+        },
+        "focus_fussball": {
+            "url": "https://rss.focus.de/fussball/",
+            "name": "Focus Fußball",
+            "category": "tier_2",
+        },
+    }
+    
+    TRANSFER_KEYWORDS = [
+        "transfer", "wechsel", "verpflicht", "unterschr", "ablöse",
+        "gerücht", "interesse", "verhandl", "angebot", "vertrag",
+        "leihe", "ausstieg", "klausel", "millionen", "deal",
+        "bundesliga", "dfb", "nationalmannschaft", "bayern", "dortmund",
+        "fußball", "trainer", "spieler", "tor", "sieg", "niederlage"
+    ]
+    
+    def _generate_dedupe_key(self, title: str, source: str) -> str:
+        """Generate unique key for deduplication"""
+        content = f"{title.lower()[:100]}:{source}"
+        return hashlib.md5(content.encode()).hexdigest()
+    
+    def _is_transfer_related(self, title: str, summary: str = "") -> bool:
+        """Check if article is transfer-related"""
+        text = f"{title} {summary}".lower()
+        return any(kw in text for kw in self.TRANSFER_KEYWORDS)
+    
+    async def fetch_feed(self, feed_key: str) -> List[dict]:
+        """Fetch and parse a single RSS feed"""
+        events = []
+        feed_info = self.FEEDS.get(feed_key)
+        if not feed_info:
+            return events
+        
+        try:
+            feed = feedparser.parse(feed_info["url"])
+            
+            for entry in feed.entries[:20]:
+                title = entry.get("title", "")
+                summary = entry.get("summary", "")
+                link = entry.get("link", "")
+                
+                # Filter for transfer-related news
+                if self._is_transfer_related(title, summary):
+                    events.append({
+                        "headline_raw": title,
+                        "summary": summary[:500] if summary else "",
+                        "source_url": link,
+                        "source_key": feed_key,
+                        "dedupe_key": self._generate_dedupe_key(title, feed_key),
+                        "published": entry.get("published", ""),
+                    })
+        except Exception as e:
+            logger.error(f"RSS feed error for {feed_key}: {e}")
+        
+        return events
+    
+    async def fetch_all_feeds(self) -> List[dict]:
+        """Fetch all RSS feeds"""
+        all_events = []
+        
+        for feed_key in self.FEEDS.keys():
+            events = await self.fetch_feed(feed_key)
+            all_events.extend(events)
+        
+        return all_events
+
+
+async def import_rss_events(db) -> dict:
+    """
+    Import events from RSS feeds
+    """
+    from models import Event, Source, EventType, EventStatus, SourceType, SourceCategory, generate_uuid
+    
+    result = {"new_events": 0, "duplicates": 0, "sources_created": 0}
+    
+    scraper = RSSFeedScraper()
+    
+    # Ensure sources exist
+    for source_key, source_info in scraper.FEEDS.items():
+        existing = await db.sources.find_one({"slug": source_key})
+        if not existing:
+            source = Source(
+                id=generate_uuid(),
+                name=source_info["name"],
+                slug=source_key,
+                type=SourceType.MEDIA,
+                source_url=source_info["url"],
+                source_category=SourceCategory(source_info["category"]),
+                active=True,
+                trust_score=80 if source_info["category"] == "tier_1" else 60,
+            )
+            await db.sources.insert_one(source.model_dump())
+            result["sources_created"] += 1
+    
+    # Fetch all feeds
+    events = await scraper.fetch_all_feeds()
+    
+    # Import events
+    for event_data in events:
+        # Check for duplicate
+        existing = await db.events.find_one({"dedupe_key": event_data["dedupe_key"]})
+        if existing:
+            result["duplicates"] += 1
+            continue
+        
+        # Get source ID
+        source = await db.sources.find_one({"slug": event_data["source_key"]})
+        source_id = source["id"] if source else None
+        
+        # Determine event type
+        headline_lower = event_data["headline_raw"].lower()
+        if any(kw in headline_lower for kw in ["offiziell", "bestätigt", "fix", "unterschrieben"]):
+            event_type = EventType.OFFICIAL
+        elif any(kw in headline_lower for kw in ["einigung", "agreement", "deal"]):
+            event_type = EventType.CONFIRMED
+        else:
+            event_type = EventType.RUMOUR
+        
+        event = Event(
+            id=generate_uuid(),
+            event_type=event_type,
+            status=EventStatus.PENDING,
+            headline_raw=event_data["headline_raw"],
+            source_id=source_id,
+            source_url=event_data.get("source_url", ""),
+            dedupe_key=event_data["dedupe_key"],
+            confidence_score=70 if event_type == EventType.OFFICIAL else 50,
+        )
+        
+        await db.events.insert_one(event.model_dump())
+        result["new_events"] += 1
+    
+    return result

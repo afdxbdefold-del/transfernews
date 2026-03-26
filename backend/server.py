@@ -1124,18 +1124,14 @@ async def import_competition(competition_code: str, current_user: dict = Depends
 @api_router.post("/import/scrape-news")
 async def scrape_transfer_news(current_user: dict = Depends(require_admin)):
     """
-    Scrape transfer news from Sky Sport DE, Kicker, Sport1
+    Scrape transfer news from RSS feeds (Sport1, Kicker, SPOX)
     """
-    from data_import import TransferNewsScraper, import_scraped_events
+    from data_import import import_rss_events
     
-    scraper = TransferNewsScraper()
-    try:
-        result = await import_scraped_events(scraper, db)
-    finally:
-        await scraper.close()
+    result = await import_rss_events(db)
     
     return {
-        "message": "Scraping abgeschlossen",
+        "message": "RSS-Scraping abgeschlossen",
         "new_events": result["new_events"],
         "duplicates_skipped": result["duplicates"],
         "sources_created": result["sources_created"]
@@ -1157,6 +1153,49 @@ async def get_available_competitions():
             {"code": "EL", "name": "Europa League", "country": "Europe"},
         ],
         "note": "Requires FOOTBALL_DATA_API_KEY in backend .env"
+    }
+
+
+@api_router.post("/import/generate-articles")
+async def generate_articles_from_events(limit: int = 5, current_user: dict = Depends(require_admin)):
+    """
+    Generate articles from pending events using LLM
+    """
+    from data_import import process_pending_events
+    
+    result = await process_pending_events(db, limit=limit)
+    
+    return {
+        "message": "Artikel-Generierung abgeschlossen",
+        "events_processed": result["processed"],
+        "articles_created": result["articles_created"],
+        "errors": result["errors"]
+    }
+
+
+@api_router.post("/import/full-pipeline")
+async def run_full_import_pipeline(current_user: dict = Depends(require_admin)):
+    """
+    Run full pipeline: Scrape RSS feeds -> Generate articles with LLM
+    """
+    from data_import import import_rss_events, process_pending_events
+    
+    # Step 1: Scrape RSS feeds
+    scrape_result = await import_rss_events(db)
+    
+    # Step 2: Generate articles from new events
+    gen_result = await process_pending_events(db, limit=10)
+    
+    return {
+        "message": "Pipeline abgeschlossen",
+        "scraping": {
+            "new_events": scrape_result["new_events"],
+            "duplicates_skipped": scrape_result["duplicates"]
+        },
+        "generation": {
+            "articles_created": gen_result["articles_created"],
+            "errors": gen_result["errors"]
+        }
     }
 
 
