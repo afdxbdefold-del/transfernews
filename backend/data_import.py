@@ -431,34 +431,92 @@ def extract_player_names(title: str) -> List[str]:
     """
     import re
     
-    # Common first names of famous footballers
-    common_names = [
-        "mohamed", "mo", "kylian", "erling", "jude", "harry", "robert", 
-        "lionel", "cristiano", "neymar", "vinicius", "marcus", "jamal",
-        "florian", "joshua", "serge", "leroy", "kai", "timo", "thomas",
-        "manuel", "marc-andre", "kevin", "ilkay", "julian", "nico",
-        "jadon", "bukayo", "declan", "martin", "cole", "alexander"
-    ]
+    # Known football player names (extended list)
+    known_players = {
+        "sancho": "Jadon Sancho",
+        "olise": "Michael Olise",
+        "rodri": "Rodri",
+        "salah": "Mohamed Salah",
+        "mbappe": "Kylian Mbappe",
+        "haaland": "Erling Haaland",
+        "bellingham": "Jude Bellingham",
+        "kane": "Harry Kane",
+        "lewandowski": "Robert Lewandowski",
+        "messi": "Lionel Messi",
+        "ronaldo": "Cristiano Ronaldo",
+        "neymar": "Neymar Jr",
+        "vinicius": "Vinicius Junior",
+        "rashford": "Marcus Rashford",
+        "musiala": "Jamal Musiala",
+        "wirtz": "Florian Wirtz",
+        "kimmich": "Joshua Kimmich",
+        "gnabry": "Serge Gnabry",
+        "sane": "Leroy Sane",
+        "havertz": "Kai Havertz",
+        "werner": "Timo Werner",
+        "muller": "Thomas Muller",
+        "neuer": "Manuel Neuer",
+        "ter stegen": "Marc-Andre ter Stegen",
+        "de bruyne": "Kevin de Bruyne",
+        "gundogan": "Ilkay Gundogan",
+        "nagelsmann": "Julian Nagelsmann",
+        "schlotterbeck": "Nico Schlotterbeck",
+        "saka": "Bukayo Saka",
+        "rice": "Declan Rice",
+        "odegaard": "Martin Odegaard",
+        "palmer": "Cole Palmer",
+        "arnold": "Alexander-Arnold",
+        "dahoud": "Mahmoud Dahoud",
+        "larsson": "Hugo Larsson",
+        "griezmann": "Antoine Griezmann",
+        "casemiro": "Casemiro",
+        "modric": "Luka Modric",
+        "kroos": "Toni Kroos",
+    }
     
     # Club name patterns to exclude
     club_patterns = [
         "fc", "bayern", "dortmund", "liverpool", "madrid", "barcelona", 
         "manchester", "chelsea", "arsenal", "city", "united", "psg",
-        "juventus", "inter", "milan", "roma", "napoli", "atletico"
+        "juventus", "inter", "milan", "roma", "napoli", "atletico",
+        "bvb", "frankfurt", "leverkusen", "schalke", "bremen", "köln"
     ]
     
-    # Extract capitalized words that could be names
-    words = title.split()
+    # German words to exclude
+    exclude_words = [
+        "transfer", "wechsel", "verlässt", "kommt", "geht", "bleibt",
+        "verhandelt", "rückkehr", "abgang", "zugang", "interesse",
+        "ablöse", "vertrag", "million", "euro", "saison", "sommer",
+        "winter", "star", "spieler", "trainer", "manager", "deal"
+    ]
+    
+    title_lower = title.lower()
     potential_names = []
+    
+    # First: Check for known player names
+    for key, full_name in known_players.items():
+        if key in title_lower:
+            potential_names.append(full_name)
+    
+    # If known players found, return them first
+    if potential_names:
+        return potential_names[:3]
+    
+    # Otherwise: Extract capitalized words that could be names
+    words = title.split()
     
     i = 0
     while i < len(words):
         word = words[i]
-        # Clean the word
-        clean_word = re.sub(r'[^\w-]', '', word)
+        # Clean the word - remove hyphens and special chars
+        clean_word = re.sub(r'[^\w]', '', word.split('-')[0])
         
-        # Skip short words or known club names
-        if len(clean_word) < 3 or clean_word.lower() in club_patterns:
+        # Skip short words or known patterns
+        if len(clean_word) < 4:
+            i += 1
+            continue
+            
+        if clean_word.lower() in club_patterns or clean_word.lower() in exclude_words:
             i += 1
             continue
         
@@ -466,15 +524,18 @@ def extract_player_names(title: str) -> List[str]:
         if clean_word and clean_word[0].isupper():
             # Check for full name (First Last)
             if i + 1 < len(words):
-                next_word = re.sub(r'[^\w-]', '', words[i + 1])
-                if next_word and next_word[0].isupper() and next_word.lower() not in club_patterns:
+                next_word = re.sub(r'[^\w]', '', words[i + 1].split('-')[0])
+                if (next_word and len(next_word) >= 3 and 
+                    next_word[0].isupper() and 
+                    next_word.lower() not in club_patterns and
+                    next_word.lower() not in exclude_words):
                     full_name = f"{clean_word} {next_word}"
                     potential_names.append(full_name)
                     i += 2
                     continue
             
-            # Single name (like Neymar, Vinicius)
-            if clean_word.lower() in common_names or len(clean_word) > 5:
+            # Single name (at least 5 chars to be a potential player name)
+            if len(clean_word) >= 5:
                 potential_names.append(clean_word)
         
         i += 1
@@ -496,6 +557,172 @@ async def search_player_image_unsplash(player_name: str) -> str:
     # Use Unsplash Source (free, no API key)
     rand = random.randint(1, 10000)
     return f"https://source.unsplash.com/800x600/?{search_query}&sig={rand}"
+
+
+async def scrape_player_image_from_sports_sites(player_name: str) -> str:
+    """
+    Scrape player images from international sports websites.
+    Priority: Player name search on ESPN, Sky Sports, Goal.com, etc.
+    """
+    import aiohttp
+    from bs4 import BeautifulSoup
+    from urllib.parse import quote
+    
+    # International sports sites to scrape (non-German)
+    SPORTS_SITES = [
+        {
+            "name": "ESPN",
+            "search_url": "https://www.espn.com/search/_/q/{query}",
+            "base_url": "https://www.espn.com",
+            "img_selector": "img.Image",
+        },
+        {
+            "name": "Sky Sports",
+            "search_url": "https://www.skysports.com/search?q={query}",
+            "base_url": "https://www.skysports.com",
+            "img_selector": "img",
+        },
+        {
+            "name": "Goal.com",
+            "search_url": "https://www.goal.com/en/search?q={query}",
+            "base_url": "https://www.goal.com",
+            "img_selector": "img",
+        },
+        {
+            "name": "Transfermarkt UK",
+            "search_url": "https://www.transfermarkt.co.uk/schnellsuche/ergebnis/schnellsuche?query={query}",
+            "base_url": "https://www.transfermarkt.co.uk",
+            "img_selector": "img.bilderrahmen-fixed",
+        },
+    ]
+    
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.5",
+    }
+    
+    query = quote(player_name)
+    
+    async with aiohttp.ClientSession(headers=headers, timeout=aiohttp.ClientTimeout(total=15)) as session:
+        for site in SPORTS_SITES:
+            try:
+                url = site["search_url"].format(query=query)
+                logger.info(f"Searching {site['name']} for: {player_name}")
+                
+                async with session.get(url) as response:
+                    if response.status != 200:
+                        continue
+                    
+                    html = await response.text()
+                    soup = BeautifulSoup(html, "html.parser")
+                    
+                    # Find images
+                    images = soup.find_all("img")
+                    
+                    for img in images:
+                        src = img.get("src") or img.get("data-src") or img.get("data-lazy-src")
+                        if not src:
+                            continue
+                        
+                        # Filter: Must be a decent sized image, likely a player photo
+                        # Skip tiny icons, logos, etc.
+                        width = img.get("width", "0")
+                        height = img.get("height", "0")
+                        
+                        try:
+                            w = int(str(width).replace("px", "")) if width else 0
+                            h = int(str(height).replace("px", "")) if height else 0
+                        except:
+                            w, h = 0, 0
+                        
+                        # Check if image URL looks like a player photo
+                        src_lower = src.lower()
+                        
+                        # Skip common non-player images
+                        skip_patterns = ["logo", "icon", "sprite", "banner", "ad", "tracking", "pixel", "badge", "flag"]
+                        if any(p in src_lower for p in skip_patterns):
+                            continue
+                        
+                        # Prefer images that look like player photos
+                        good_patterns = ["player", "headshot", "portrait", "foto", "photo", "bild", "image"]
+                        is_likely_player = any(p in src_lower for p in good_patterns)
+                        
+                        # Accept if large enough or looks like player photo
+                        if (w >= 100 and h >= 100) or is_likely_player or ("jpg" in src_lower or "jpeg" in src_lower or "png" in src_lower):
+                            # Make absolute URL
+                            if src.startswith("//"):
+                                src = "https:" + src
+                            elif src.startswith("/"):
+                                src = site["base_url"] + src
+                            elif not src.startswith("http"):
+                                continue
+                            
+                            # Skip data URIs
+                            if src.startswith("data:"):
+                                continue
+                            
+                            logger.info(f"Found image on {site['name']}: {src[:80]}...")
+                            return src
+                            
+            except Exception as e:
+                logger.warning(f"Error scraping {site['name']}: {e}")
+                continue
+    
+    return ""
+
+
+async def scrape_player_image_bing(player_name: str) -> str:
+    """
+    Search for player image using Bing Images (no API key needed)
+    """
+    import aiohttp
+    from bs4 import BeautifulSoup
+    from urllib.parse import quote
+    
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    }
+    
+    query = quote(f"{player_name} football player")
+    url = f"https://www.bing.com/images/search?q={query}&form=HDRSC2&first=1"
+    
+    try:
+        async with aiohttp.ClientSession(headers=headers, timeout=aiohttp.ClientTimeout(total=10)) as session:
+            async with session.get(url) as response:
+                if response.status != 200:
+                    return ""
+                
+                html = await response.text()
+                soup = BeautifulSoup(html, "html.parser")
+                
+                # Find image thumbnails
+                images = soup.find_all("img", class_="mimg")
+                
+                for img in images[:5]:
+                    src = img.get("src") or img.get("data-src")
+                    if src and src.startswith("http") and "bing" not in src.lower():
+                        logger.info(f"Found Bing image: {src[:60]}...")
+                        return src
+                
+                # Alternative: Find in a tags
+                links = soup.find_all("a", class_="iusc")
+                for link in links[:5]:
+                    m = link.get("m")
+                    if m:
+                        import json
+                        try:
+                            data = json.loads(m)
+                            if "murl" in data:
+                                logger.info(f"Found Bing murl: {data['murl'][:60]}...")
+                                return data["murl"]
+                        except:
+                            pass
+                            
+    except Exception as e:
+        logger.warning(f"Bing search error: {e}")
+    
+    return ""
 
 
 async def search_player_image_pexels(player_name: str) -> str:
@@ -533,9 +760,10 @@ async def search_player_image_pexels(player_name: str) -> str:
 async def find_best_player_image(title: str, article_id: str) -> str:
     """
     Find the best available image for an article
-    1. Try to find player-specific image
-    2. Fallback to club/league image
-    3. Last resort: generic football image
+    Priority:
+    1. Scrape from international sports sites (ESPN, Sky Sports, Goal, Transfermarkt UK)
+    2. Bing Image Search
+    3. Fallback to generic football image
     """
     
     # Extract player names from title
@@ -545,23 +773,23 @@ async def find_best_player_image(title: str, article_id: str) -> str:
     for player_name in player_names:
         logger.info(f"Searching image for player: {player_name}")
         
-        # Try Pexels first (better quality)
-        image_url = await search_player_image_pexels(player_name)
+        # Priority 1: Scrape from international sports sites
+        image_url = await scrape_player_image_from_sports_sites(player_name)
         if image_url:
             saved_path = await download_and_save_image(image_url, article_id)
             if saved_path:
-                logger.info(f"Found Pexels image for: {player_name}")
+                logger.info(f"Found sports site image for: {player_name}")
                 return saved_path
         
-        # Try Unsplash
-        image_url = await search_player_image_unsplash(player_name)
+        # Priority 2: Bing Image Search
+        image_url = await scrape_player_image_bing(player_name)
         if image_url:
             saved_path = await download_and_save_image(image_url, article_id)
             if saved_path:
-                logger.info(f"Found Unsplash image for: {player_name}")
+                logger.info(f"Found Bing image for: {player_name}")
                 return saved_path
     
-    # Fallback: Search by club/league keywords
+    # Fallback: generic football image from Unsplash
     title_lower = title.lower()
     keyword_map = {
         "bayern": "bayern munich stadium",
