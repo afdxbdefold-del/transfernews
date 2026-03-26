@@ -42,6 +42,43 @@ function ArticleImage({ src, alt, className, articleId }) {
   );
 }
 
+// Club logo mapping
+const CLUB_LOGOS = {
+  'psg': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/160.png&w=60',
+  'hakimi': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/160.png&w=60',
+  'liverpool': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/364.png&w=60',
+  'salah': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/364.png&w=60',
+  'bvb': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/124.png&w=60',
+  'dortmund': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/124.png&w=60',
+  'sancho': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/124.png&w=60',
+  'brandt': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/124.png&w=60',
+  'bayern': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/132.png&w=60',
+  'olise': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/132.png&w=60',
+  'real': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/86.png&w=60',
+  'madrid': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/86.png&w=60',
+  'vinicius': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/86.png&w=60',
+  'rudiger': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/86.png&w=60',
+  'city': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/382.png&w=60',
+  'de bruyne': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/382.png&w=60',
+  'rodri': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/382.png&w=60',
+  'casemiro': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/360.png&w=60',
+  'inter': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/110.png&w=60',
+  'calhanoglu': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/110.png&w=60',
+  'frankfurt': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/3771.png&w=60',
+  'dahoud': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/3771.png&w=60',
+  'larsson': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/3771.png&w=60',
+};
+
+function getClubLogo(title) {
+  const titleLower = title?.toLowerCase() || '';
+  for (const [key, url] of Object.entries(CLUB_LOGOS)) {
+    if (titleLower.includes(key)) {
+      return url;
+    }
+  }
+  return null;
+}
+
 // Transfer Status Badge Component
 function TransferBadge({ status }) {
   const isConfirmed = status === "BESTÄTIGT";
@@ -128,6 +165,8 @@ export function HeroCard({ article, isLive = false }) {
 export function NewsCardHorizontal({ article, showVideo = false }) {
   if (!article) return null;
   
+  const clubLogo = getClubLogo(article.title);
+  
   return (
     <Link 
       to={"/news/" + article.slug} 
@@ -142,6 +181,15 @@ export function NewsCardHorizontal({ article, showVideo = false }) {
           className="w-full h-full object-cover"
           articleId={article.id}
         />
+        
+        {/* Club Logo - Top Right */}
+        {clubLogo && (
+          <img 
+            src={clubLogo} 
+            alt="" 
+            className="absolute top-1 right-1 w-9 h-9 object-contain drop-shadow-lg bg-white/80 rounded-full p-0.5"
+          />
+        )}
         
         {/* Status Badge */}
         <div className="absolute top-1 left-1">
