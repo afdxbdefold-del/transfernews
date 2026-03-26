@@ -1095,6 +1095,72 @@ async def init_ad_slots(current_user: dict = Depends(require_admin)):
 
 
 # =============================================================================
+# DATA IMPORT ROUTES
+# =============================================================================
+
+@api_router.post("/import/competition/{competition_code}")
+async def import_competition(competition_code: str, current_user: dict = Depends(require_admin)):
+    """
+    Import competition, teams and players from football-data.org
+    Codes: BL1 (Bundesliga), PL (Premier League), PD (La Liga), SA (Serie A), FL1 (Ligue 1), CL (Champions League)
+    """
+    from data_import import FootballDataAPI, import_competition_data
+    
+    api_key = os.environ.get("FOOTBALL_DATA_API_KEY", "")
+    if not api_key:
+        raise HTTPException(status_code=400, detail="FOOTBALL_DATA_API_KEY nicht konfiguriert")
+    
+    api = FootballDataAPI(api_key)
+    result = await import_competition_data(api, competition_code, db)
+    
+    return {
+        "message": "Import abgeschlossen",
+        "competition": result["competition"],
+        "clubs_imported": result["clubs"],
+        "players_imported": result["players"]
+    }
+
+
+@api_router.post("/import/scrape-news")
+async def scrape_transfer_news(current_user: dict = Depends(require_admin)):
+    """
+    Scrape transfer news from Sky Sport DE, Kicker, Sport1
+    """
+    from data_import import TransferNewsScraper, import_scraped_events
+    
+    scraper = TransferNewsScraper()
+    try:
+        result = await import_scraped_events(scraper, db)
+    finally:
+        await scraper.close()
+    
+    return {
+        "message": "Scraping abgeschlossen",
+        "new_events": result["new_events"],
+        "duplicates_skipped": result["duplicates"],
+        "sources_created": result["sources_created"]
+    }
+
+
+@api_router.get("/import/available-competitions")
+async def get_available_competitions():
+    """Get list of available competition codes for import"""
+    return {
+        "competitions": [
+            {"code": "BL1", "name": "Bundesliga", "country": "Germany"},
+            {"code": "BL2", "name": "2. Bundesliga", "country": "Germany"},
+            {"code": "PL", "name": "Premier League", "country": "England"},
+            {"code": "PD", "name": "La Liga", "country": "Spain"},
+            {"code": "SA", "name": "Serie A", "country": "Italy"},
+            {"code": "FL1", "name": "Ligue 1", "country": "France"},
+            {"code": "CL", "name": "Champions League", "country": "Europe"},
+            {"code": "EL", "name": "Europa League", "country": "Europe"},
+        ],
+        "note": "Requires FOOTBALL_DATA_API_KEY in backend .env"
+    }
+
+
+# =============================================================================
 # HEALTH CHECK
 # =============================================================================
 

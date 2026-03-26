@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AdminLayout from "@/components/AdminLayout";
-import { getDashboardStats, initAdSlots } from "@/api";
+import { getDashboardStats, initAdSlots, getAvailableCompetitions, importCompetition, scrapeNews } from "@/api";
 import { toast } from "sonner";
 import {
   User,
@@ -13,12 +13,25 @@ import {
   TrendUp,
   Megaphone,
   LinkSimple,
+  Download,
+  Globe,
 } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [competitions, setCompetitions] = useState([]);
+  const [selectedCompetition, setSelectedCompetition] = useState("");
+  const [importing, setImporting] = useState(false);
+  const [scraping, setScraping] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -29,6 +42,7 @@ export default function AdminDashboard() {
     }
 
     fetchStats();
+    fetchCompetitions();
   }, [navigate]);
 
   const fetchStats = async () => {
@@ -45,6 +59,15 @@ export default function AdminDashboard() {
     }
   };
 
+  const fetchCompetitions = async () => {
+    try {
+      const res = await getAvailableCompetitions();
+      setCompetitions(res.data.competitions);
+    } catch (e) {
+      console.error("Competitions error:", e);
+    }
+  };
+
   const handleInitAdSlots = async () => {
     try {
       const res = await initAdSlots();
@@ -52,6 +75,36 @@ export default function AdminDashboard() {
       fetchStats();
     } catch (e) {
       toast.error(e.response?.data?.detail || "Fehler beim Erstellen der Ad-Slots");
+    }
+  };
+
+  const handleImportCompetition = async () => {
+    if (!selectedCompetition) {
+      toast.error("Bitte Wettbewerb auswählen");
+      return;
+    }
+    setImporting(true);
+    try {
+      const res = await importCompetition(selectedCompetition);
+      toast.success(`${res.data.competition}: ${res.data.clubs_imported} Vereine, ${res.data.players_imported} Spieler importiert`);
+      fetchStats();
+    } catch (e) {
+      toast.error(e.response?.data?.detail || "Import fehlgeschlagen - API-Key prüfen");
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const handleScrapeNews = async () => {
+    setScraping(true);
+    try {
+      const res = await scrapeNews();
+      toast.success(`${res.data.new_events} neue Events gescrapt, ${res.data.duplicates_skipped} Duplikate übersprungen`);
+      fetchStats();
+    } catch (e) {
+      toast.error(e.response?.data?.detail || "Scraping fehlgeschlagen");
+    } finally {
+      setScraping(false);
     }
   };
 
@@ -75,6 +128,62 @@ export default function AdminDashboard() {
   return (
     <AdminLayout title="Dashboard">
       <div data-testid="admin-dashboard">
+        {/* Data Import Section */}
+        <div className="bg-white border border-gray-200 p-6 mb-8">
+          <h3 className="font-['Oswald'] text-xl font-bold uppercase mb-4 flex items-center">
+            <Download size={24} className="mr-2 text-[#00a651]" />
+            Daten-Import
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Competition Import */}
+            <div className="border-r border-gray-200 pr-6">
+              <h4 className="font-medium mb-3">Wettbewerb importieren (football-data.org)</h4>
+              <div className="flex gap-2">
+                <Select value={selectedCompetition} onValueChange={setSelectedCompetition}>
+                  <SelectTrigger className="w-[200px]" data-testid="competition-select">
+                    <SelectValue placeholder="Wettbewerb wählen" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {competitions.map((c) => (
+                      <SelectItem key={c.code} value={c.code}>
+                        {c.name} ({c.country})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  onClick={handleImportCompetition}
+                  disabled={importing || !selectedCompetition}
+                  className="bg-blue-600 hover:bg-blue-700"
+                  data-testid="import-competition-btn"
+                >
+                  {importing ? "Importiere..." : "Importieren"}
+                </Button>
+              </div>
+              <p className="text-xs text-gray-500 mt-2">
+                Importiert Vereine und Spieler für den gewählten Wettbewerb
+              </p>
+            </div>
+
+            {/* News Scraper */}
+            <div className="pl-6">
+              <h4 className="font-medium mb-3">Transfer-News scrapen</h4>
+              <Button
+                onClick={handleScrapeNews}
+                disabled={scraping}
+                className="bg-orange-600 hover:bg-orange-700"
+                data-testid="scrape-news-btn"
+              >
+                <Globe size={18} className="mr-2" />
+                {scraping ? "Scrape läuft..." : "News scrapen"}
+              </Button>
+              <p className="text-xs text-gray-500 mt-2">
+                Scrapt Transfer-News von Sky Sport, Kicker, Sport1
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* Quick Actions */}
         <div className="mb-8 flex gap-4">
           <Button

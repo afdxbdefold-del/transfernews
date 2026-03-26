@@ -132,4 +132,9 @@ export const initAdSlots = () => api.post('/init/ad-slots');
 export const getUsers = () => api.get('/users');
 export const createUser = (data) => api.post('/users', data);
 
+// Data Import
+export const getAvailableCompetitions = () => api.get('/import/available-competitions');
+export const importCompetition = (code) => api.post(`/import/competition/${code}`);
+export const scrapeNews = () => api.post('/import/scrape-news');
+
 export default api;
