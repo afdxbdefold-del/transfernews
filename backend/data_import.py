@@ -546,31 +546,17 @@ ARTIKEL:
     source_image_url = event.get("image_url", "")
     article_id = generate_uuid()
     
-    # Download and save image locally
+    # Download original image from source
+    image_url = ""
     if source_image_url:
         image_url = await download_and_save_image(source_image_url, article_id)
-    else:
-        image_url = ""
+        if image_url:
+            logger.info(f"Using original image for article: {title[:30]}")
     
-    # If no image or download failed, get fallback
+    # Only use fallback if original download completely failed
     if not image_url:
-        # Extract keywords from title for relevant image
-        keywords = "football,soccer"
-        title_lower = title.lower()
-        if "bayern" in title_lower:
-            keywords = "bayern,munich,football"
-        elif "dortmund" in title_lower:
-            keywords = "dortmund,football"
-        elif "liverpool" in title_lower:
-            keywords = "liverpool,football"
-        elif "champions" in title_lower:
-            keywords = "champions,league,football"
-        elif "bundesliga" in title_lower:
-            keywords = "bundesliga,stadium"
-        elif "nationalmannschaft" in title_lower or "dfb" in title_lower:
-            keywords = "germany,football,team"
-        
-        image_url = await download_fallback_image(article_id, keywords)
+        logger.warning(f"No original image, using fallback for: {title[:30]}")
+        image_url = await download_fallback_image(article_id, "football,soccer")
     
     # Create article
     article = Article(
@@ -828,44 +814,69 @@ IMAGES_DIR.mkdir(parents=True, exist_ok=True)
 
 async def download_and_save_image(image_url: str, article_id: str) -> str:
     """
-    Download image from URL and save locally
+    Download image from original source URL and save locally
     Returns the local path for the image
     """
     if not image_url:
         return ""
     
+    # Skip video URLs
+    if ".m3u8" in image_url or "stream" in image_url:
+        return ""
+    
     try:
-        # Generate filename from article ID
-        ext = "jpg"  # Default extension
+        # Determine file extension from content-type or URL
+        ext = "jpg"
         if ".png" in image_url.lower():
             ext = "png"
         elif ".webp" in image_url.lower():
             ext = "webp"
+        elif ".gif" in image_url.lower():
+            ext = "gif"
         
         filename = f"{article_id}.{ext}"
         filepath = IMAGES_DIR / filename
         
-        # Download image
+        # Download with proper headers to avoid blocking
         async with aiohttp.ClientSession() as session:
             headers = {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "Accept": "image/webp,image/apng,image/*,*/*;q=0.8",
+                "Accept-Language": "de-DE,de;q=0.9,en;q=0.8",
             }
-            async with session.get(image_url, headers=headers, timeout=30) as response:
+            
+            # Add referer based on source
+            if "t-online" in image_url:
+                headers["Referer"] = "https://www.t-online.de/"
+            elif "welt" in image_url:
+                headers["Referer"] = "https://www.welt.de/"
+            
+            async with session.get(image_url, headers=headers, timeout=30, allow_redirects=True) as response:
                 if response.status == 200:
                     content = await response.read()
                     
-                    # Save to file
-                    with open(filepath, "wb") as f:
-                        f.write(content)
+                    # Check content type and adjust extension
+                    content_type = response.headers.get("Content-Type", "")
+                    if "webp" in content_type:
+                        ext = "webp"
+                        filename = f"{article_id}.{ext}"
+                        filepath = IMAGES_DIR / filename
                     
-                    # Return URL path (will be served by FastAPI static files)
-                    return f"/static/images/{filename}"
+                    # Only save if we got actual image data (> 1KB)
+                    if len(content) > 1024:
+                        with open(filepath, "wb") as f:
+                            f.write(content)
+                        logger.info(f"Downloaded image: {filename} ({len(content)} bytes)")
+                        return f"/api/static/images/{filename}"
+                    else:
+                        logger.warning(f"Image too small: {len(content)} bytes")
+                        return ""
                 else:
-                    logger.warning(f"Failed to download image: {response.status}")
+                    logger.warning(f"Failed to download image: {response.status} - {image_url[:50]}")
                     return ""
     
     except Exception as e:
-        logger.error(f"Image download error: {e}")
+        logger.error(f"Image download error for {image_url[:50]}: {e}")
         return ""
 
 

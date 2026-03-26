@@ -55,11 +55,11 @@ security = HTTPBearer()
 # Create the main app
 app = FastAPI(title="TransferNews.de API", version="1.0.0")
 
-# Mount static files directory for images
+# Mount static files directory for images under /api/static
 STATIC_DIR = ROOT_DIR / "static"
 STATIC_DIR.mkdir(exist_ok=True)
 (STATIC_DIR / "images").mkdir(exist_ok=True)
-app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+app.mount("/api/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
