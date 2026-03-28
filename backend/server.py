@@ -32,7 +32,8 @@ from models import (
     User, UserCreate, UserUpdate, UserPublic, UserRole,
     Setting, SettingCreate, SettingUpdate,
     TokenResponse, LoginRequest, PaginatedResponse,
-    DraftGenerationRequest, DraftGenerationResponse
+    DraftGenerationRequest, DraftGenerationResponse,
+    Author, AuthorCreate, AuthorUpdate
 )
 
 ROOT_DIR = Path(__file__).parent
@@ -1622,6 +1623,223 @@ async def check_for_duplicate_article(
         "existing_articles": existing,
         "recommendation": "update" if existing else "create_new"
     }
+
+
+# =============================================================================
+# AUTHOR PROFILE ROUTES (Trust Signals für Google News)
+# =============================================================================
+
+@api_router.post("/authors", response_model=Author)
+async def create_author(author_data: AuthorCreate, current_user: dict = Depends(require_admin)):
+    """Create new author profile"""
+    existing = await db.authors.find_one({"slug": author_data.slug})
+    if existing:
+        raise HTTPException(status_code=400, detail="Autor mit diesem Slug existiert bereits")
+    
+    author = Author(**author_data.model_dump())
+    doc = serialize_datetime(author.model_dump())
+    await db.authors.insert_one(doc)
+    return author
+
+
+@api_router.get("/authors", response_model=List[Author])
+async def get_authors(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=100),
+    is_active: Optional[bool] = None
+):
+    """Get all authors"""
+    query = {}
+    if is_active is not None:
+        query["is_active"] = is_active
+    
+    authors = await db.authors.find(query, {"_id": 0}).sort("name", 1).skip(skip).limit(limit).to_list(limit)
+    return authors
+
+
+@api_router.get("/authors/{slug}", response_model=Author)
+async def get_author(slug: str):
+    """Get author by slug"""
+    author = await db.authors.find_one({"slug": slug}, {"_id": 0})
+    if not author:
+        raise HTTPException(status_code=404, detail="Autor nicht gefunden")
+    return author
+
+
+@api_router.put("/authors/{author_id}", response_model=Author)
+async def update_author(author_id: str, author_data: AuthorUpdate, current_user: dict = Depends(require_admin)):
+    """Update author profile"""
+    update_dict = {k: v for k, v in author_data.model_dump().items() if v is not None}
+    if not update_dict:
+        raise HTTPException(status_code=400, detail="Keine Änderungen angegeben")
+    
+    update_dict["updated_at"] = datetime.now(timezone.utc)
+    
+    result = await db.authors.update_one(
+        {"id": author_id},
+        {"$set": serialize_datetime(update_dict)}
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Autor nicht gefunden")
+    
+    updated = await db.authors.find_one({"id": author_id}, {"_id": 0})
+    return updated
+
+
+@api_router.get("/authors/{slug}/articles")
+async def get_author_articles(slug: str, limit: int = Query(20, ge=1, le=50)):
+    """Get articles by author"""
+    articles = await db.articles.find(
+        {"author_slug": slug, "status": "published"},
+        {"_id": 0}
+    ).sort("published_at", -1).limit(limit).to_list(limit)
+    
+    return {"author_slug": slug, "articles": articles, "count": len(articles)}
+
+
+@api_router.get("/public/authors/{slug}")
+async def get_public_author(slug: str):
+    """Get author profile with articles for public page"""
+    author = await db.authors.find_one({"slug": slug, "is_active": True}, {"_id": 0})
+    if not author:
+        raise HTTPException(status_code=404, detail="Autor nicht gefunden")
+    
+    # Get author's articles
+    articles = await db.articles.find(
+        {"author_slug": slug, "status": "published"},
+        {"_id": 0, "id": 1, "title": 1, "slug": 1, "excerpt": 1, "image_url": 1, "published_at": 1}
+    ).sort("published_at", -1).limit(20).to_list(20)
+    
+    # Serialize datetime objects
+    for article in articles:
+        if isinstance(article.get("published_at"), datetime):
+            article["published_at"] = article["published_at"].isoformat()
+    
+    return {
+        **author,
+        "articles": articles,
+        "article_count": len(articles)
+    }
+
+
+# =============================================================================
+# PRE-RENDERING & SCHEDULER ROUTES
+# =============================================================================
+
+from scheduler import (
+    start_scheduler, stop_scheduler, get_scheduler_status,
+    trigger_rss_scrape, trigger_event_processing, trigger_full_prerender
+)
+from prerender import (
+    prerender_article, prerender_homepage, prerender_all_articles,
+    get_prerendered_html, get_prerender_engine
+)
+
+
+@api_router.get("/scheduler/status")
+async def get_scheduler_info(current_user: dict = Depends(get_current_user)):
+    """Get scheduler status and job information"""
+    return get_scheduler_status()
+
+
+@api_router.post("/scheduler/start")
+async def start_background_scheduler(current_user: dict = Depends(require_admin)):
+    """Start the background scheduler"""
+    start_scheduler()
+    return {"status": "started", "jobs": get_scheduler_status()["jobs"]}
+
+
+@api_router.post("/scheduler/stop")
+async def stop_background_scheduler(current_user: dict = Depends(require_admin)):
+    """Stop the background scheduler"""
+    stop_scheduler()
+    return {"status": "stopped"}
+
+
+@api_router.post("/scheduler/trigger/rss")
+async def manual_rss_scrape(current_user: dict = Depends(require_admin)):
+    """Manually trigger RSS scrape"""
+    result = await trigger_rss_scrape()
+    return {"triggered": "rss_scrape", "result": result}
+
+
+@api_router.post("/scheduler/trigger/events")
+async def manual_event_processing(current_user: dict = Depends(require_admin)):
+    """Manually trigger event processing"""
+    result = await trigger_event_processing()
+    return {"triggered": "event_processing", "result": result}
+
+
+@api_router.post("/scheduler/trigger/prerender")
+async def manual_prerender(current_user: dict = Depends(require_admin)):
+    """Manually trigger full pre-render"""
+    result = await trigger_full_prerender()
+    return {"triggered": "prerender", "result": result}
+
+
+@api_router.post("/prerender/article/{slug}")
+async def prerender_single_article(slug: str, current_user: dict = Depends(get_current_user)):
+    """Pre-render a single article"""
+    success = await prerender_article(slug)
+    return {"slug": slug, "success": success}
+
+
+@api_router.post("/prerender/homepage")
+async def prerender_home(current_user: dict = Depends(get_current_user)):
+    """Pre-render homepage"""
+    success = await prerender_homepage()
+    return {"path": "/", "success": success}
+
+
+@api_router.post("/prerender/all")
+async def prerender_all(
+    limit: int = Query(50, ge=1, le=200),
+    current_user: dict = Depends(require_admin)
+):
+    """Pre-render all articles"""
+    result = await prerender_all_articles(db, limit=limit)
+    return result
+
+
+@api_router.get("/prerender/status/{path:path}")
+async def check_prerender_status(path: str):
+    """Check if a path is pre-rendered"""
+    full_path = f"/{path}" if not path.startswith("/") else path
+    html = await get_prerendered_html(full_path)
+    return {
+        "path": full_path,
+        "is_prerendered": html is not None,
+        "html_length": len(html) if html else 0
+    }
+
+
+# =============================================================================
+# STARTUP - Auto-start scheduler
+# =============================================================================
+
+@app.on_event("startup")
+async def startup_event():
+    """Start scheduler on app startup"""
+    try:
+        start_scheduler()
+        logger.info("Background scheduler started on startup")
+        
+        # Create default author if not exists
+        default_author = await db.authors.find_one({"slug": "redaktion"})
+        if not default_author:
+            author = Author(
+                name="Redaktion",
+                slug="redaktion",
+                bio="Die Redaktion von TransferNews.de berichtet täglich über aktuelle Transfers und Gerüchte aus der Welt des Fußballs.",
+                expertise=["Bundesliga", "Premier League", "La Liga", "Champions League"],
+                avatar_url="/api/static/images/author-redaktion.jpg"
+            )
+            await db.authors.insert_one(serialize_datetime(author.model_dump()))
+            logger.info("Default author 'Redaktion' created")
+            
+    except Exception as e:
+        logger.error(f"Startup error: {e}")
 
 
 # Include the router in the main app

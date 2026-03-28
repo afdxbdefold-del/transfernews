@@ -293,16 +293,19 @@ export default function NewsDetailPage() {
 
                   {/* Author & Reading Time */}
                   <div className="flex items-center gap-4 mb-4 text-sm">
-                    <div className="flex items-center gap-2">
+                    <Link 
+                      to={`/autor/${article.author_slug || 'redaktion'}`}
+                      className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+                    >
                       <div className="w-8 h-8 rounded-full bg-[#79B92A] flex items-center justify-center text-white font-bold text-xs">
                         {article.author_name?.charAt(0) || 'R'}
                       </div>
                       <div>
-                        <span className="font-medium text-gray-900">{article.author_name || 'Redaktion'}</span>
+                        <span className="font-medium text-gray-900 hover:text-[#79B92A] transition-colors">{article.author_name || 'Redaktion'}</span>
                         <span className="text-gray-400 mx-2">·</span>
                         <span className="text-gray-500">{article.reading_time_minutes || 1} Min. Lesezeit</span>
                       </div>
-                    </div>
+                    </Link>
                     {article.word_count > 0 && (
                       <span className="text-gray-400 text-xs hidden md:inline">
                         ({article.word_count} Wörter)

@@ -640,3 +640,65 @@ class DraftGenerationResponse(BaseModel):
     meta_description: Optional[str] = None
     success: bool
     message: Optional[str] = None
+
+
+
+# =============================================================================
+# AUTHOR PROFILE (Trust Signal für Google News)
+# =============================================================================
+
+class Author(BaseModel):
+    """Autor-Profil für Google News Trust Signals"""
+    model_config = ConfigDict(populate_by_name=True)
+    
+    id: str = Field(default_factory=generate_uuid)
+    name: str
+    slug: str
+    email: Optional[str] = None
+    bio: Optional[str] = None
+    avatar_url: Optional[str] = None
+    
+    # Social Links (Trust Signals)
+    twitter_handle: Optional[str] = None
+    linkedin_url: Optional[str] = None
+    
+    # Expertise
+    expertise: List[str] = Field(default_factory=list)  # e.g., ["Bundesliga", "Premier League"]
+    
+    # Stats
+    article_count: int = 0
+    
+    # SEO
+    seo_title: Optional[str] = None
+    meta_description: Optional[str] = None
+    
+    # Timestamps
+    created_at: datetime = Field(default_factory=utc_now)
+    updated_at: datetime = Field(default_factory=utc_now)
+    
+    # Status
+    is_active: bool = True
+
+
+class AuthorCreate(BaseModel):
+    name: str
+    slug: str
+    email: Optional[str] = None
+    bio: Optional[str] = None
+    avatar_url: Optional[str] = None
+    twitter_handle: Optional[str] = None
+    linkedin_url: Optional[str] = None
+    expertise: List[str] = Field(default_factory=list)
+
+
+class AuthorUpdate(BaseModel):
+    name: Optional[str] = None
+    email: Optional[str] = None
+    bio: Optional[str] = None
+    avatar_url: Optional[str] = None
+    twitter_handle: Optional[str] = None
+    linkedin_url: Optional[str] = None
+    expertise: Optional[List[str]] = None
+    seo_title: Optional[str] = None
+    meta_description: Optional[str] = None
+    is_active: Optional[bool] = None

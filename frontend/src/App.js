@@ -25,6 +25,7 @@ import CompetitionPage from "@/pages/public/CompetitionPage";
 import RumoursPage from "@/pages/public/RumoursPage";
 import TransfersPage from "@/pages/public/TransfersPage";
 import SearchPage from "@/pages/public/SearchPage";
+import AuthorPage from "@/pages/public/AuthorPage";
 
 // Admin Pages
 import AdminLogin from "@/pages/admin/AdminLogin";
@@ -56,6 +57,7 @@ function App() {
             <Route path="/geruechte" element={<RumoursPage />} />
             <Route path="/transfers" element={<TransfersPage />} />
             <Route path="/suche" element={<SearchPage />} />
+            <Route path="/autor/:slug" element={<AuthorPage />} />
             
             {/* Admin Routes */}
             <Route path="/admin/login" element={<AdminLogin />} />
