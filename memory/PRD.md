@@ -22,7 +22,21 @@ Deutschsprachige Fußball-Transfer-News-Plattform auf der Domain transfernews.de
 
 ## What's Been Implemented
 
-### 28. März 2026 - GOOGLE NEWS DOMINANCE SYSTEM
+### 28. März 2026 - PRE-RENDERING & CRAWLER-SERVING
+- ✅ **Playwright Pre-Rendering** (`/app/backend/prerender.py`) - Rendert React-Seiten zu statischem HTML
+- ✅ **Crawler-Detection** - User-Agent Prüfung für GoogleBot, BingBot, etc.
+- ✅ **Pre-Render Serving** (`/api/render/{path}`) - Liefert statisches HTML an Crawler
+- ✅ **SSR Endpoint** (`/api/ssr/{path}`) - On-Demand Rendering wenn Cache leer
+- ✅ **Auto-Trigger nach Publish** - Artikel werden automatisch pre-rendered nach Veröffentlichung
+- ✅ **APScheduler Cronjobs** (`/app/backend/scheduler.py`):
+  - RSS Scraping alle 30 Minuten
+  - Event-Processing alle 30 Minuten
+  - Full Pre-Render alle 12 Stunden
+  - Cache Cleanup alle 6 Stunden
+  - Google Ping alle 60 Minuten
+- ✅ **Autor-Profile** (`/api/public/authors/{slug}`) mit Frontend-Seite
+
+### 28. März 2026 - GOOGLE NEWS + DISCOVER DOMINANCE SYSTEM
 - ✅ **XML Sitemap** (`/api/sitemap.xml`) - Alle Seiten mit lastmod, changefreq, priority
 - ✅ **News Sitemap** (`/api/news-sitemap.xml`) - Nur Artikel der letzten 48h für Google News
 - ✅ **Sitemap Index** (`/api/sitemap-index.xml`) - Verweist auf alle Sitemaps
@@ -84,17 +98,21 @@ Deutschsprachige Fußball-Transfer-News-Plattform auf der Domain transfernews.de
 - [x] Google Discover SEO Tags
 - [x] TREND + BREAKING System
 - [x] **GOOGLE NEWS DOMINANCE SYSTEM**
+- [x] **PRE-RENDERING SYSTEM** (Playwright-basiert, mit Auto-Trigger nach Publish)
+- [x] **CRONJOB SYSTEM** (APScheduler: RSS 30min, Events 30min, Prerender 12h, Google Ping 1h)
+- [x] **AUTOR-PROFILE** (AuthorPage.jsx mit Artikel-Liste)
+- [x] **CRAWLER-SERVING** (Pre-Rendered HTML für GoogleBot & Co.)
 
 ### P1 (Nächste Phase)
-- [ ] **Pre-Rendering mit react-snap** (Für schnellere Indexierung)
-- [ ] **Cronjob für automatisches Scraping** (APScheduler)
-- [ ] Autor-Profile mit eigener Seite
-- [ ] Homepage als Live-Feed (Auto-Refresh)
+- [ ] Breaking-Engine Score-Berechnung (Event-Scoring nach Quelle, Spieler-Level, Club-Level)
+- [ ] Trend-System Zeitfenster-Logik (15m, 1h, 6h, 24h Cluster für trend_score)
+- [ ] SEO-Landingpages dynamische Routen (`/wettbewerb/{slug}`, `/thema/...`)
+- [ ] Homepage als Live-Feed (Auto-Refresh alle 60s)
 
 ### P2 (Später)
 - [ ] Themenseiten (Deadline Day, Sommertransfers, etc.)
 - [ ] Newsletter-Integration
-- [ ] Performance-Optimierung (Caching)
+- [ ] Performance-Optimierung (Redis Caching)
 
 ## Admin Credentials
 - Email: admin@transfernews.de

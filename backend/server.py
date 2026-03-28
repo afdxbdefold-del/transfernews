@@ -3,11 +3,13 @@ TransferNews.de - Hauptserver
 FastAPI Backend für die Fußball-Transfer-News-Plattform
 """
 
-from fastapi import FastAPI, APIRouter, HTTPException, Depends, Query, status
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, Query, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import HTMLResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
@@ -17,6 +19,7 @@ from datetime import datetime, timezone, timedelta
 import jwt
 from passlib.context import CryptContext
 import re
+import asyncio
 
 from models import (
     Player, PlayerCreate, PlayerUpdate,
@@ -71,6 +74,57 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+
+# =============================================================================
+# CRAWLER DETECTION & PRE-RENDER SERVING
+# =============================================================================
+
+# Known search engine crawler User-Agents
+CRAWLER_USER_AGENTS = [
+    'googlebot',
+    'google-inspectiontool',
+    'googleother',
+    'bingbot',
+    'slurp',        # Yahoo
+    'duckduckbot',
+    'baiduspider',
+    'yandexbot',
+    'sogou',
+    'facebookexternalhit',
+    'twitterbot',
+    'linkedinbot',
+    'whatsapp',
+    'telegrambot',
+    'applebot',
+    'petalbot',
+    'semrushbot',
+    'ahrefsbot',
+    'mj12bot',
+]
+
+def is_crawler(user_agent: str) -> bool:
+    """Check if the request is from a known crawler"""
+    if not user_agent:
+        return False
+    ua_lower = user_agent.lower()
+    return any(crawler in ua_lower for crawler in CRAWLER_USER_AGENTS)
+
+
+async def trigger_article_prerender(slug: str):
+    """
+    Background task to pre-render an article after publish
+    Non-blocking, runs asynchronously
+    """
+    try:
+        from prerender import prerender_article, prerender_homepage
+        
+        await prerender_article(slug)
+        await prerender_homepage()  # Also refresh homepage
+        logger.info(f"[PRERENDER] Article pre-rendered: {slug}")
+        
+    except Exception as e:
+        logger.error(f"[PRERENDER] Failed to pre-render {slug}: {e}")
 
 
 # =============================================================================
@@ -719,15 +773,27 @@ async def update_article(article_id: str, article_data: ArticleUpdate, current_u
     update_data = {k: v for k, v in article_data.model_dump().items() if v is not None}
     update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
     
+    existing = await db.articles.find_one({"id": article_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Artikel nicht gefunden")
+    
+    was_published = existing.get("status") == "published"
+    
     # Auto-set published_at when publishing
     if article_data.status == ArticleStatus.PUBLISHED:
-        existing = await db.articles.find_one({"id": article_id}, {"_id": 0})
-        if existing and not existing.get("published_at"):
+        if not existing.get("published_at"):
             update_data["published_at"] = datetime.now(timezone.utc).isoformat()
     
     result = await db.articles.update_one({"id": article_id}, {"$set": update_data})
-    if result.matched_count == 0:
-        raise HTTPException(status_code=404, detail="Artikel nicht gefunden")
+    
+    # Auto-trigger pre-rendering when article is published
+    if article_data.status == ArticleStatus.PUBLISHED:
+        article_slug = existing.get("slug")
+        if article_slug:
+            # Trigger pre-rendering in background (don't block the response)
+            asyncio.create_task(trigger_article_prerender(article_slug))
+            logger.info(f"Pre-rendering triggered for: {article_slug}")
+    
     return await db.articles.find_one({"id": article_id}, {"_id": 0})
 
 
@@ -1812,6 +1878,74 @@ async def check_prerender_status(path: str):
         "is_prerendered": html is not None,
         "html_length": len(html) if html else 0
     }
+
+
+# =============================================================================
+# CRAWLER HTML SERVING - Serve pre-rendered HTML to search engines
+# =============================================================================
+
+@api_router.get("/render/{path:path}", response_class=HTMLResponse)
+async def serve_prerendered_html(path: str, request: Request):
+    """
+    Serve pre-rendered HTML for crawlers.
+    This endpoint is called by nginx/ingress when a crawler is detected.
+    
+    Returns:
+    - Pre-rendered HTML if available
+    - 404 if not pre-rendered (frontend should handle this via SPA)
+    """
+    full_path = f"/{path}" if not path.startswith("/") else path
+    
+    # Check User-Agent
+    user_agent = request.headers.get("user-agent", "")
+    
+    # Log crawler access
+    if is_crawler(user_agent):
+        logger.info(f"[CRAWLER] Serving pre-rendered HTML for: {full_path} (UA: {user_agent[:50]})")
+    
+    # Get pre-rendered HTML
+    html = await get_prerendered_html(full_path)
+    
+    if html:
+        return HTMLResponse(content=html, status_code=200)
+    
+    # No pre-rendered version available
+    raise HTTPException(
+        status_code=404, 
+        detail=f"No pre-rendered content for {full_path}"
+    )
+
+
+@api_router.get("/ssr/{path:path}", response_class=HTMLResponse)
+async def serve_ssr_html(path: str, request: Request):
+    """
+    Alternative endpoint for SSR/pre-rendered content.
+    Can be used for testing or direct access to pre-rendered pages.
+    """
+    full_path = f"/{path}" if not path.startswith("/") else path
+    html = await get_prerendered_html(full_path)
+    
+    if html:
+        return HTMLResponse(content=html, status_code=200)
+    
+    # Fallback: try to pre-render on demand
+    try:
+        from prerender import PreRenderEngine, get_prerender_engine
+        
+        engine = await get_prerender_engine()
+        html = await engine.render_page(full_path)
+        
+        if html:
+            await engine.cache_html(full_path, html)
+            logger.info(f"[SSR] On-demand rendered: {full_path}")
+            return HTMLResponse(content=html, status_code=200)
+    except Exception as e:
+        logger.error(f"[SSR] On-demand render failed for {full_path}: {e}")
+    
+    raise HTTPException(
+        status_code=404,
+        detail=f"Could not render {full_path}"
+    )
 
 
 # =============================================================================
