@@ -3,6 +3,7 @@ import Footer from "@/components/Footer";
 import { AdSlot, SidebarAd } from "@/components/AdSlot";
 import { NewsCard } from "@/components/NewsCard";
 import { TrendingWidget } from "@/components/TrendingWidget";
+import { PersonSchema } from "@/components/SchemaMarkup";
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { getPlayerBySlug, getArticlesByPlayer, getTransfers, getRumours } from "@/api";
@@ -78,22 +79,20 @@ export default function PlayerPage() {
     );
   }
 
-  // Schema.org Person markup
-  const schemaData = {
-    "@context": "https://schema.org",
-    "@type": "Person",
-    "name": player.name,
-    "url": `https://transfernews.de/spieler/${slug}`,
-    ...(player.country && { "nationality": player.country }),
-    ...(player.birthdate && { "birthDate": player.birthdate }),
-    ...(player.image && { "image": player.image }),
-    ...(player.position && { "jobTitle": player.position })
+  // Schema.org Person data
+  const personData = {
+    name: player.name,
+    url: `https://transfernews.de/spieler/${slug}`,
+    nationality: player.country,
+    birthDate: player.birthdate,
+    image: player.image,
+    jobTitle: player.position
   };
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50" data-testid="player-page">
       <Helmet>
-        <title>{player.name} - Transfer-News & Gerüchte | TransferNews.de</title>
+        <title>{`${player.name} - Transfer-News & Gerüchte | TransferNews.de`}</title>
         <meta name="description" content={`Alle Transfer-News, Gerüchte und Wechsel zu ${player.name}. Aktuelle Informationen und Hintergründe.`} />
         <meta name="robots" content="index, follow, max-image-preview:large" />
         <link rel="canonical" href={`https://transfernews.de/spieler/${slug}`} />
@@ -108,10 +107,10 @@ export default function PlayerPage() {
         {/* Twitter */}
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={`${player.name} - TransferNews.de`} />
-        
-        {/* Schema.org */}
-        <script type="application/ld+json">{JSON.stringify(schemaData)}</script>
       </Helmet>
+      
+      {/* Schema.org Person JSON-LD */}
+      <PersonSchema person={personData} />
       
       <Header />
 

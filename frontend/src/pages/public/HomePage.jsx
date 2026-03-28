@@ -2,6 +2,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { HeroCard, NewsCardHorizontal, NewsTickerEntry } from "@/components/NewsCard";
 import { TrendingWidget, TrendingBar } from "@/components/TrendingWidget";
+import { WebsiteSchema } from "@/components/SchemaMarkup";
 import { useEffect, useState } from "react";
 import { getPublishedArticles } from "@/api";
 import { Link } from "react-router-dom";
@@ -38,6 +39,9 @@ export default function HomePage() {
         <meta name="robots" content="index, follow, max-image-preview:large" />
         <link rel="canonical" href="https://transfernews.de" />
       </Helmet>
+      
+      {/* Schema.org WebSite JSON-LD */}
+      <WebsiteSchema />
       
       <Header />
       
