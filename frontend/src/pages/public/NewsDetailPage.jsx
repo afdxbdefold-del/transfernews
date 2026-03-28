@@ -24,9 +24,9 @@ function ArticleSchema({ article }) {
     "datePublished": article.published_at,
     "dateModified": article.updated_at || article.published_at,
     "author": {
-      "@type": "Organization",
-      "name": "transfernews.de",
-      "url": "https://transfernews.de"
+      "@type": "Person",
+      "name": article.author_name || "Redaktion",
+      "url": `https://transfernews.de/autor/${article.author_slug || 'redaktion'}`
     },
     "publisher": {
       "@type": "Organization",
@@ -41,6 +41,7 @@ function ArticleSchema({ article }) {
       "@id": window.location.href
     },
     "articleSection": "Transfer News",
+    "wordCount": article.word_count || 0,
     "keywords": ["Fußball", "Transfer", "Bundesliga", article.category || "Transfer"].join(", ")
   };
 
@@ -275,11 +276,37 @@ export default function NewsDetailPage() {
                     {article.title}
                   </h1>
 
+                  {/* Author & Reading Time */}
+                  <div className="flex items-center gap-4 mb-4 text-sm">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-full bg-[#79B92A] flex items-center justify-center text-white font-bold text-xs">
+                        {article.author_name?.charAt(0) || 'R'}
+                      </div>
+                      <div>
+                        <span className="font-medium text-gray-900">{article.author_name || 'Redaktion'}</span>
+                        <span className="text-gray-400 mx-2">·</span>
+                        <span className="text-gray-500">{article.reading_time_minutes || 1} Min. Lesezeit</span>
+                      </div>
+                    </div>
+                    {article.word_count > 0 && (
+                      <span className="text-gray-400 text-xs hidden md:inline">
+                        ({article.word_count} Wörter)
+                      </span>
+                    )}
+                  </div>
+
                   {/* Meta Row */}
                   <div className="flex items-center justify-between py-3 border-t border-b border-gray-100 mb-4">
-                    <div className="flex items-center gap-2 text-sm text-gray-500">
-                      <Clock size={16} />
-                      <span>{formatDate(article.published_at)}</span>
+                    <div className="flex items-center gap-3 text-sm text-gray-500">
+                      <div className="flex items-center gap-1.5">
+                        <Clock size={14} />
+                        <span>{formatDate(article.published_at)}</span>
+                      </div>
+                      {article.updated_at && article.updated_at !== article.published_at && (
+                        <span className="text-[#79B92A] text-xs font-medium">
+                          Aktualisiert
+                        </span>
+                      )}
                     </div>
                     
                     {/* Share Buttons */}

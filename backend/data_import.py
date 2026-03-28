@@ -904,7 +904,7 @@ STRUKTUR:
 - Professionell wie Kicker.de oder Sport1.de
 - Sachlich aber lebendig
 - Klare Absätze, kein Textblock
-- Mindestens 400 Wörter für Google Discover
+- MINDESTENS 800 Wörter für Google Discover
 
 ABSOLUTE VERBOTE:
 - KEINE erfundenen Statistiken
@@ -914,7 +914,7 @@ ABSOLUTE VERBOTE:
     ).with_model("openai", "gpt-4o")
     
     # Generate Discover-optimized article from multiple sources
-    prompt = f"""Schreibe einen Transfer-Artikel aus diesen Quellen:
+    prompt = f"""Schreibe einen ausführlichen Transfer-Artikel aus diesen Quellen:
 
 {sources_text}
 
@@ -927,35 +927,52 @@ WICHTIG - ANTI-AI SCHREIBSTIL:
 TITEL (50-65 Zeichen):
 - Knackig und direkt
 - Spielername + Aktion
-- Beispiele: "Sancho zurück zum BVB? Verhandlungen laufen" oder "Bayern-Hammer: Olise vor 200-Mio-Verlängerung"
 
 TEASER (max 150 Zeichen):
 - Eine Zeile, die neugierig macht
 - Kernfakt komprimiert
 
-ARTIKEL (400+ Wörter, 4-5 Absätze):
+ARTIKEL (MINDESTENS 800 Wörter, 7-8 Absätze):
 
-Einstieg - Pack den Leser (60-80 Wörter):
+1. Einstieg - Pack den Leser (100 Wörter):
 - Direkt rein, keine lahme Einleitung
 - Die wichtigste Info sofort
 - Quelle nennen
 
-Details - Was ist passiert? (80-100 Wörter):
-- Hintergründe zum Deal
-- Zahlen wenn bekannt
-- Beteiligte Parteien
+2. Die Fakten - Was ist passiert? (120 Wörter):
+- Alle bekannten Details
+- Zahlen, Ablösesummen
+- Beteiligte Parteien und Berater
 
-Einordnung - Warum wichtig? (80-100 Wörter):
-- Was bedeutet das für den Verein?
-- Sportliche Perspektive
+3. Hintergründe - Warum jetzt? (100 Wörter):
+- Timing des Transfers
+- Vertragssituation
+- Sportliche Gründe
 
-Hintergrund - Wer ist der Spieler? (60-80 Wörter):
-- Kurze Karriere-Info
-- Nur Fakten aus Quellen
+4. Der Spieler - Karriere & Stärken (120 Wörter):
+- Bisherige Stationen
+- Spielstil und Position
+- Erfolge und Auszeichnungen
 
-Ausblick - Wie geht's weiter? (40-60 Wörter):
+5. Der aufnehmende Verein (100 Wörter):
+- Warum will der Verein den Spieler?
+- Wie passt er ins System?
+- Konkurrenz auf der Position
+
+6. Der abgebende Verein (100 Wörter):
+- Warum lässt man ihn gehen?
+- Finanzieller Aspekt
+- Mögliche Nachfolger
+
+7. Stimmen & Reaktionen (80 Wörter):
+- Zitate aus den Quellen
+- Experteneinschätzungen
+- Fan-Reaktionen (wenn bekannt)
+
+8. Ausblick - Wie geht's weiter? (80 Wörter):
 - Nächste Schritte
-- Zeitrahmen wenn bekannt
+- Zeitrahmen
+- Offene Fragen
 
 REGELN:
 - NUR Fakten aus den Quellen

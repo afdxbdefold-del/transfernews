@@ -426,6 +426,10 @@ class ArticleBase(BaseModel):
     is_featured: bool = False
     transfer_probability: Optional[int] = None  # 0-100%
     transfer_status: Optional[str] = None  # GERÜCHT or BESTÄTIGT
+    author_name: Optional[str] = "Redaktion"
+    author_slug: Optional[str] = "redaktion"
+    reading_time_minutes: Optional[int] = None
+    word_count: Optional[int] = None
 
 
 class ArticleCreate(ArticleBase):
