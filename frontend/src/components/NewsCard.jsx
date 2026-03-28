@@ -81,9 +81,17 @@ function getClubLogo(title) {
 
 // Transfer Status Badge Component
 function TransferBadge({ status }) {
-  const isConfirmed = status === "BESTÄTIGT";
+  const statusConfig = {
+    'GERÜCHT': { bg: 'bg-gray-600', text: 'text-white' },
+    'FORTGESCHRITTEN': { bg: 'bg-blue-600', text: 'text-white' },
+    'BESTÄTIGT': { bg: 'bg-[#79B92A]', text: 'text-white' },
+    'OFFIZIELL': { bg: 'bg-[#79B92A]', text: 'text-white' },
+  };
+  
+  const config = statusConfig[status] || statusConfig['GERÜCHT'];
+  
   return (
-    <div className={`text-[10px] font-black uppercase px-2 py-0.5 ${isConfirmed ? 'bg-[#79B92A] text-white' : 'bg-black/80 text-white'}`}>
+    <div className={`text-[9px] font-black uppercase px-1.5 py-0.5 ${config.bg} ${config.text}`}>
       {status || "GERÜCHT"}
     </div>
   );

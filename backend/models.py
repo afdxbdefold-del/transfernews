@@ -422,10 +422,13 @@ class ArticleBase(BaseModel):
     linked_competition_ids: List[str] = []
     linked_source_ids: List[str] = []
     linked_event_id: Optional[str] = None
+    source_event_id: Optional[str] = None  # Reference to source event
+    category: Optional[str] = "TRANSFER"
     is_breaking: bool = False
     is_featured: bool = False
     transfer_probability: Optional[int] = None  # 0-100%
-    transfer_status: Optional[str] = None  # GERÜCHT or BESTÄTIGT
+    transfer_status: Optional[str] = None  # GERÜCHT, FORTGESCHRITTEN, BESTÄTIGT, OFFIZIELL
+    transfer_status_raw: Optional[str] = None  # rumour, advanced, confirmed, official
     author_name: Optional[str] = "Redaktion"
     author_slug: Optional[str] = "redaktion"
     reading_time_minutes: Optional[int] = None

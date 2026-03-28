@@ -873,115 +873,91 @@ QUELLE {i}:
     chat = LlmChat(
         api_key=api_key,
         session_id=f"article-gen-{event.get('id', 'new')}",
-        system_message="""Du bist ein erfahrener Sportjournalist für transfernews.de.
+        system_message="""Du bist Sportjournalist für transfernews.de. STRIKT FAKTENBASIERT.
 
-SCHREIBSTIL - ANTI-AI:
-- Schreibe wie ein ECHTER Journalist, nicht wie eine KI
-- Variiere Satzlängen: kurze, prägnante Sätze wechseln mit längeren
-- Starte Sätze unterschiedlich, NICHT immer mit Subjekt
-- Nutze umgangssprachliche Wendungen ("Der Deal steht", "Es wird ernst")
-- Keine Phrasen wie "Es bleibt abzuwarten", "Die Zeit wird zeigen", "Es ist erwähnenswert"
-- VERMEIDE: "zweifellos", "sicherlich", "in der Tat", "bemerkenswert"
-- Kein Passiv-Overload, aktive Formulierungen bevorzugen
-- Direkte, lebendige Sprache wie in der Bild-Sportredaktion
+=== ABSOLUTE REGELN ===
 
-VERBOTENE AI-PHRASEN:
-- "Es ist wichtig zu beachten"
-- "Zusammenfassend lässt sich sagen"
-- "In diesem Zusammenhang"
-- "Darüber hinaus"
-- "Nicht zuletzt"
-- "Alles in allem"
-- "Es steht außer Frage"
-- Jeder Satz der mit "Es" anfängt und kein konkretes Subjekt hat
+1. ERSTER ABSATZ (PFLICHT):
+- Maximal 2 Sätze
+- NUR harte Fakten
+- KEINE Emotion
+- KEINE Einleitung
+- KEINE Geschichte
+- KEINE Füllwörter
+Beispiel: "Borussia Dortmund prüft eine Rückkehr von Jadon Sancho. Voraussetzung ist laut Vereinsführung eine deutliche Gehaltsreduzierung."
 
-GUTER STIL-BEISPIELE:
-- "Bayern greift an" statt "Der FC Bayern München beabsichtigt eine Verpflichtung"
-- "Sancho zurück zum BVB? Die Gespräche laufen" statt "Es wird berichtet, dass Gespräche stattfinden"
-- "60 Millionen Euro - so viel will Liverpool" statt "Liverpool soll eine Ablösesumme von 60 Millionen Euro fordern"
+2. VERBOTENE FÜLLSÄTZE:
+- "Fans dürfen sich freuen"
+- "spannend bleibt es"
+- "eine Beziehung die einst"
+- "es könnte"
+- "man darf gespannt sein"
+- "es bleibt abzuwarten"
+- "die Zeit wird zeigen"
+- "zweifellos"
+- "sicherlich"
+- Jede Form von generischem Storytelling
 
-STRUKTUR:
-- Professionell wie Kicker.de oder Sport1.de
-- Sachlich aber lebendig
-- Klare Absätze, kein Textblock
-- MINDESTENS 800 Wörter für Google Discover
+3. ABSATZSTRUKTUR:
+- Kurze Absätze (2-3 Sätze max)
+- KEINE langen Blöcke
+- Klare Trennung: Fakten → Kontext → Einordnung
 
-ABSOLUTE VERBOTE:
-- KEINE erfundenen Statistiken
-- KEINE erfundenen Zitate
-- KEINE Spekulationen als Fakten
-- KEIN Clickbait"""
+4. TITEL-REGEL:
+- KEIN Clickbait
+- Klare Information
+- Format: Spieler + Aktion + Verein
+- Beispiel: "Sancho-Rückkehr zum BVB nur bei Gehaltsverzicht"
+
+5. KEINE SPEKULATION ALS FAKT:
+- "soll" statt "wird" bei Gerüchten
+- "laut Berichten" bei unbestätigten Infos
+- Quellenbezug klar machen
+
+6. KEINE ERFUNDENEN DETAILS:
+- NUR Fakten aus den Quellen
+- KEINE Statistiken erfinden
+- KEINE Zitate erfinden"""
     ).with_model("openai", "gpt-4o")
     
-    # Generate Discover-optimized article from multiple sources
-    prompt = f"""Schreibe einen ausführlichen Transfer-Artikel aus diesen Quellen:
+    # Generate article with strict structure
+    prompt = f"""Schreibe einen Transfer-Artikel aus diesen Quellen:
 
 {sources_text}
 
-WICHTIG - ANTI-AI SCHREIBSTIL:
-- Schreibe wie ein MENSCH, nicht wie ChatGPT
-- Kurze, knackige Sätze mischen mit längeren
-- Lebendige Sprache, keine Floskeln
-- Starte Absätze unterschiedlich
+=== STRIKTE STRUKTUR ===
 
-TITEL (50-65 Zeichen):
-- Knackig und direkt
-- Spielername + Aktion
+TITEL (max 60 Zeichen):
+Spieler + Aktion + Verein
+KEIN Clickbait, KEINE Frage
 
-TEASER (max 150 Zeichen):
-- Eine Zeile, die neugierig macht
-- Kernfakt komprimiert
+TEASER (max 120 Zeichen):
+Ein Satz, Kernfakt
 
-ARTIKEL (MINDESTENS 800 Wörter, 7-8 Absätze):
+STATUS:
+Wähle: rumour / advanced / confirmed / official
 
-1. Einstieg - Pack den Leser (100 Wörter):
-- Direkt rein, keine lahme Einleitung
-- Die wichtigste Info sofort
-- Quelle nennen
+ARTIKEL:
 
-2. Die Fakten - Was ist passiert? (120 Wörter):
-- Alle bekannten Details
-- Zahlen, Ablösesummen
-- Beteiligte Parteien und Berater
+**ABSATZ 1 - FAKTEN (2 Sätze, PFLICHT):**
+Nur harte Fakten. Keine Einleitung. Keine Emotion.
 
-3. Hintergründe - Warum jetzt? (100 Wörter):
-- Timing des Transfers
-- Vertragssituation
-- Sportliche Gründe
+**ABSATZ 2 - DETAILS (2-3 Sätze):**
+Ablöse, Vertragslaufzeit, beteiligte Parteien.
 
-4. Der Spieler - Karriere & Stärken (120 Wörter):
-- Bisherige Stationen
-- Spielstil und Position
-- Erfolge und Auszeichnungen
+**ABSATZ 3 - KONTEXT (2-3 Sätze):**
+Warum jetzt? Hintergründe.
 
-5. Der aufnehmende Verein (100 Wörter):
-- Warum will der Verein den Spieler?
-- Wie passt er ins System?
-- Konkurrenz auf der Position
+**ABSATZ 4 - EINORDNUNG (2-3 Sätze):**
+Was bedeutet das für Spieler/Verein?
 
-6. Der abgebende Verein (100 Wörter):
-- Warum lässt man ihn gehen?
-- Finanzieller Aspekt
-- Mögliche Nachfolger
+**ABSATZ 5 - AUSBLICK (1-2 Sätze):**
+Nächste Schritte. Zeitrahmen.
 
-7. Stimmen & Reaktionen (80 Wörter):
-- Zitate aus den Quellen
-- Experteneinschätzungen
-- Fan-Reaktionen (wenn bekannt)
-
-8. Ausblick - Wie geht's weiter? (80 Wörter):
-- Nächste Schritte
-- Zeitrahmen
-- Offene Fragen
-
-REGELN:
-- NUR Fakten aus den Quellen
-- KEINE erfundenen Zitate
-- Quellenangaben einbauen
-
-Format:
+=== FORMAT ===
 TITEL: [titel]
 TEASER: [teaser]
+STATUS: [rumour/advanced/confirmed/official]
 ARTIKEL:
 [artikel]"""
 
@@ -992,6 +968,7 @@ ARTIKEL:
     title = headline  # Fallback
     excerpt = ""
     body = response
+    transfer_status_raw = "rumour"  # Default
     
     lines = response.split("\n")
     current_section = None
@@ -1002,6 +979,10 @@ ARTIKEL:
             title = line.replace("TITEL:", "").strip()
         elif line.startswith("TEASER:"):
             excerpt = line.replace("TEASER:", "").strip()
+        elif line.startswith("STATUS:"):
+            status_val = line.replace("STATUS:", "").strip().lower()
+            if status_val in ["rumour", "advanced", "confirmed", "official"]:
+                transfer_status_raw = status_val
         elif line.startswith("ARTIKEL:"):
             current_section = "body"
         elif current_section == "body":
@@ -1009,6 +990,15 @@ ARTIKEL:
     
     if body_lines:
         body = "\n".join(body_lines).strip()
+    
+    # Map status to display values
+    status_map = {
+        "rumour": ("GERÜCHT", 25),
+        "advanced": ("FORTGESCHRITTEN", 60),
+        "confirmed": ("BESTÄTIGT", 90),
+        "official": ("OFFIZIELL", 100)
+    }
+    transfer_status, transfer_probability = status_map.get(transfer_status_raw, ("GERÜCHT", 25))
     
     # Generate slug
     slug = generate_slug(title)
@@ -1037,6 +1027,10 @@ ARTIKEL:
         if image_url:
             logger.info(f"Found player-related image for: {title[:30]}")
     
+    # Calculate word count and reading time
+    word_count = len(body.split()) if body else 0
+    reading_time = max(1, word_count // 200)
+    
     # Create article
     article = Article(
         id=article_id,
@@ -1050,6 +1044,12 @@ ARTIKEL:
         source_event_id=event.get("id"),
         published_at=datetime.now(timezone.utc),
         feature_image=image_url,
+        transfer_status=transfer_status,
+        transfer_probability=transfer_probability,
+        author_name="Redaktion",
+        author_slug="redaktion",
+        word_count=word_count,
+        reading_time_minutes=reading_time,
     )
     
     return article.model_dump()
