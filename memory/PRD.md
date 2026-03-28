@@ -22,6 +22,31 @@ Deutschsprachige Fußball-Transfer-News-Plattform auf der Domain transfernews.de
 
 ## What's Been Implemented
 
+### 28. März 2026 - BREAKING & TREND ENGINE + SEO LANDING PAGES
+- ✅ **Erweitertes Event-Scoring** (`/app/backend/trending.py`):
+  - Spieler-Popularität (100 Punkte für Mbappé, Haaland etc.)
+  - Club-Popularität (100 Punkte für Real Madrid, Bayern etc.)
+  - Quellen-Vertrauen (Fabrizio Romano > Sky > Bild)
+  - Breaking Keywords (Offiziell, Here We Go, etc.)
+  - Zeit-Frische-Bonus (15min = +15, 1h = +12, etc.)
+- ✅ **Priority-Zuweisung** (HIGH, MEDIUM, LOW) basierend auf Score
+- ✅ **Trend-Zeitfenster** (`/api/trending/windows`):
+  - 15 Minuten, 1 Stunde, 6 Stunden, 24 Stunden Cluster
+  - `trend_score` Berechnung pro Entity
+- ✅ **Wettbewerb-Landingpages** (`/wettbewerb/{slug}`):
+  - Bundesliga, Premier League, La Liga, Serie A, Ligue 1, Champions League
+  - Breaking News, Gerüchte, Bestätigte Transfers pro Liga
+- ✅ **Themen-Landingpages** (`/thema/{slug}`):
+  - Ablösefreie Transfers, Deadline Day, Sommertransfers, Wintertransfers
+  - Rekordtransfers, Leihen, Junge Talente
+- ✅ **API Endpoints**:
+  - `GET /api/wettbewerbe` - Liste aller Wettbewerbe
+  - `GET /api/wettbewerb/{slug}` - Wettbewerb-Daten
+  - `GET /api/themen` - Liste aller Themen
+  - `GET /api/thema/{slug}` - Themen-Daten
+  - `GET /api/trending/windows` - Zeitfenster-Trends
+  - `GET /api/events/score` - Event-Scoring
+
 ### 28. März 2026 - GOOGLE SEARCH CONSOLE ADMIN DASHBOARD
 - ✅ **GSC Service** (`/app/backend/search_console.py`) - Vollständiger Service für GSC API Integration
 - ✅ **URL Inspection API** - Indexierungsstatus einzelner URLs prüfen
@@ -119,15 +144,16 @@ Deutschsprachige Fußball-Transfer-News-Plattform auf der Domain transfernews.de
 - [x] **CRAWLER-SERVING** (Pre-Rendered HTML für GoogleBot & Co.)
 
 ### P1 (Nächste Phase)
-- [ ] Breaking-Engine Score-Berechnung (Event-Scoring nach Quelle, Spieler-Level, Club-Level)
-- [ ] Trend-System Zeitfenster-Logik (15m, 1h, 6h, 24h Cluster für trend_score)
-- [ ] SEO-Landingpages dynamische Routen (`/wettbewerb/{slug}`, `/thema/...`)
+- [x] Breaking-Engine Score-Berechnung (Event-Scoring nach Quelle, Spieler-Level, Club-Level) ✅
+- [x] Trend-System Zeitfenster-Logik (15m, 1h, 6h, 24h Cluster für trend_score) ✅
+- [x] SEO-Landingpages dynamische Routen (`/wettbewerb/{slug}`, `/thema/...`) ✅
+- [x] Google Search Console Integration (`/admin/gsc`) ✅
 - [ ] Homepage als Live-Feed (Auto-Refresh alle 60s)
 
 ### P2 (Später)
-- [ ] Themenseiten (Deadline Day, Sommertransfers, etc.)
 - [ ] Newsletter-Integration
 - [ ] Performance-Optimierung (Redis Caching)
+- [ ] Push-Benachrichtigungen für Breaking News
 
 ## Admin Credentials
 - Email: admin@transfernews.de

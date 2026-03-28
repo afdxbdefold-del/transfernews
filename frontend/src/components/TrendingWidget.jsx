@@ -72,7 +72,7 @@ export function TrendingWidget({ className = "" }) {
                     {player.name}
                   </span>
                   <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded">
-                    {player.count} News
+                    {player.trend_score ? `${player.trend_score} Score` : `${player.count} News`}
                   </span>
                 </Link>
               </li>
@@ -103,7 +103,7 @@ export function TrendingWidget({ className = "" }) {
                     {club.name}
                   </span>
                   <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded">
-                    {club.count} News
+                    {club.trend_score ? `${club.trend_score} Score` : `${club.count} News`}
                   </span>
                 </Link>
               </li>

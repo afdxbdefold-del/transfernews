@@ -1334,12 +1334,18 @@ async def health_check():
 from trending import (
     calculate_event_score,
     get_trending_entities,
+    get_trend_windows,
     get_breaking_news,
     get_player_landing_data,
     get_club_landing_data,
+    get_competition_landing_data,
+    get_theme_landing_data,
     get_free_transfers,
     get_top_transfers,
-    generate_related_links
+    generate_related_links,
+    get_available_competitions,
+    get_available_themes,
+    batch_score_events
 )
 
 
@@ -1414,6 +1420,69 @@ async def get_top_transfer_articles(limit: int = Query(20, ge=1, le=50)):
         "title": "Top Transfers",
         "articles": articles,
         "count": len(articles)
+    }
+
+
+# =============================================================================
+# COMPETITION & THEME LANDING PAGES (SEO)
+# =============================================================================
+
+@api_router.get("/wettbewerbe")
+async def list_competitions():
+    """List all available competitions for navigation"""
+    return {"competitions": get_available_competitions()}
+
+
+@api_router.get("/wettbewerb/{slug}")
+async def get_competition_landing(slug: str):
+    """Get all data for competition SEO landing page (e.g. /wettbewerb/bundesliga)"""
+    data = await get_competition_landing_data(db, slug)
+    if not data:
+        raise HTTPException(status_code=404, detail="Wettbewerb nicht gefunden")
+    return data
+
+
+@api_router.get("/themen")
+async def list_themes():
+    """List all available themes for navigation"""
+    return {"themes": get_available_themes()}
+
+
+@api_router.get("/thema/{slug}")
+async def get_theme_landing(slug: str):
+    """Get all data for theme SEO landing page (e.g. /thema/abloesefreie-transfers)"""
+    data = await get_theme_landing_data(db, slug)
+    if not data:
+        raise HTTPException(status_code=404, detail="Thema nicht gefunden")
+    return data
+
+
+# =============================================================================
+# ENHANCED TRENDING WITH TIME WINDOWS
+# =============================================================================
+
+@api_router.get("/trending/windows")
+async def get_trending_time_windows():
+    """Get trending entities across multiple time windows (15min, 1h, 6h, 24h)"""
+    return await get_trend_windows(db)
+
+
+@api_router.get("/events/score")
+async def score_recent_events(limit: int = Query(20, ge=1, le=100)):
+    """Score recent events and return sorted by priority"""
+    events = await db.events.find(
+        {},
+        {"_id": 0}
+    ).sort("created_at", -1).limit(limit).to_list(limit)
+    
+    scored_events = batch_score_events(events)
+    
+    return {
+        "events": scored_events,
+        "count": len(scored_events),
+        "high_priority": len([e for e in scored_events if e["score_data"]["priority"] == "HIGH"]),
+        "medium_priority": len([e for e in scored_events if e["score_data"]["priority"] == "MEDIUM"]),
+        "low_priority": len([e for e in scored_events if e["score_data"]["priority"] == "LOW"])
     }
 
 

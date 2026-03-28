@@ -26,6 +26,7 @@ import RumoursPage from "@/pages/public/RumoursPage";
 import TransfersPage from "@/pages/public/TransfersPage";
 import SearchPage from "@/pages/public/SearchPage";
 import AuthorPage from "@/pages/public/AuthorPage";
+import ThemePage from "@/pages/public/ThemePage";
 
 // Admin Pages
 import AdminLogin from "@/pages/admin/AdminLogin";
@@ -55,6 +56,7 @@ function App() {
             <Route path="/spieler/:slug" element={<PlayerPage />} />
             <Route path="/verein/:slug" element={<ClubPage />} />
             <Route path="/wettbewerb/:slug" element={<CompetitionPage />} />
+            <Route path="/thema/:slug" element={<ThemePage />} />
             <Route path="/geruechte" element={<RumoursPage />} />
             <Route path="/transfers" element={<TransfersPage />} />
             <Route path="/suche" element={<SearchPage />} />
