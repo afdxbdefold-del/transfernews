@@ -2,9 +2,11 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { AdSlot, SidebarAd } from "@/components/AdSlot";
 import { NewsCardCompact } from "@/components/NewsCard";
+import { TrendingWidget } from "@/components/TrendingWidget";
+import { RelatedLinks } from "@/components/RelatedLinks";
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { getArticleBySlug, getPublishedArticles, getPlayer, getClub } from "@/api";
+import { getArticleBySlug, getPublishedArticles, getPlayer, getClub, getPublicNewsDetail } from "@/api";
 import { Clock, CaretLeft, ShareNetwork, User, Buildings, FacebookLogo, XLogo, WhatsappLogo, EnvelopeSimple } from "@phosphor-icons/react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Helmet } from "react-helmet-async";
@@ -59,30 +61,43 @@ export default function NewsDetailPage() {
   const [relatedNews, setRelatedNews] = useState([]);
   const [linkedPlayers, setLinkedPlayers] = useState([]);
   const [linkedClubs, setLinkedClubs] = useState([]);
+  const [relatedLinks, setRelatedLinks] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const res = await getArticleBySlug(slug);
-        setArticle(res.data);
+        
+        // Try to get article with related links first
+        let articleData;
+        try {
+          const publicRes = await getPublicNewsDetail(slug);
+          articleData = publicRes.data;
+          setRelatedLinks(articleData.related_links || []);
+        } catch {
+          // Fallback to regular endpoint
+          const res = await getArticleBySlug(slug);
+          articleData = res.data;
+        }
+        
+        setArticle(articleData);
 
         // Fetch related news
         const relatedRes = await getPublishedArticles({ limit: 5 });
         setRelatedNews(relatedRes.data.filter((a) => a.slug !== slug).slice(0, 4));
 
         // Fetch linked entities
-        if (res.data.linked_player_ids?.length > 0) {
+        if (articleData.linked_player_ids?.length > 0) {
           const players = await Promise.all(
-            res.data.linked_player_ids.slice(0, 3).map((id) => getPlayer(id).catch(() => null))
+            articleData.linked_player_ids.slice(0, 3).map((id) => getPlayer(id).catch(() => null))
           );
           setLinkedPlayers(players.filter(Boolean).map((r) => r.data));
         }
 
-        if (res.data.linked_club_ids?.length > 0) {
+        if (articleData.linked_club_ids?.length > 0) {
           const clubs = await Promise.all(
-            res.data.linked_club_ids.slice(0, 3).map((id) => getClub(id).catch(() => null))
+            articleData.linked_club_ids.slice(0, 3).map((id) => getClub(id).catch(() => null))
           );
           setLinkedClubs(clubs.filter(Boolean).map((r) => r.data));
         }
@@ -381,6 +396,13 @@ export default function NewsDetailPage() {
                   )}
                 </div>
 
+                {/* Auto-generated Related Links from Trending System */}
+                {relatedLinks.length > 0 && (
+                  <div className="mt-6">
+                    <RelatedLinks links={relatedLinks} />
+                  </div>
+                )}
+                
                 {/* Linked Entities */}
                 {(linkedPlayers.length > 0 || linkedClubs.length > 0) && (
                   <div className="mt-8 pt-6 border-t border-gray-100">
@@ -448,9 +470,9 @@ export default function NewsDetailPage() {
 
             {/* Sidebar */}
             <aside className="space-y-6">
+              <TrendingWidget />
               <SidebarAd slotKey="sidebar_top" />
               <SidebarAd slotKey="sidebar_middle" />
-              <SidebarAd slotKey="sidebar_bottom" />
             </aside>
           </div>
         </div>

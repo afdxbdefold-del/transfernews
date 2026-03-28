@@ -137,4 +137,21 @@ export const getAvailableCompetitions = () => api.get('/import/available-competi
 export const importCompetition = (code) => api.post(`/import/competition/${code}`);
 export const scrapeNews = () => api.post('/import/scrape-news');
 
+// Trending & Breaking
+export const getTrendingPlayers = (hours = 24) => api.get('/trending/players', { params: { hours } });
+export const getTrendingClubs = (hours = 24) => api.get('/trending/clubs', { params: { hours } });
+export const getAllTrending = (hours = 24) => api.get('/trending/all', { params: { hours } });
+export const getBreakingArticles = (limit = 5) => api.get('/breaking', { params: { limit } });
+
+// SEO Landing Pages
+export const getPlayerLanding = (slug) => api.get(`/landing/spieler/${slug}`);
+export const getClubLanding = (slug) => api.get(`/landing/verein/${slug}`);
+export const getFreeTransfers = () => api.get('/landing/abloesefreie');
+export const getTopTransfers = (limit = 20) => api.get('/landing/top-transfers', { params: { limit } });
+export const getArticleRelatedLinks = (articleId) => api.get(`/articles/${articleId}/related-links`);
+
+// Public News with related links
+export const getPublicNews = (params) => api.get('/public/news', { params });
+export const getPublicNewsDetail = (slug) => api.get(`/public/news/${slug}`);
+
 export default api;

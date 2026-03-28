@@ -2,6 +2,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { AdSlot, SidebarAd } from "@/components/AdSlot";
 import { NewsCard } from "@/components/NewsCard";
+import { TrendingWidget } from "@/components/TrendingWidget";
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { getPlayerBySlug, getArticlesByPlayer, getTransfers, getRumours } from "@/api";
@@ -9,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { User, MapPin, Calendar, ArrowLeft } from "@phosphor-icons/react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Helmet } from "react-helmet-async";
 
 export default function PlayerPage() {
   const { slug } = useParams();
@@ -76,8 +78,41 @@ export default function PlayerPage() {
     );
   }
 
+  // Schema.org Person markup
+  const schemaData = {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    "name": player.name,
+    "url": `https://transfernews.de/spieler/${slug}`,
+    ...(player.country && { "nationality": player.country }),
+    ...(player.birthdate && { "birthDate": player.birthdate }),
+    ...(player.image && { "image": player.image }),
+    ...(player.position && { "jobTitle": player.position })
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50" data-testid="player-page">
+      <Helmet>
+        <title>{player.name} - Transfer-News & Gerüchte | TransferNews.de</title>
+        <meta name="description" content={`Alle Transfer-News, Gerüchte und Wechsel zu ${player.name}. Aktuelle Informationen und Hintergründe.`} />
+        <meta name="robots" content="index, follow, max-image-preview:large" />
+        <link rel="canonical" href={`https://transfernews.de/spieler/${slug}`} />
+        
+        {/* OpenGraph */}
+        <meta property="og:title" content={`${player.name} - Transfer-News & Gerüchte`} />
+        <meta property="og:description" content={`Alle Transfer-News und Gerüchte zu ${player.name}`} />
+        <meta property="og:type" content="profile" />
+        <meta property="og:url" content={`https://transfernews.de/spieler/${slug}`} />
+        {player.image && <meta property="og:image" content={player.image} />}
+        
+        {/* Twitter */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={`${player.name} - TransferNews.de`} />
+        
+        {/* Schema.org */}
+        <script type="application/ld+json">{JSON.stringify(schemaData)}</script>
+      </Helmet>
+      
       <Header />
 
       {/* Top Ad */}
@@ -242,9 +277,9 @@ export default function PlayerPage() {
 
             {/* Sidebar */}
             <aside className="space-y-6">
+              <TrendingWidget />
               <SidebarAd slotKey="sidebar_top" />
               <SidebarAd slotKey="sidebar_middle" />
-              <SidebarAd slotKey="sidebar_bottom" />
             </aside>
           </div>
         </div>

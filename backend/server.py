@@ -1260,6 +1260,170 @@ async def health_check():
     return {"status": "healthy", "timestamp": datetime.now(timezone.utc).isoformat()}
 
 
+# =============================================================================
+# TRENDING & BREAKING NEWS ROUTES
+# =============================================================================
+
+from trending import (
+    calculate_event_score,
+    get_trending_entities,
+    get_breaking_news,
+    get_player_landing_data,
+    get_club_landing_data,
+    get_free_transfers,
+    get_top_transfers,
+    generate_related_links
+)
+
+
+@api_router.get("/trending/players")
+async def get_trending_players(hours: int = Query(24, ge=1, le=168)):
+    """Get trending players based on recent event frequency"""
+    result = await get_trending_entities(db, hours=hours)
+    return {
+        "trending_players": result["trending_players"],
+        "period_hours": result["period_hours"]
+    }
+
+
+@api_router.get("/trending/clubs")
+async def get_trending_clubs(hours: int = Query(24, ge=1, le=168)):
+    """Get trending clubs based on recent event frequency"""
+    result = await get_trending_entities(db, hours=hours)
+    return {
+        "trending_clubs": result["trending_clubs"],
+        "period_hours": result["period_hours"]
+    }
+
+
+@api_router.get("/trending/all")
+async def get_all_trending(hours: int = Query(24, ge=1, le=168)):
+    """Get all trending entities (players + clubs)"""
+    result = await get_trending_entities(db, hours=hours)
+    return result
+
+
+@api_router.get("/breaking")
+async def get_breaking_articles(limit: int = Query(5, ge=1, le=20)):
+    """Get latest breaking news articles"""
+    articles = await get_breaking_news(db, limit=limit)
+    return {"breaking_news": articles, "count": len(articles)}
+
+
+@api_router.get("/landing/spieler/{slug}")
+async def get_player_landing(slug: str):
+    """Get all data for player SEO landing page"""
+    data = await get_player_landing_data(db, slug)
+    if not data:
+        raise HTTPException(status_code=404, detail="Spieler nicht gefunden")
+    return data
+
+
+@api_router.get("/landing/verein/{slug}")
+async def get_club_landing(slug: str):
+    """Get all data for club SEO landing page"""
+    data = await get_club_landing_data(db, slug)
+    if not data:
+        raise HTTPException(status_code=404, detail="Verein nicht gefunden")
+    return data
+
+
+@api_router.get("/landing/abloesefreie")
+async def get_free_transfer_articles():
+    """Get articles about free transfers for SEO landing page"""
+    articles = await get_free_transfers(db)
+    return {
+        "title": "Ablösefreie Transfers",
+        "articles": articles,
+        "count": len(articles)
+    }
+
+
+@api_router.get("/landing/top-transfers")
+async def get_top_transfer_articles(limit: int = Query(20, ge=1, le=50)):
+    """Get highest-probability transfer articles"""
+    articles = await get_top_transfers(db, limit=limit)
+    return {
+        "title": "Top Transfers",
+        "articles": articles,
+        "count": len(articles)
+    }
+
+
+@api_router.get("/articles/{article_id}/related-links")
+async def get_article_related_links(article_id: str):
+    """Get internal links for article footer"""
+    article = await db.articles.find_one({"id": article_id}, {"_id": 0})
+    if not article:
+        raise HTTPException(status_code=404, detail="Artikel nicht gefunden")
+    
+    links = generate_related_links(article)
+    return {"article_id": article_id, "related_links": links}
+
+
+@api_router.post("/events/{event_id}/calculate-score")
+async def calculate_event_priority(event_id: str, current_user: dict = Depends(get_current_user)):
+    """Calculate priority score for an event"""
+    event = await db.events.find_one({"id": event_id}, {"_id": 0})
+    if not event:
+        raise HTTPException(status_code=404, detail="Event nicht gefunden")
+    
+    score_result = calculate_event_score(event)
+    
+    # Update event with score
+    await db.events.update_one(
+        {"id": event_id},
+        {"$set": {
+            "priority_score": score_result["score"],
+            "priority": score_result["priority"],
+            "is_breaking": score_result["is_breaking"],
+            "score_reasons": score_result["reasons"],
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    return score_result
+
+
+# =============================================================================
+# PUBLIC NEWS ROUTES (Enhanced)
+# =============================================================================
+
+@api_router.get("/public/news")
+async def get_public_news(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=50),
+    status_filter: Optional[str] = None
+):
+    """Get published news for public display with optional status filter"""
+    query = {"status": "published"}
+    if status_filter:
+        query["transfer_status"] = status_filter
+    
+    articles = await db.articles.find(query, {"_id": 0}).sort("published_at", -1).skip(skip).limit(limit).to_list(limit)
+    total = await db.articles.count_documents(query)
+    
+    return {
+        "articles": articles,
+        "total": total,
+        "skip": skip,
+        "limit": limit
+    }
+
+
+@api_router.get("/public/news/{slug}")
+async def get_public_news_detail(slug: str):
+    """Get single news article with related links"""
+    article = await db.articles.find_one({"slug": slug, "status": "published"}, {"_id": 0})
+    if not article:
+        raise HTTPException(status_code=404, detail="Artikel nicht gefunden")
+    
+    # Add related links
+    article["related_links"] = generate_related_links(article)
+    
+    return article
+
+
 # Include the router in the main app
 app.include_router(api_router)
 

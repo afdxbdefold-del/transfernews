@@ -1,10 +1,12 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { HeroCard, NewsCardHorizontal, NewsTickerEntry } from "@/components/NewsCard";
+import { TrendingWidget, TrendingBar } from "@/components/TrendingWidget";
 import { useEffect, useState } from "react";
-import { getPublishedArticles, getConfirmedTransfers, getRumours } from "@/api";
+import { getPublishedArticles } from "@/api";
 import { Link } from "react-router-dom";
 import { CaretRight } from "@phosphor-icons/react";
+import { Helmet } from "react-helmet-async";
 
 export default function HomePage() {
   const [articles, setArticles] = useState([]);
@@ -30,7 +32,17 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-white" data-testid="homepage">
+      <Helmet>
+        <title>TransferNews.de - Alle Fußball-Transfers & Gerüchte</title>
+        <meta name="description" content="Die neuesten Fußball-Transfer-News, Gerüchte und offizielle Wechsel. Bundesliga, Premier League, La Liga und mehr." />
+        <meta name="robots" content="index, follow, max-image-preview:large" />
+        <link rel="canonical" href="https://transfernews.de" />
+      </Helmet>
+      
       <Header />
+      
+      {/* Trending Bar */}
+      <TrendingBar />
       
       <main className="flex-1">
         {/* Hero Section */}
@@ -51,8 +63,12 @@ export default function HomePage() {
               ))}
             </div>
             
-            {/* Sidebar Ticker - Desktop only */}
+            {/* Sidebar Ticker + Trending - Desktop only */}
             <div className="hidden lg:block w-[340px] border-l border-gray-100">
+              {/* Trending Widget */}
+              <TrendingWidget className="m-4" />
+              
+              {/* Newsticker */}
               <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
                 <Link to="/news" className="flex items-center gap-1 group">
                   <span className="text-sm font-bold uppercase">Newsticker</span>

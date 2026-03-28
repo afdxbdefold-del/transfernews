@@ -2,6 +2,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { AdSlot, SidebarAd } from "@/components/AdSlot";
 import { NewsCard } from "@/components/NewsCard";
+import { TrendingWidget } from "@/components/TrendingWidget";
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { getClubBySlug, getArticlesByClub, getTransfers } from "@/api";
@@ -9,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Buildings, MapPin, ArrowLeft } from "@phosphor-icons/react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Helmet } from "react-helmet-async";
 
 export default function ClubPage() {
   const { slug } = useParams();
@@ -73,8 +75,40 @@ export default function ClubPage() {
     );
   }
 
+  // Schema.org SportsTeam markup
+  const schemaData = {
+    "@context": "https://schema.org",
+    "@type": "SportsTeam",
+    "name": club.name,
+    "url": `https://transfernews.de/verein/${slug}`,
+    "sport": "Fußball",
+    ...(club.country && { "location": { "@type": "Place", "name": club.country } }),
+    ...(club.logo && { "logo": club.logo })
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50" data-testid="club-page">
+      <Helmet>
+        <title>{club.name} - Transfer-News & Gerüchte | TransferNews.de</title>
+        <meta name="description" content={`Alle Transfer-News, Gerüchte, Zugänge und Abgänge von ${club.name}. Aktuelle Transfermarkt-Informationen.`} />
+        <meta name="robots" content="index, follow, max-image-preview:large" />
+        <link rel="canonical" href={`https://transfernews.de/verein/${slug}`} />
+        
+        {/* OpenGraph */}
+        <meta property="og:title" content={`${club.name} - Transfer-News & Gerüchte`} />
+        <meta property="og:description" content={`Alle Transfer-News von ${club.name}`} />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content={`https://transfernews.de/verein/${slug}`} />
+        {club.logo && <meta property="og:image" content={club.logo} />}
+        
+        {/* Twitter */}
+        <meta name="twitter:card" content="summary" />
+        <meta name="twitter:title" content={`${club.name} - TransferNews.de`} />
+        
+        {/* Schema.org */}
+        <script type="application/ld+json">{JSON.stringify(schemaData)}</script>
+      </Helmet>
+      
       <Header />
 
       {/* Top Ad */}
@@ -199,9 +233,9 @@ export default function ClubPage() {
 
             {/* Sidebar */}
             <aside className="space-y-6">
+              <TrendingWidget />
               <SidebarAd slotKey="sidebar_top" />
               <SidebarAd slotKey="sidebar_middle" />
-              <SidebarAd slotKey="sidebar_bottom" />
             </aside>
           </div>
         </div>
