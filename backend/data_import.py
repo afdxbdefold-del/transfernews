@@ -857,23 +857,41 @@ async def generate_article_from_event(event: dict, db) -> dict:
     # Find related events from different sources
     related_events = await find_related_events(db, event)
     
-    # Build source information
+    # Build source information with language info
     sources_text = ""
+    has_english_sources = False
     for i, e in enumerate(related_events, 1):
+        lang = e.get('source_language', 'de')
+        if lang != 'de':
+            has_english_sources = True
         sources_text += f"""
-QUELLE {i}:
+QUELLE {i} [{lang.upper()}]:
 - Headline: {e.get('headline_raw', '')}
+- Quelle: {e.get('source_name', e.get('source_key', ''))}
 - URL: {e.get('source_url', '')}
 - Summary: {e.get('summary', '')[:300]}
 """
     
     headline = event.get("headline_raw", "")
+    source_language = event.get("source_language", "de")
+    
+    # Add translation instruction for non-German sources
+    translation_note = ""
+    if has_english_sources or source_language != "de":
+        translation_note = """
+=== WICHTIG: ÜBERSETZUNG ===
+Einige Quellen sind auf Englisch/Spanisch. 
+Übersetze ALLE Inhalte ins perfekte Deutsch.
+Behalte Namen und Vereinsnamen im Original.
+Verwende deutsche Fußball-Terminologie (z.B. "Ablöse" statt "fee").
+"""
     
     # Create LLM chat instance with strict instructions
     chat = LlmChat(
         api_key=api_key,
         session_id=f"article-gen-{event.get('id', 'new')}",
-        system_message="""Du bist Sportjournalist für transfernews.de. STRIKT FAKTENBASIERT.
+        system_message=f"""Du bist Sportjournalist für transfernews.de. STRIKT FAKTENBASIERT.
+{translation_note}
 
 === ABSOLUTE REGELN ===
 
@@ -1231,78 +1249,208 @@ import feedparser
 class RSSFeedScraper:
     """
     RSS Feed Scraper für Transfer-News
+    Internationale + Deutsche Quellen mit automatischer Übersetzung
     """
     
     FEEDS = {
+        # =============================================
+        # TIER 1 - BREAKING NEWS (Höchste Priorität)
+        # =============================================
+        
+        # Internationale Top-Quellen
+        "sky_sports_uk": {
+            "url": "https://www.skysports.com/rss/12040",  # Football News
+            "name": "Sky Sports UK",
+            "category": "tier_1",
+            "language": "en",
+            "trust_score": 95,
+        },
+        "espn_fc": {
+            "url": "https://www.espn.com/espn/rss/soccer/news",
+            "name": "ESPN FC",
+            "category": "tier_1",
+            "language": "en",
+            "trust_score": 88,
+        },
+        "bbc_football": {
+            "url": "https://feeds.bbci.co.uk/sport/football/rss.xml",
+            "name": "BBC Football",
+            "category": "tier_1",
+            "language": "en",
+            "trust_score": 92,
+        },
+        
+        # =============================================
+        # TIER 1 - DEUTSCHE TRANSFER-SPEZIALISTEN
+        # =============================================
+        "transfermarkt_news": {
+            "url": "https://www.transfermarkt.de/rss/news",
+            "name": "Transfermarkt",
+            "category": "tier_1",
+            "language": "de",
+            "trust_score": 90,
+        },
+        "kicker_transfers": {
+            "url": "https://rss.kicker.de/news/aktuell",
+            "name": "Kicker",
+            "category": "tier_1",
+            "language": "de",
+            "trust_score": 88,
+        },
+        "sport1_fussball": {
+            "url": "https://www.sport1.de/rss/fussball",
+            "name": "Sport1",
+            "category": "tier_1",
+            "language": "de",
+            "trust_score": 82,
+        },
+        
+        # =============================================
+        # TIER 2 - INTERNATIONALE QUELLEN
+        # =============================================
+        "goal_com": {
+            "url": "https://www.goal.com/feeds/en/news",
+            "name": "Goal.com",
+            "category": "tier_2",
+            "language": "en",
+            "trust_score": 75,
+        },
+        "football_italia": {
+            "url": "https://www.football-italia.net/rss.xml",
+            "name": "Football Italia",
+            "category": "tier_2",
+            "language": "en",
+            "trust_score": 78,
+        },
+        "marca_football": {
+            "url": "https://e00-marca.uecdn.es/rss/futbol/futbol-internacional.xml",
+            "name": "Marca",
+            "category": "tier_2",
+            "language": "es",
+            "trust_score": 80,
+        },
+        "guardian_football": {
+            "url": "https://www.theguardian.com/football/rss",
+            "name": "The Guardian Football",
+            "category": "tier_2",
+            "language": "en",
+            "trust_score": 85,
+        },
+        
+        # =============================================
+        # TIER 3 - DEUTSCHE MAINSTREAM-QUELLEN
+        # =============================================
+        "sportbuzzer": {
+            "url": "https://www.sportbuzzer.de/rss/fussball.xml",
+            "name": "Sportbuzzer",
+            "category": "tier_3",
+            "language": "de",
+            "trust_score": 70,
+        },
+        "spox_fussball": {
+            "url": "https://www.spox.com/de/rss/fussball.xml",
+            "name": "SPOX",
+            "category": "tier_3",
+            "language": "de",
+            "trust_score": 72,
+        },
         "t_online_sport": {
             "url": "https://www.t-online.de/sport/feed.rss",
             "name": "T-Online Sport",
-            "category": "tier_1",
+            "category": "tier_3",
+            "language": "de",
+            "trust_score": 68,
         },
         "welt_sport": {
             "url": "https://www.welt.de/feeds/section/sport.rss",
             "name": "Welt Sport", 
-            "category": "tier_1",
+            "category": "tier_3",
+            "language": "de",
+            "trust_score": 70,
         },
         "spiegel_sport": {
             "url": "https://www.spiegel.de/sport/index.rss",
             "name": "Spiegel Sport",
-            "category": "tier_1",
-        },
-        "faz_sport": {
-            "url": "https://www.faz.net/rss/aktuell/sport/",
-            "name": "FAZ Sport",
-            "category": "tier_1",
-        },
-        "sueddeutsche_sport": {
-            "url": "https://rss.sueddeutsche.de/rss/Sport",
-            "name": "Süddeutsche Sport",
-            "category": "tier_1",
-        },
-        "zeit_sport": {
-            "url": "https://newsfeed.zeit.de/sport/index",
-            "name": "Zeit Sport",
-            "category": "tier_2",
+            "category": "tier_3",
+            "language": "de",
+            "trust_score": 75,
         },
     }
     
-    TRANSFER_KEYWORDS = [
-        "transfer", "verpflichtet", "verpflichtung",
-        "wechselt zu", "wechselt von", "wechsel zu", "wechsel von",
-        "ablöse", "ablösefrei", "ablösesumme",
-        "unterschreibt bei", "unterschrieben bei", "vertrag unterschrieben",
-        "leihe von", "leihe zu", "leihgeschäft", "ausgeliehen",
-        "verkauft", "gekauft", "transfer-", "transfersumme",
-        "kommt von", "geht zu", "verlässt den",
-        "neuzugang", "abgang", "rückkehr zu"
-    ]
+    # Transfer keywords für verschiedene Sprachen
+    TRANSFER_KEYWORDS = {
+        "de": [
+            "transfer", "verpflichtet", "verpflichtung",
+            "wechselt zu", "wechselt von", "wechsel zu", "wechsel von",
+            "ablöse", "ablösefrei", "ablösesumme",
+            "unterschreibt bei", "unterschrieben bei", "vertrag unterschrieben",
+            "leihe von", "leihe zu", "leihgeschäft", "ausgeliehen",
+            "verkauft", "gekauft", "transfer-", "transfersumme",
+            "kommt von", "geht zu", "verlässt den",
+            "neuzugang", "abgang", "rückkehr zu"
+        ],
+        "en": [
+            "transfer", "signs for", "signed for", "signing",
+            "joins", "joining", "deal", "move to", "moves to",
+            "loan", "loaned", "fee", "bid", "offer",
+            "completes move", "agrees terms", "personal terms",
+            "medical", "here we go", "done deal", "confirmed",
+            "targets", "interested in", "pursuing", "chase",
+            "release clause", "contract", "extension"
+        ],
+        "es": [
+            "fichaje", "ficha por", "firma con", "cesión",
+            "traspaso", "acuerdo", "negociaciones",
+            "oficial", "confirmado"
+        ]
+    }
     
     def _generate_dedupe_key(self, title: str, source: str) -> str:
         """Generate unique key for deduplication"""
         content = f"{title.lower()[:100]}:{source}"
         return hashlib.md5(content.encode()).hexdigest()
     
-    def _is_transfer_related(self, title: str, summary: str = "") -> bool:
-        """Check if article is a real TRANSFER news"""
+    def _is_transfer_related(self, title: str, summary: str = "", language: str = "de") -> bool:
+        """
+        Check if article is a real TRANSFER news
+        Supports multiple languages (de, en, es)
+        """
         text = f"{title} {summary}".lower()
         
-        # EXCLUDE non-transfer news
-        exclude_terms = ["testspiel", "auswechslung", "einwechslung", "spieltag",
-                        "tor geschossen", "torschütze", "ergebnis", "endergebnis",
-                        "halbzeit", "anpfiff", "abpfiff", "elfmeter", "freistoß",
-                        "rote karte", "gelbe karte", "verletzung", "verletzt",
-                        "marktwert", "marktwerte", "ranking", "statistik",
-                        "interview", "pressekonferenz", "pk"]
+        # EXCLUDE non-transfer news (multilingual)
+        exclude_terms = [
+            # German
+            "testspiel", "auswechslung", "einwechslung", "spieltag",
+            "tor geschossen", "torschütze", "ergebnis", "endergebnis",
+            "halbzeit", "anpfiff", "abpfiff", "elfmeter", "freistoß",
+            "rote karte", "gelbe karte", "verletzung", "verletzt",
+            "marktwert", "marktwerte", "ranking", "statistik",
+            "interview", "pressekonferenz", "pk",
+            # English
+            "match report", "goal scored", "red card", "yellow card",
+            "injury update", "lineup", "starting xi", "preview",
+            "highlights", "recap", "results", "fixtures", "standings",
+            "press conference", "interview", "quotes",
+            "play-off", "playoffs", "semi-final", "quarter-final",
+            "champions league draw", "europa league draw",
+            # Sports that are NOT football
+            "rugby", "cricket", "tennis", "golf", "f1", "formula 1",
+            "nfl", "nba", "nhl", "mlb", "boxing", "mma", "ufc",
+            "harlequins", "saracens", "northampton", "bristol bears",
+            # Spanish
+            "lesión", "tarjeta roja", "tarjeta amarilla", "goles"
+        ]
         
         if any(term in text for term in exclude_terms):
             return False
         
-        # Must have REAL transfer action word
-        must_have = ["transfer", "verpflichtet", "wechselt", "unterschreibt",
-                    "ablöse", "leihe", "verlässt", "neuzugang", "abgang",
-                    "verkauft", "gekauft", "kommt von", "geht zu"]
+        # Get keywords for language (fallback to all languages)
+        all_keywords = []
+        for lang_keywords in self.TRANSFER_KEYWORDS.values():
+            all_keywords.extend(lang_keywords)
         
-        return any(kw in text for kw in must_have)
+        # Check for transfer-related content
+        return any(kw in text for kw in all_keywords)
     
     def _extract_image(self, entry) -> str:
         """Extract image URL from RSS entry"""
@@ -1335,6 +1483,9 @@ class RSSFeedScraper:
         if not feed_info:
             return events
         
+        language = feed_info.get("language", "de")
+        trust_score = feed_info.get("trust_score", 70)
+        
         try:
             feed = feedparser.parse(feed_info["url"])
             
@@ -1344,16 +1495,20 @@ class RSSFeedScraper:
                 link = entry.get("link", "")
                 image_url = self._extract_image(entry)
                 
-                # Filter for transfer-related news
-                if self._is_transfer_related(title, summary):
+                # Filter for transfer-related news (multilingual)
+                if self._is_transfer_related(title, summary, language):
                     events.append({
                         "headline_raw": title,
                         "summary": summary[:500] if summary else "",
                         "source_url": link,
                         "source_key": feed_key,
+                        "source_name": feed_info["name"],
                         "dedupe_key": self._generate_dedupe_key(title, feed_key),
                         "published": entry.get("published", ""),
                         "image_url": image_url,
+                        "language": language,
+                        "trust_score": trust_score,
+                        "category": feed_info.get("category", "tier_3"),
                     })
         except Exception as e:
             logger.error(f"RSS feed error for {feed_key}: {e}")
@@ -1361,23 +1516,36 @@ class RSSFeedScraper:
         return events
     
     async def fetch_all_feeds(self) -> List[dict]:
-        """Fetch all RSS feeds"""
+        """Fetch all RSS feeds, prioritized by tier"""
         all_events = []
         
-        for feed_key in self.FEEDS.keys():
+        # Sort feeds by tier (tier_1 first)
+        sorted_feeds = sorted(
+            self.FEEDS.items(),
+            key=lambda x: (x[1].get("category", "tier_3"), -x[1].get("trust_score", 0))
+        )
+        
+        for feed_key, feed_info in sorted_feeds:
             events = await self.fetch_feed(feed_key)
             all_events.extend(events)
+            logger.info(f"[RSS] {feed_info['name']}: {len(events)} transfer events")
         
         return all_events
 
 
 async def import_rss_events(db) -> dict:
     """
-    Import events from RSS feeds
+    Import events from RSS feeds (international + German sources)
     """
     from models import Event, Source, EventType, EventStatus, SourceType, SourceCategory, generate_uuid
     
-    result = {"new_events": 0, "duplicates": 0, "sources_created": 0}
+    result = {
+        "new_events": 0, 
+        "duplicates": 0, 
+        "sources_created": 0,
+        "by_language": {"de": 0, "en": 0, "es": 0},
+        "by_tier": {"tier_1": 0, "tier_2": 0, "tier_3": 0}
+    }
     
     scraper = RSSFeedScraper()
     
@@ -1393,13 +1561,15 @@ async def import_rss_events(db) -> dict:
                 source_url=source_info["url"],
                 source_category=SourceCategory(source_info["category"]),
                 active=True,
-                trust_score=80 if source_info["category"] == "tier_1" else 60,
+                trust_score=source_info.get("trust_score", 70),
             )
             await db.sources.insert_one(source.model_dump())
             result["sources_created"] += 1
     
     # Fetch all feeds
     events = await scraper.fetch_all_feeds()
+    
+    logger.info(f"[RSS] Total transfer events found: {len(events)}")
     
     # Import events
     for event_data in events:
@@ -1413,14 +1583,29 @@ async def import_rss_events(db) -> dict:
         source = await db.sources.find_one({"slug": event_data["source_key"]})
         source_id = source["id"] if source else None
         
-        # Determine event type
+        # Determine event type (multilingual keywords)
         headline_lower = event_data["headline_raw"].lower()
-        if any(kw in headline_lower for kw in ["offiziell", "bestätigt", "fix", "unterschrieben"]):
+        
+        # Official/Confirmed keywords
+        official_keywords = ["offiziell", "bestätigt", "fix", "unterschrieben", 
+                           "official", "confirmed", "done deal", "here we go",
+                           "oficial", "confirmado"]
+        agreement_keywords = ["einigung", "agreement", "deal", "agrees terms",
+                            "acuerdo", "personal terms", "medical"]
+        
+        if any(kw in headline_lower for kw in official_keywords):
             event_type = EventType.OFFICIAL
-        elif any(kw in headline_lower for kw in ["einigung", "agreement", "deal"]):
+            confidence = 90
+        elif any(kw in headline_lower for kw in agreement_keywords):
             event_type = EventType.CONFIRMED
+            confidence = 75
         else:
             event_type = EventType.RUMOUR
+            confidence = 50
+        
+        # Adjust confidence by trust score
+        trust_score = event_data.get("trust_score", 70)
+        confidence = min(95, confidence + (trust_score - 70) // 5)
         
         event = Event(
             id=generate_uuid(),
@@ -1430,13 +1615,26 @@ async def import_rss_events(db) -> dict:
             source_id=source_id,
             source_url=event_data.get("source_url", ""),
             dedupe_key=event_data["dedupe_key"],
-            confidence_score=70 if event_type == EventType.OFFICIAL else 50,
+            confidence_score=confidence,
             image_url=event_data.get("image_url", ""),
         )
         
-        await db.events.insert_one(event.model_dump())
+        # Add language metadata
+        event_dict = event.model_dump()
+        event_dict["source_language"] = event_data.get("language", "de")
+        event_dict["source_name"] = event_data.get("source_name", "")
+        event_dict["source_category"] = event_data.get("category", "tier_3")
+        
+        await db.events.insert_one(event_dict)
         result["new_events"] += 1
+        
+        # Track stats
+        lang = event_data.get("language", "de")
+        tier = event_data.get("category", "tier_3")
+        result["by_language"][lang] = result["by_language"].get(lang, 0) + 1
+        result["by_tier"][tier] = result["by_tier"].get(tier, 0) + 1
     
+    logger.info(f"[RSS] Import complete: {result}")
     return result
 
 

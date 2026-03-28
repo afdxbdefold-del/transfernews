@@ -22,6 +22,17 @@ Deutschsprachige Fußball-Transfer-News-Plattform auf der Domain transfernews.de
 
 ## What's Been Implemented
 
+### 28. März 2026 - INTERNATIONALE RSS-QUELLEN
+- ✅ **15 RSS-Quellen** konfiguriert (vorher: 6)
+- ✅ **Tier-1 International:** Sky Sports UK, ESPN FC, BBC Football
+- ✅ **Tier-1 Deutsch:** Transfermarkt, Kicker, Sport1
+- ✅ **Tier-2:** Goal.com, Football Italia, Marca, The Guardian
+- ✅ **Tier-3:** Sportbuzzer, SPOX, T-Online, Welt, Spiegel
+- ✅ **Mehrsprachige Keywords:** DE, EN, ES Transfer-Begriffe
+- ✅ **Automatische Übersetzung:** Englische Artikel → Deutsch via LLM
+- ✅ **Trust-Score System:** Quellen-Vertrauen beeinflusst Confidence
+- ✅ **Filter verbessert:** Rugby, Cricket, Tennis etc. ausgeschlossen
+
 ### 28. März 2026 - BREAKING & TREND ENGINE + SEO LANDING PAGES
 - ✅ **Erweitertes Event-Scoring** (`/app/backend/trending.py`):
   - Spieler-Popularität (100 Punkte für Mbappé, Haaland etc.)
