@@ -1424,6 +1424,206 @@ async def get_public_news_detail(slug: str):
     return article
 
 
+# =============================================================================
+# SITEMAP & SEO ROUTES (Google News + Discover Optimization)
+# =============================================================================
+
+from fastapi.responses import Response
+from sitemap import (
+    generate_sitemap,
+    generate_news_sitemap,
+    generate_sitemap_index,
+    generate_robots_txt,
+    ping_google_sitemap,
+    ping_google_news_sitemap,
+    track_article_update
+)
+
+
+@api_router.get("/sitemap.xml", response_class=Response)
+async def get_sitemap():
+    """Standard sitemap for all pages"""
+    content = await generate_sitemap(db)
+    return Response(content=content, media_type="application/xml")
+
+
+@api_router.get("/news-sitemap.xml", response_class=Response)
+async def get_news_sitemap():
+    """Google News sitemap - only articles from last 48 hours"""
+    content = await generate_news_sitemap(db)
+    return Response(content=content, media_type="application/xml")
+
+
+@api_router.get("/sitemap-index.xml", response_class=Response)
+async def get_sitemap_index():
+    """Sitemap index pointing to all sitemaps"""
+    content = await generate_sitemap_index()
+    return Response(content=content, media_type="application/xml")
+
+
+@api_router.get("/robots.txt", response_class=Response)
+async def get_robots():
+    """Optimized robots.txt for Google News"""
+    content = generate_robots_txt()
+    return Response(content=content, media_type="text/plain")
+
+
+@api_router.post("/seo/ping-google")
+async def trigger_google_ping(current_user: dict = Depends(get_current_user)):
+    """Manually trigger Google sitemap ping"""
+    sitemap_result = await ping_google_sitemap()
+    news_result = await ping_google_news_sitemap()
+    
+    return {
+        "sitemap_ping": sitemap_result,
+        "news_sitemap_ping": news_result,
+        "message": "Google wurde über Sitemap-Updates informiert" if sitemap_result else "Ping fehlgeschlagen"
+    }
+
+
+# =============================================================================
+# ARTICLE UPDATE SYSTEM (Update statt Duplikate)
+# =============================================================================
+
+@api_router.post("/articles/{article_id}/update-status")
+async def update_article_status(
+    article_id: str,
+    new_status: str = Query(..., description="New status: rumour, advanced, confirmed, official"),
+    additional_info: str = Query(None, description="New information to append"),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Update existing article status instead of creating duplicate
+    Google loves updates, hates duplicate news
+    """
+    article = await db.articles.find_one({"id": article_id}, {"_id": 0})
+    if not article:
+        raise HTTPException(status_code=404, detail="Artikel nicht gefunden")
+    
+    old_status = article.get("transfer_status", "rumour")
+    now = datetime.now(timezone.utc).isoformat()
+    
+    # Build update
+    update_data = {
+        "transfer_status": new_status,
+        "updated_at": now
+    }
+    
+    # Append new information to body if provided
+    if additional_info:
+        current_body = article.get("body", "")
+        
+        # Create update paragraph
+        status_labels = {
+            "rumour": "Gerücht",
+            "advanced": "Fortgeschritten", 
+            "confirmed": "Bestätigt",
+            "official": "Offiziell"
+        }
+        status_label = status_labels.get(new_status, new_status.upper())
+        
+        update_paragraph = f"\n\n**UPDATE ({status_label}):** {additional_info}"
+        update_data["body"] = current_body + update_paragraph
+    
+    # Update probability based on status
+    probability_map = {
+        "rumour": 25,
+        "advanced": 60,
+        "confirmed": 85,
+        "official": 100
+    }
+    if new_status in probability_map:
+        update_data["transfer_probability"] = probability_map[new_status]
+    
+    # Perform update
+    await db.articles.update_one(
+        {"id": article_id},
+        {"$set": update_data}
+    )
+    
+    # Track the update
+    await track_article_update(
+        db, 
+        article_id, 
+        "status_change", 
+        f"{old_status} → {new_status}"
+    )
+    
+    # Ping Google about the update
+    await ping_google_news_sitemap()
+    
+    return {
+        "success": True,
+        "article_id": article_id,
+        "old_status": old_status,
+        "new_status": new_status,
+        "updated_at": now,
+        "google_pinged": True
+    }
+
+
+@api_router.get("/check-duplicate-article")
+async def check_for_duplicate_article(
+    player_name: str = Query(...),
+    club_name: str = Query(None),
+    transfer_type: str = Query(None)
+):
+    """
+    Check if an article about this transfer already exists
+    Returns existing article if found, so it can be updated instead
+    """
+    # Find potential duplicates from last 7 days
+    cutoff = datetime.now(timezone.utc) - timedelta(days=7)
+    
+    # Build search query - search in title for player name
+    # Note: published_at might be stored as datetime or string, handle both
+    query = {
+        "status": "published",
+        "$or": [
+            {"title": {"$regex": player_name, "$options": "i"}},
+            {"body": {"$regex": player_name, "$options": "i"}}
+        ]
+    }
+    
+    # Get articles matching the player name
+    all_matches = await db.articles.find(
+        query,
+        {"_id": 0, "id": 1, "title": 1, "slug": 1, "transfer_status": 1, "published_at": 1}
+    ).sort("published_at", -1).limit(20).to_list(20)
+    
+    # Filter by date (handle both datetime and string formats)
+    existing = []
+    for article in all_matches:
+        pub_date = article.get("published_at")
+        if pub_date:
+            # Handle datetime object
+            if isinstance(pub_date, datetime):
+                if pub_date.replace(tzinfo=timezone.utc) >= cutoff:
+                    existing.append(article)
+            # Handle string format
+            elif isinstance(pub_date, str):
+                try:
+                    parsed = datetime.fromisoformat(pub_date.replace("Z", "+00:00"))
+                    if parsed >= cutoff:
+                        existing.append(article)
+                except:
+                    existing.append(article)  # Include if we can't parse date
+        
+        if len(existing) >= 5:
+            break
+    
+    # Serialize datetime objects for JSON response
+    for article in existing:
+        if isinstance(article.get("published_at"), datetime):
+            article["published_at"] = article["published_at"].isoformat()
+    
+    return {
+        "has_existing": len(existing) > 0,
+        "existing_articles": existing,
+        "recommendation": "update" if existing else "create_new"
+    }
+
+
 # Include the router in the main app
 app.include_router(api_router)
 

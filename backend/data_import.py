@@ -1058,11 +1058,13 @@ ARTIKEL:
 async def process_pending_events(db, limit: int = 5) -> dict:
     """
     Process pending events and generate articles
+    IMPORTANT: Updates existing articles instead of creating duplicates
     Returns summary of processed events
     """
     from models import EventStatus, ArticleStatus
+    from sitemap import ping_google_news_sitemap, track_article_update
     
-    result = {"processed": 0, "articles_created": 0, "errors": []}
+    result = {"processed": 0, "articles_created": 0, "articles_updated": 0, "errors": []}
     
     # Get pending events
     cursor = db.events.find({"status": "pending"}).limit(limit)
@@ -1070,17 +1072,43 @@ async def process_pending_events(db, limit: int = 5) -> dict:
     
     for event in events:
         try:
-            # Generate article
-            article_data = await generate_article_from_event(event, db)
+            headline = event.get("headline_raw", "").lower()
             
-            # Save article
-            await db.articles.insert_one(article_data)
-            result["articles_created"] += 1
+            # ===== UPDATE STATT DUPLIKATE LOGIK =====
+            # Check if we already have an article about this transfer
+            existing_article = await find_existing_article_for_event(db, event)
+            
+            if existing_article:
+                # UPDATE existing article instead of creating new one
+                await update_existing_article(db, existing_article, event)
+                result["articles_updated"] += 1
+                
+                # Track the update
+                await track_article_update(
+                    db,
+                    existing_article["id"],
+                    "content_update",
+                    f"Neue Quelle: {event.get('source_url', '')}"
+                )
+                
+                logger.info(f"Updated existing article: {existing_article['title'][:50]}")
+            else:
+                # Generate NEW article only if no existing one found
+                article_data = await generate_article_from_event(event, db)
+                
+                # Save article
+                await db.articles.insert_one(article_data)
+                result["articles_created"] += 1
+                
+                logger.info(f"Created new article: {article_data['title'][:50]}")
             
             # Update event status
             await db.events.update_one(
                 {"id": event["id"]},
-                {"$set": {"status": "processed", "generated_article_id": article_data["id"]}}
+                {"$set": {
+                    "status": "processed", 
+                    "generated_article_id": existing_article["id"] if existing_article else article_data["id"]
+                }}
             )
             result["processed"] += 1
             
@@ -1094,7 +1122,104 @@ async def process_pending_events(db, limit: int = 5) -> dict:
                 {"$set": {"status": "error", "error_message": str(e)}}
             )
     
+    # Ping Google after processing
+    if result["articles_created"] > 0 or result["articles_updated"] > 0:
+        await ping_google_news_sitemap()
+    
     return result
+
+
+async def find_existing_article_for_event(db, event: dict) -> dict:
+    """
+    Find if an article already exists for this transfer event
+    Checks player names, clubs, and recent publication date
+    """
+    from datetime import timedelta
+    
+    headline = event.get("headline_raw", "")
+    
+    # Extract key entities from headline
+    player_names = extract_player_names(headline)
+    
+    if not player_names:
+        return None
+    
+    # Search for existing articles from last 7 days
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
+    
+    for player in player_names:
+        # Check if article with this player exists
+        query = {
+            "status": "published",
+            "published_at": {"$gte": cutoff},
+            "$or": [
+                {"title": {"$regex": player, "$options": "i"}},
+                {"body": {"$regex": player, "$options": "i"}}
+            ]
+        }
+        
+        existing = await db.articles.find_one(query, {"_id": 0})
+        if existing:
+            return existing
+    
+    return None
+
+
+async def update_existing_article(db, article: dict, new_event: dict) -> None:
+    """
+    Update existing article with new information from event
+    - Updates status if event has higher confidence
+    - Appends new information to body
+    - Updates timestamp
+    """
+    from datetime import datetime, timezone
+    
+    now = datetime.now(timezone.utc).isoformat()
+    
+    # Determine new status based on event type
+    event_type = new_event.get("event_type", "rumour").lower()
+    current_status = article.get("transfer_status", "rumour")
+    
+    status_priority = {"rumour": 1, "advanced": 2, "confirmed": 3, "official": 4}
+    
+    new_status = current_status
+    if status_priority.get(event_type, 0) > status_priority.get(current_status, 0):
+        new_status = event_type
+    
+    # Build update paragraph
+    status_labels = {
+        "rumour": "Gerücht",
+        "advanced": "Fortgeschritten",
+        "confirmed": "Bestätigt", 
+        "official": "Offiziell"
+    }
+    
+    update_text = new_event.get("headline_raw", "")
+    source_url = new_event.get("source_url", "")
+    
+    update_paragraph = f"\n\n**UPDATE ({status_labels.get(new_status, 'Neu')}):** {update_text}"
+    
+    # Update probability based on status
+    probability_map = {
+        "rumour": 25,
+        "advanced": 60,
+        "confirmed": 85,
+        "official": 100
+    }
+    
+    update_data = {
+        "transfer_status": new_status,
+        "updated_at": now,
+        "body": article.get("body", "") + update_paragraph
+    }
+    
+    if new_status in probability_map:
+        update_data["transfer_probability"] = probability_map[new_status]
+    
+    await db.articles.update_one(
+        {"id": article["id"]},
+        {"$set": update_data}
+    )
 
 
 # ============================================================================
