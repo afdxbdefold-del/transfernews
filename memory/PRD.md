@@ -22,6 +22,21 @@ Deutschsprachige Fußball-Transfer-News-Plattform auf der Domain transfernews.de
 
 ## What's Been Implemented
 
+### 28. März 2026 - GOOGLE SEARCH CONSOLE ADMIN DASHBOARD
+- ✅ **GSC Service** (`/app/backend/search_console.py`) - Vollständiger Service für GSC API Integration
+- ✅ **URL Inspection API** - Indexierungsstatus einzelner URLs prüfen
+- ✅ **Search Analytics API** - Klicks, Impressionen, CTR, Position abrufen
+- ✅ **Indexing API** - URLs zur Indexierung einreichen
+- ✅ **Admin Dashboard** (`/admin/gsc`) - Vollständiges GSC Dashboard im Admin-Panel
+- ✅ **Setup-Anleitung** - Zeigt Schritt-für-Schritt Anleitung wenn nicht konfiguriert
+- ✅ **API Endpoints**:
+  - `GET /api/gsc/status` - Konfigurationsstatus
+  - `GET /api/gsc/dashboard` - Dashboard Summary
+  - `POST /api/gsc/inspect-url` - URL prüfen
+  - `GET /api/gsc/performance` - Performance-Daten
+  - `POST /api/gsc/submit-url` - URL einreichen
+  - `POST /api/gsc/submit-all-articles` - Alle Artikel einreichen
+
 ### 28. März 2026 - PRE-RENDERING & CRAWLER-SERVING
 - ✅ **Playwright Pre-Rendering** (`/app/backend/prerender.py`) - Rendert React-Seiten zu statischem HTML
 - ✅ **Crawler-Detection** - User-Agent Prüfung für GoogleBot, BingBot, etc.

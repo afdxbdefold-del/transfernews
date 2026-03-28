@@ -39,6 +39,7 @@ import AdminArticles from "@/pages/admin/AdminArticles";
 import AdminAdSlots from "@/pages/admin/AdminAdSlots";
 import AdminTransfers from "@/pages/admin/AdminTransfers";
 import AdminRumours from "@/pages/admin/AdminRumours";
+import AdminGSC from "@/pages/admin/AdminGSC";
 
 function App() {
   return (
@@ -71,6 +72,7 @@ function App() {
             <Route path="/admin/ad-slots" element={<AdminAdSlots />} />
             <Route path="/admin/transfers" element={<AdminTransfers />} />
             <Route path="/admin/rumours" element={<AdminRumours />} />
+            <Route path="/admin/gsc" element={<AdminGSC />} />
           </Routes>
         </BrowserRouter>
         <Toaster position="top-right" />

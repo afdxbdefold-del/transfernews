@@ -12,6 +12,7 @@ import {
   Megaphone,
   Gear,
   SignOut,
+  ChartLine,
 } from "@phosphor-icons/react";
 
 export default function AdminLayout({ children, title }) {
@@ -34,6 +35,7 @@ export default function AdminLayout({ children, title }) {
     { path: "/admin/rumours", icon: TrendUp, label: "Gerüchte" },
     { path: "/admin/sources", icon: LinkIcon, label: "Quellen" },
     { path: "/admin/ad-slots", icon: Megaphone, label: "Ad-Slots" },
+    { path: "/admin/gsc", icon: ChartLine, label: "Search Console" },
   ];
 
   return (

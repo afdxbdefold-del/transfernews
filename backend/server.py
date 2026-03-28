@@ -1949,6 +1949,162 @@ async def serve_ssr_html(path: str, request: Request):
 
 
 # =============================================================================
+# GOOGLE SEARCH CONSOLE ROUTES
+# =============================================================================
+
+from search_console import get_gsc_service, GoogleSearchConsoleService
+
+
+@api_router.get("/gsc/status")
+async def get_gsc_status():
+    """Check if Google Search Console is configured"""
+    service = get_gsc_service()
+    return {
+        "configured": service.configured,
+        "site_url": os.environ.get('SITE_URL', 'https://transfernews.de')
+    }
+
+
+@api_router.get("/gsc/dashboard")
+async def get_gsc_dashboard(current_user: dict = Depends(get_current_user)):
+    """Get complete GSC dashboard summary for Admin Panel"""
+    service = get_gsc_service()
+    return await service.get_dashboard_summary()
+
+
+@api_router.post("/gsc/inspect-url")
+async def inspect_url_indexation(
+    url: str = Query(..., description="URL to inspect"),
+    current_user: dict = Depends(get_current_user)
+):
+    """Inspect URL indexation status"""
+    service = get_gsc_service()
+    return await service.inspect_url(url)
+
+
+@api_router.post("/gsc/inspect-batch")
+async def inspect_urls_batch(
+    urls: List[str],
+    current_user: dict = Depends(get_current_user)
+):
+    """Inspect multiple URLs"""
+    service = get_gsc_service()
+    return await service.batch_inspect_urls(urls)
+
+
+@api_router.get("/gsc/performance")
+async def get_search_performance(
+    start_date: str = Query(None, description="Start date (YYYY-MM-DD)"),
+    end_date: str = Query(None, description="End date (YYYY-MM-DD)"),
+    dimensions: str = Query("date", description="Comma-separated dimensions"),
+    limit: int = Query(100, ge=1, le=1000),
+    current_user: dict = Depends(get_current_user)
+):
+    """Get search performance data"""
+    service = get_gsc_service()
+    dimension_list = [d.strip() for d in dimensions.split(",")]
+    return await service.get_performance_data(
+        start_date=start_date,
+        end_date=end_date,
+        dimensions=dimension_list,
+        row_limit=limit
+    )
+
+
+@api_router.get("/gsc/top-queries")
+async def get_top_search_queries(
+    days: int = Query(7, ge=1, le=90),
+    limit: int = Query(20, ge=1, le=100),
+    current_user: dict = Depends(get_current_user)
+):
+    """Get top performing search queries"""
+    service = get_gsc_service()
+    return await service.get_top_queries(days=days, limit=limit)
+
+
+@api_router.get("/gsc/top-pages")
+async def get_top_performing_pages(
+    days: int = Query(7, ge=1, le=90),
+    limit: int = Query(20, ge=1, le=100),
+    current_user: dict = Depends(get_current_user)
+):
+    """Get top performing pages"""
+    service = get_gsc_service()
+    return await service.get_top_pages(days=days, limit=limit)
+
+
+@api_router.get("/gsc/daily-stats")
+async def get_daily_performance_stats(
+    days: int = Query(30, ge=1, le=90),
+    current_user: dict = Depends(get_current_user)
+):
+    """Get daily performance stats for charts"""
+    service = get_gsc_service()
+    return await service.get_daily_stats(days=days)
+
+
+@api_router.get("/gsc/device-breakdown")
+async def get_device_performance(
+    days: int = Query(7, ge=1, le=90),
+    current_user: dict = Depends(get_current_user)
+):
+    """Get performance breakdown by device type"""
+    service = get_gsc_service()
+    return await service.get_device_breakdown(days=days)
+
+
+@api_router.get("/gsc/country-breakdown")
+async def get_country_performance(
+    days: int = Query(7, ge=1, le=90),
+    limit: int = Query(10, ge=1, le=50),
+    current_user: dict = Depends(get_current_user)
+):
+    """Get performance breakdown by country"""
+    service = get_gsc_service()
+    return await service.get_country_breakdown(days=days, limit=limit)
+
+
+@api_router.post("/gsc/submit-url")
+async def submit_url_for_indexing(
+    url: str = Query(..., description="URL to submit"),
+    current_user: dict = Depends(get_current_user)
+):
+    """Submit a URL for indexing via Google Indexing API"""
+    service = get_gsc_service()
+    return await service.submit_url_for_indexing(url)
+
+
+@api_router.post("/gsc/submit-batch")
+async def submit_urls_batch(
+    urls: List[str],
+    current_user: dict = Depends(get_current_user)
+):
+    """Submit multiple URLs for indexing"""
+    service = get_gsc_service()
+    return await service.submit_urls_batch(urls)
+
+
+@api_router.post("/gsc/submit-all-articles")
+async def submit_all_articles_for_indexing(
+    limit: int = Query(50, ge=1, le=100),
+    current_user: dict = Depends(require_admin)
+):
+    """Submit all published articles for indexing"""
+    service = get_gsc_service()
+    
+    # Get published article URLs
+    articles = await db.articles.find(
+        {"status": "published"},
+        {"_id": 0, "slug": 1}
+    ).sort("published_at", -1).limit(limit).to_list(limit)
+    
+    site_url = os.environ.get('SITE_URL', 'https://transfernews.de')
+    urls = [f"{site_url}/news/{article['slug']}" for article in articles if article.get('slug')]
+    
+    return await service.submit_urls_batch(urls)
+
+
+# =============================================================================
 # STARTUP - Auto-start scheduler
 # =============================================================================
 
