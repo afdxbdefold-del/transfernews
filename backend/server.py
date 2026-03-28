@@ -1864,7 +1864,7 @@ async def get_public_author(slug: str):
 
 from scheduler import (
     start_scheduler, stop_scheduler, get_scheduler_status,
-    trigger_rss_scrape, trigger_event_processing, trigger_full_prerender
+    trigger_rss_scrape, trigger_speed_pipeline, trigger_prerender
 )
 from prerender import (
     prerender_article, prerender_homepage, prerender_all_articles,
@@ -1901,15 +1901,15 @@ async def manual_rss_scrape(current_user: dict = Depends(require_admin)):
 
 @api_router.post("/scheduler/trigger/events")
 async def manual_event_processing(current_user: dict = Depends(require_admin)):
-    """Manually trigger event processing"""
-    result = await trigger_event_processing()
-    return {"triggered": "event_processing", "result": result}
+    """Manually trigger speed pipeline (instant articles)"""
+    result = await trigger_speed_pipeline()
+    return {"triggered": "speed_pipeline", "result": result}
 
 
 @api_router.post("/scheduler/trigger/prerender")
 async def manual_prerender(current_user: dict = Depends(require_admin)):
-    """Manually trigger full pre-render"""
-    result = await trigger_full_prerender()
+    """Manually trigger pre-render"""
+    result = await trigger_prerender()
     return {"triggered": "prerender", "result": result}
 
 
@@ -2171,6 +2171,76 @@ async def submit_all_articles_for_indexing(
     urls = [f"{site_url}/news/{article['slug']}" for article in articles if article.get('slug')]
     
     return await service.submit_urls_batch(urls)
+
+
+# =============================================================================
+# SPEED PIPELINE ROUTES
+# =============================================================================
+
+@api_router.post("/pipeline/full")
+async def trigger_full_pipeline(current_user: dict = Depends(require_admin)):
+    """Trigger complete speed pipeline: RSS → Events → Articles → Sitemap"""
+    from scheduler import trigger_full_pipeline
+    result = await trigger_full_pipeline()
+    return {"triggered": "full_pipeline", "result": result}
+
+
+@api_router.post("/pipeline/rss")
+async def trigger_rss_only(current_user: dict = Depends(require_admin)):
+    """Trigger RSS scraping only"""
+    from scheduler import trigger_rss_scrape
+    result = await trigger_rss_scrape()
+    return {"triggered": "rss", "result": result}
+
+
+@api_router.post("/pipeline/process")
+async def trigger_process_only(current_user: dict = Depends(require_admin)):
+    """Trigger speed pipeline processing only"""
+    from scheduler import trigger_speed_pipeline
+    result = await trigger_speed_pipeline()
+    return {"triggered": "speed_pipeline", "result": result}
+
+
+@api_router.post("/pipeline/gpt-rewrite")
+async def trigger_gpt_rewrite(current_user: dict = Depends(require_admin)):
+    """Trigger GPT rewrite for instant articles"""
+    from scheduler import trigger_gpt_rewrite
+    result = await trigger_gpt_rewrite()
+    return {"triggered": "gpt_rewrite", "result": result}
+
+
+@api_router.get("/pipeline/status")
+async def get_pipeline_status(current_user: dict = Depends(get_current_user)):
+    """Get speed pipeline status"""
+    from scheduler import get_scheduler_status
+    from datetime import timedelta
+    
+    # Pending events
+    pending_events = await db.events.count_documents({"status": "pending"})
+    
+    # Articles needing GPT rewrite
+    needs_rewrite = await db.articles.count_documents({"needs_gpt_rewrite": True})
+    
+    # Recent articles (last hour)
+    cutoff = (datetime.now(timezone.utc) - timedelta(hours=1)).isoformat()
+    recent_articles = await db.articles.count_documents({"published_at": {"$gte": cutoff}})
+    
+    # Instant vs GPT-rewritten
+    instant_count = await db.articles.count_documents({"is_instant": True, "needs_gpt_rewrite": True})
+    rewritten_count = await db.articles.count_documents({"gpt_rewritten_at": {"$exists": True}})
+    
+    scheduler_status = get_scheduler_status()
+    
+    return {
+        "pipeline": {
+            "pending_events": pending_events,
+            "needs_gpt_rewrite": needs_rewrite,
+            "recent_articles_1h": recent_articles,
+            "instant_articles": instant_count,
+            "rewritten_articles": rewritten_count,
+        },
+        "scheduler": scheduler_status
+    }
 
 
 # =============================================================================

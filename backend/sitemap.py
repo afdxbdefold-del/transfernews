@@ -263,6 +263,16 @@ async def ping_google_news_sitemap() -> bool:
     return await ping_google_sitemap(f"{SITE_URL}/news-sitemap.xml")
 
 
+async def ping_google_sitemaps() -> dict:
+    """Ping Google for both sitemaps"""
+    results = {
+        "main_sitemap": await ping_google_sitemap(f"{SITE_URL}/api/sitemap.xml"),
+        "news_sitemap": await ping_google_sitemap(f"{SITE_URL}/api/news-sitemap.xml"),
+    }
+    logger.info(f"[SITEMAP] Google ping results: {results}")
+    return results
+
+
 # ========================
 # ARTICLE UPDATE TRACKER
 # ========================

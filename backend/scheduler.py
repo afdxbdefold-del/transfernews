@@ -1,12 +1,15 @@
 """
-TransferNews.de - Background Scheduler
-Automatisierte Tasks für News-Scraping und Pre-Rendering
+TransferNews.de - SPEED-OPTIMIZED SCHEDULER
+============================================
 
-Cronjobs:
-- Alle 30 Min: RSS-Feeds scrapen
-- Alle 30 Min: Pending Events verarbeiten
-- Alle 6 Stunden: Cache aufräumen
-- Alle 12 Stunden: Alle Artikel pre-rendern
+INTERVALLE:
+- RSS Scraping:     alle 2 Minuten
+- Event Processing: alle 1 Minute (kontinuierlich)
+- GPT Rewrite:      alle 5 Minuten
+- Sitemap:          alle 2 Minuten
+- Internal Links:   alle 3 Minuten
+- Pre-Render:       alle 2 Stunden
+- Cache Cleanup:    alle 6 Stunden
 """
 
 import asyncio
@@ -14,255 +17,318 @@ import logging
 from datetime import datetime, timezone
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
-from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
+from motor.motor_asyncio import AsyncIOMotorClient
 import os
 
 logger = logging.getLogger(__name__)
 
-# Global scheduler instance
-scheduler: AsyncIOScheduler = None
-db: AsyncIOMotorDatabase = None
+# Scheduler Instance
+scheduler = AsyncIOScheduler()
 
+# DB Connection
+_db = None
 
 def get_db():
-    """Get database connection"""
-    global db
-    if db is None:
-        mongo_url = os.environ.get('MONGO_URL')
-        db_name = os.environ.get('DB_NAME', 'transfernews')
-        client = AsyncIOMotorClient(mongo_url)
-        db = client[db_name]
-    return db
+    global _db
+    if _db is None:
+        client = AsyncIOMotorClient(os.environ.get('MONGO_URL'))
+        _db = client[os.environ.get('DB_NAME', 'transfernews')]
+    return _db
 
 
-# ========================
-# SCHEDULED TASKS
-# ========================
+# =============================================================================
+# JOB 1: RSS SCRAPING (alle 2 Minuten)
+# =============================================================================
 
-async def task_scrape_rss_feeds():
-    """
-    Scrape RSS feeds for new transfer news
-    Runs every 30 minutes
-    """
-    logger.info("[CRON] Starting RSS feed scrape...")
-    
+async def task_rss_scrape():
+    """Scraped alle RSS-Feeds nach Transfer-News"""
     try:
         from data_import import import_rss_events
+        db = get_db()
+        result = await import_rss_events(db)
         
-        database = get_db()
-        result = await import_rss_events(database)
+        new_events = result.get("new_events", 0)
+        if new_events > 0:
+            logger.info(f"[CRON:RSS] {new_events} neue Events gefunden")
         
-        logger.info(f"[CRON] RSS scrape complete: {result}")
         return result
-        
     except Exception as e:
-        logger.error(f"[CRON] RSS scrape failed: {e}")
+        logger.error(f"[CRON:RSS] Error: {e}")
         return {"error": str(e)}
 
 
-async def task_process_pending_events():
-    """
-    Process pending events and generate articles
-    Runs every 30 minutes (after RSS scrape)
-    """
-    logger.info("[CRON] Processing pending events...")
-    
+# =============================================================================
+# JOB 2: SPEED PIPELINE (alle 1 Minute)
+# =============================================================================
+
+async def task_speed_pipeline():
+    """Verarbeitet pending Events SOFORT zu Artikeln"""
     try:
-        from data_import import process_pending_events
+        from speed_pipeline import SpeedPipeline
+        db = get_db()
+        pipeline = SpeedPipeline(db)
+        result = await pipeline.process_pending_events(limit=20)
         
-        database = get_db()
-        result = await process_pending_events(database, limit=5)
-        
-        logger.info(f"[CRON] Event processing complete: {result}")
-        
-        # Pre-render newly created articles
-        if result.get("articles_created", 0) > 0:
-            await task_prerender_new_articles()
+        if result.get("created", 0) > 0 or result.get("updated", 0) > 0:
+            logger.info(f"[CRON:SPEED] Created: {result.get('created', 0)}, Updated: {result.get('updated', 0)}, Avg: {result.get('total_time_ms', 0) // max(1, result.get('processed', 1))}ms")
         
         return result
-        
     except Exception as e:
-        logger.error(f"[CRON] Event processing failed: {e}")
+        logger.error(f"[CRON:SPEED] Error: {e}")
         return {"error": str(e)}
 
 
-async def task_prerender_new_articles():
-    """
-    Pre-render recently published articles
-    Called after article creation
-    """
-    logger.info("[CRON] Pre-rendering new articles...")
-    
+# =============================================================================
+# JOB 3: GPT REWRITE (alle 5 Minuten)
+# =============================================================================
+
+async def task_gpt_rewrite():
+    """Verbessert Instant-Artikel mit GPT (Hintergrund)"""
     try:
-        from prerender import prerender_all_articles, prerender_homepage
+        from speed_pipeline import GPTRewriter
+        db = get_db()
+        rewriter = GPTRewriter(db)
+        result = await rewriter.process_rewrite_queue(limit=3)
         
-        database = get_db()
-        result = await prerender_all_articles(database, limit=10)
+        if result.get("rewritten", 0) > 0:
+            logger.info(f"[CRON:GPT] {result.get('rewritten', 0)} Artikel verbessert")
         
-        # Also refresh homepage
+        return result
+    except Exception as e:
+        logger.error(f"[CRON:GPT] Error: {e}")
+        return {"error": str(e)}
+
+
+# =============================================================================
+# JOB 4: NEWS-SITEMAP UPDATE (alle 2 Minuten)
+# =============================================================================
+
+async def task_sitemap_update():
+    """Aktualisiert news-sitemap.xml"""
+    try:
+        from sitemap import generate_news_sitemap, ping_google_sitemaps
+        db = get_db()
+        
+        # Sitemap generieren
+        sitemap = await generate_news_sitemap(db)
+        
+        # Google pingen (nur wenn neue Artikel)
+        article_count = sitemap.count("<url>")
+        if article_count > 0:
+            await ping_google_sitemaps()
+            logger.info(f"[CRON:SITEMAP] {article_count} URLs, Google gepingt")
+        
+        return {"articles": article_count}
+    except Exception as e:
+        logger.error(f"[CRON:SITEMAP] Error: {e}")
+        return {"error": str(e)}
+
+
+# =============================================================================
+# JOB 5: INTERNAL LINKS (alle 3 Minuten)
+# =============================================================================
+
+async def task_internal_links():
+    """Aktualisiert interne Verlinkungen"""
+    try:
+        from speed_pipeline import InternalLinksUpdater
+        db = get_db()
+        updater = InternalLinksUpdater(db)
+        
+        # Neue Artikel ohne Links
+        articles = await db.articles.find(
+            {"links_updated": {"$ne": True}},
+            {"_id": 0}
+        ).sort("published_at", -1).limit(10).to_list(10)
+        
+        for article in articles:
+            await updater.update_links_for_article(article)
+            await db.articles.update_one(
+                {"id": article.get("id")},
+                {"$set": {"links_updated": True}}
+            )
+        
+        if articles:
+            logger.info(f"[CRON:LINKS] {len(articles)} Artikel verlinkt")
+        
+        return {"updated": len(articles)}
+    except Exception as e:
+        logger.error(f"[CRON:LINKS] Error: {e}")
+        return {"error": str(e)}
+
+
+# =============================================================================
+# JOB 6: PRE-RENDERING (alle 2 Stunden)
+# =============================================================================
+
+async def task_prerender():
+    """Pre-rendert Seiten für Google"""
+    try:
+        from prerender import prerender_homepage, prerender_recent_articles
+        
         await prerender_homepage()
+        count = await prerender_recent_articles(limit=20)
         
-        logger.info(f"[CRON] Pre-render complete: {result}")
-        return result
-        
+        logger.info(f"[CRON:PRERENDER] {count} Seiten gerendert")
+        return {"pages": count}
     except Exception as e:
-        logger.error(f"[CRON] Pre-render failed: {e}")
+        logger.error(f"[CRON:PRERENDER] Error: {e}")
         return {"error": str(e)}
 
 
-async def task_cleanup_cache():
-    """
-    Clean up old pre-render cache files
-    Runs every 6 hours
-    """
-    logger.info("[CRON] Cleaning up cache...")
-    
+# =============================================================================
+# JOB 7: CACHE CLEANUP (alle 6 Stunden)
+# =============================================================================
+
+async def task_cache_cleanup():
+    """Löscht alte Cache-Dateien"""
     try:
         from prerender import cleanup_old_cache
+        result = await cleanup_old_cache(max_age_hours=48)
         
-        removed = await cleanup_old_cache(max_age_hours=48)
+        if result.get("deleted", 0) > 0:
+            logger.info(f"[CRON:CLEANUP] {result.get('deleted', 0)} Dateien gelöscht")
         
-        logger.info(f"[CRON] Cache cleanup complete: {removed} files removed")
-        return {"removed": removed}
-        
-    except Exception as e:
-        logger.error(f"[CRON] Cache cleanup failed: {e}")
-        return {"error": str(e)}
-
-
-async def task_full_prerender():
-    """
-    Full pre-render of all articles
-    Runs every 12 hours
-    """
-    logger.info("[CRON] Starting full pre-render...")
-    
-    try:
-        from prerender import prerender_all_articles, prerender_homepage
-        
-        database = get_db()
-        result = await prerender_all_articles(database, limit=100)
-        await prerender_homepage()
-        
-        logger.info(f"[CRON] Full pre-render complete: {result}")
         return result
-        
     except Exception as e:
-        logger.error(f"[CRON] Full pre-render failed: {e}")
+        logger.error(f"[CRON:CLEANUP] Error: {e}")
         return {"error": str(e)}
 
 
-async def task_ping_google_sitemaps():
-    """
-    Ping Google about sitemap updates
-    Runs every hour
-    """
-    logger.info("[CRON] Pinging Google sitemaps...")
-    
+# =============================================================================
+# JOB 8: HEALTH CHECK (alle 5 Minuten)
+# =============================================================================
+
+async def task_health_check():
+    """Prüft System-Gesundheit"""
     try:
-        from sitemap import ping_google_sitemap, ping_google_news_sitemap
+        db = get_db()
         
-        sitemap_ok = await ping_google_sitemap()
-        news_ok = await ping_google_news_sitemap()
+        # Pending Events zählen
+        pending = await db.events.count_documents({"status": "pending"})
         
-        logger.info(f"[CRON] Google ping: sitemap={sitemap_ok}, news={news_ok}")
-        return {"sitemap": sitemap_ok, "news": news_ok}
+        # Artikel der letzten Stunde
+        from datetime import timedelta
+        cutoff = (datetime.now(timezone.utc) - timedelta(hours=1)).isoformat()
+        recent = await db.articles.count_documents({"published_at": {"$gte": cutoff}})
         
+        if pending > 50:
+            logger.warning(f"[HEALTH] {pending} pending events - Pipeline möglicherweise überlastet")
+        
+        return {"pending_events": pending, "recent_articles": recent}
     except Exception as e:
-        logger.error(f"[CRON] Google ping failed: {e}")
+        logger.error(f"[HEALTH] Error: {e}")
         return {"error": str(e)}
 
 
-# ========================
+# =============================================================================
 # SCHEDULER SETUP
-# ========================
+# =============================================================================
 
 def setup_scheduler():
-    """Initialize and configure the scheduler"""
-    global scheduler
+    """Konfiguriert alle Cronjobs"""
     
-    if scheduler is not None:
-        return scheduler
-    
-    scheduler = AsyncIOScheduler(timezone="UTC")
-    
-    # RSS Scraping - every 30 minutes
+    # Job 1: RSS Scraping - alle 2 Minuten
     scheduler.add_job(
-        task_scrape_rss_feeds,
-        IntervalTrigger(minutes=30),
-        id="scrape_rss",
-        name="Scrape RSS Feeds",
-        replace_existing=True
+        task_rss_scrape,
+        IntervalTrigger(minutes=2),
+        id='rss_scrape',
+        name='RSS Feed Scraping',
+        replace_existing=True,
+        max_instances=1
     )
     
-    # Process Events - every 30 minutes (offset by 5 min from RSS)
+    # Job 2: Speed Pipeline - alle 1 Minute
     scheduler.add_job(
-        task_process_pending_events,
-        IntervalTrigger(minutes=30, start_date=datetime.now(timezone.utc).replace(second=0, microsecond=0)),
-        id="process_events",
-        name="Process Pending Events",
-        replace_existing=True
+        task_speed_pipeline,
+        IntervalTrigger(minutes=1),
+        id='speed_pipeline',
+        name='Speed Pipeline Processing',
+        replace_existing=True,
+        max_instances=1
     )
     
-    # Cache Cleanup - every 6 hours
+    # Job 3: GPT Rewrite - alle 5 Minuten
     scheduler.add_job(
-        task_cleanup_cache,
+        task_gpt_rewrite,
+        IntervalTrigger(minutes=5),
+        id='gpt_rewrite',
+        name='GPT Article Rewrite',
+        replace_existing=True,
+        max_instances=1
+    )
+    
+    # Job 4: Sitemap Update - alle 2 Minuten
+    scheduler.add_job(
+        task_sitemap_update,
+        IntervalTrigger(minutes=2),
+        id='sitemap_update',
+        name='News Sitemap Update',
+        replace_existing=True,
+        max_instances=1
+    )
+    
+    # Job 5: Internal Links - alle 3 Minuten
+    scheduler.add_job(
+        task_internal_links,
+        IntervalTrigger(minutes=3),
+        id='internal_links',
+        name='Internal Links Update',
+        replace_existing=True,
+        max_instances=1
+    )
+    
+    # Job 6: Pre-Rendering - alle 2 Stunden
+    scheduler.add_job(
+        task_prerender,
+        IntervalTrigger(hours=2),
+        id='prerender',
+        name='Page Pre-Rendering',
+        replace_existing=True,
+        max_instances=1
+    )
+    
+    # Job 7: Cache Cleanup - alle 6 Stunden
+    scheduler.add_job(
+        task_cache_cleanup,
         IntervalTrigger(hours=6),
-        id="cleanup_cache",
-        name="Cleanup Cache",
-        replace_existing=True
+        id='cache_cleanup',
+        name='Cache Cleanup',
+        replace_existing=True,
+        max_instances=1
     )
     
-    # Full Pre-render - every 12 hours
+    # Job 8: Health Check - alle 5 Minuten
     scheduler.add_job(
-        task_full_prerender,
-        IntervalTrigger(hours=12),
-        id="full_prerender",
-        name="Full Pre-render",
-        replace_existing=True
+        task_health_check,
+        IntervalTrigger(minutes=5),
+        id='health_check',
+        name='System Health Check',
+        replace_existing=True,
+        max_instances=1
     )
     
-    # Google Ping - every hour
-    scheduler.add_job(
-        task_ping_google_sitemaps,
-        IntervalTrigger(hours=1),
-        id="ping_google",
-        name="Ping Google Sitemaps",
-        replace_existing=True
-    )
-    
-    logger.info("[SCHEDULER] Configured with 5 jobs")
-    return scheduler
+    logger.info("[SCHEDULER] All jobs configured")
+    logger.info("[SCHEDULER] Intervals: RSS=2min, Pipeline=1min, GPT=5min, Sitemap=2min")
 
 
 def start_scheduler():
-    """Start the background scheduler"""
-    global scheduler
-    
-    if scheduler is None:
-        scheduler = setup_scheduler()
-    
+    """Startet den Scheduler"""
     if not scheduler.running:
+        setup_scheduler()
         scheduler.start()
         logger.info("[SCHEDULER] Started")
-    
-    return scheduler
 
 
 def stop_scheduler():
-    """Stop the background scheduler"""
-    global scheduler
-    
-    if scheduler and scheduler.running:
+    """Stoppt den Scheduler"""
+    if scheduler.running:
         scheduler.shutdown()
         logger.info("[SCHEDULER] Stopped")
 
 
 def get_scheduler_status() -> dict:
-    """Get current scheduler status and job info"""
-    if scheduler is None:
-        return {"running": False, "jobs": []}
-    
+    """Gibt Scheduler-Status zurück"""
     jobs = []
     for job in scheduler.get_jobs():
         jobs.append({
@@ -274,24 +340,49 @@ def get_scheduler_status() -> dict:
     
     return {
         "running": scheduler.running,
-        "jobs": jobs
+        "jobs": jobs,
+        "job_count": len(jobs)
     }
 
 
-# ========================
-# MANUAL TRIGGERS
-# ========================
+# =============================================================================
+# MANUAL TRIGGERS (für API)
+# =============================================================================
 
 async def trigger_rss_scrape():
-    """Manually trigger RSS scrape"""
-    return await task_scrape_rss_feeds()
+    """Manueller RSS-Scrape"""
+    return await task_rss_scrape()
 
+async def trigger_speed_pipeline():
+    """Manuelle Pipeline-Verarbeitung"""
+    return await task_speed_pipeline()
 
-async def trigger_event_processing():
-    """Manually trigger event processing"""
-    return await task_process_pending_events()
+async def trigger_gpt_rewrite():
+    """Manueller GPT-Rewrite"""
+    return await task_gpt_rewrite()
 
+async def trigger_sitemap_update():
+    """Manuelles Sitemap-Update"""
+    return await task_sitemap_update()
 
-async def trigger_full_prerender():
-    """Manually trigger full pre-render"""
-    return await task_full_prerender()
+async def trigger_prerender():
+    """Manuelles Pre-Rendering"""
+    return await task_prerender()
+
+async def trigger_full_pipeline():
+    """Komplette Pipeline manuell ausführen"""
+    results = {}
+    
+    # 1. RSS Scrape
+    results["rss"] = await task_rss_scrape()
+    
+    # 2. Speed Pipeline
+    results["pipeline"] = await task_speed_pipeline()
+    
+    # 3. Sitemap
+    results["sitemap"] = await task_sitemap_update()
+    
+    # 4. Internal Links
+    results["links"] = await task_internal_links()
+    
+    return results

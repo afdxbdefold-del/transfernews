@@ -22,6 +22,31 @@ Deutschsprachige Fußball-Transfer-News-Plattform auf der Domain transfernews.de
 
 ## What's Been Implemented
 
+### 28. März 2026 - SPEED-PIPELINE OPTIMIZATION
+- ✅ **Instant-Artikel System** (`/app/backend/speed_pipeline.py`):
+  - Artikel in < 100ms erstellen (ohne GPT!)
+  - Template-basierte Titel und Bodies
+  - Sofort veröffentlicht
+- ✅ **Async GPT-Rewrite**:
+  - Verbessert Instant-Artikel im Hintergrund
+  - Blockiert nicht die Veröffentlichung
+- ✅ **Dedupe-System**:
+  - Key: Player + Club + Transfer-Type
+  - Status-Upgrade statt Duplikate (GERÜCHT → OFFIZIELL)
+- ✅ **Schnellere Cronjobs** (`/app/backend/scheduler.py`):
+  - RSS: alle 2 Minuten (vorher: 30 Min)
+  - Pipeline: alle 1 Minute
+  - Sitemap: alle 2 Minuten
+  - GPT-Rewrite: alle 5 Minuten
+- ✅ **Internal Links System**:
+  - Automatische Verlinkung nach Artikel-Erstellung
+  - Spieler- und Club-Seiten aktualisiert
+- ✅ **API Endpoints**:
+  - `POST /api/pipeline/full` - Komplette Pipeline
+  - `POST /api/pipeline/rss` - Nur RSS
+  - `POST /api/pipeline/process` - Nur Processing
+  - `GET /api/pipeline/status` - Pipeline Status
+
 ### 28. März 2026 - INTERNATIONALE RSS-QUELLEN
 - ✅ **15 RSS-Quellen** konfiguriert (vorher: 6)
 - ✅ **Tier-1 International:** Sky Sports UK, ESPN FC, BBC Football
