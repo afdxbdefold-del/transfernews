@@ -94,55 +94,39 @@ class InstantArticleGenerator:
         }
     }
     
-    # Body Templates (kurz, faktisch, kein AI-Smell)
+    # Body Templates (kurz, faktisch, kein AI-Smell, OHNE Markdown)
     BODY_TEMPLATES = {
-        "official": """## Transfer bestätigt
+        "official": """{source_name} berichtet: {headline}
 
-{source_name} berichtet: {headline}
+{player} wechselt zu {club}. Der Transfer wurde offiziell bestätigt.
 
-{player} wird künftig für {club} auflaufen. Der Wechsel wurde offiziell verkündet.
+Laut {source_name} ist der Deal abgeschlossen. Details zu Ablöse und Vertragslaufzeit wurden noch nicht bekannt gegeben.
 
-## Quelle
+Der Wechsel stärkt den Kader von {club}. {player} soll das Team verstärken.""",
 
-Laut {source_name} ist der Deal perfekt. Weitere Details werden erwartet.
+        "confirmed": """{source_name} meldet: {headline}
 
-*Zuletzt aktualisiert: {timestamp}*""",
+{player} und {club} haben sich geeinigt. Die offizielle Bestätigung steht noch aus.
 
-        "confirmed": """## Einigung erzielt
+Die Verhandlungen sind abgeschlossen. Der Transfer soll zeitnah verkündet werden.
 
-{source_name} meldet: {headline}
+Für {club} bedeutet die Verpflichtung eine wichtige Verstärkung.""",
 
-{player} und {club} haben sich geeinigt. Der Transfer steht kurz vor dem Abschluss.
+        "advanced": """{source_name} berichtet: {headline}
 
-## Hintergrund
+{player} befindet sich in Gesprächen mit {club}. Ein Wechsel gilt als wahrscheinlich.
 
-Die Verhandlungen sind abgeschlossen. Eine offizielle Bestätigung wird in Kürze erwartet.
+Die Verhandlungen sind weit fortgeschritten. Beide Seiten arbeiten an einer Einigung.
 
-*Zuletzt aktualisiert: {timestamp}*""",
+Eine Entscheidung wird zeitnah erwartet.""",
 
-        "advanced": """## Verhandlungen laufen
+        "rumour": """{source_name} meldet: {headline}
 
-{source_name} berichtet: {headline}
+{player} wird mit einem Wechsel zu {club} in Verbindung gebracht. Konkrete Verhandlungen sind bisher nicht bestätigt.
 
-{player} befindet sich in Gesprächen mit {club}. Ein Wechsel ist möglich.
+Das Interesse von {club} an {player} soll laut Berichten bestehen. Offizielle Stellungnahmen gibt es noch nicht.
 
-## Aktuelle Lage
-
-Die Verhandlungen sind fortgeschritten. Eine Entscheidung könnte bald fallen.
-
-*Zuletzt aktualisiert: {timestamp}*""",
-
-        "rumour": """## Transfer-Gerücht
-
-{source_name} meldet: {headline}
-
-{player} wird mit einem Wechsel zu {club} in Verbindung gebracht.
-
-## Einschätzung
-
-Es handelt sich um ein Gerücht. Konkrete Verhandlungen sind nicht bestätigt.
-
-*Zuletzt aktualisiert: {timestamp}*"""
+Ob es zu konkreten Gesprächen kommt, ist derzeit offen."""
     }
     
     def __init__(self):
@@ -723,6 +707,13 @@ FORBIDDEN_PHRASES = [
     "bemerkenswert",
     "interessanterweise",
     "überraschenderweise",
+    "werden zeigen",
+    "sind gespannt",
+    "bleibt spannend",
+    "wird sich zeigen",
+    "abzuwarten bleibt",
+    "beobachter sind gespannt",
+    "die kommenden wochen",
 ]
 
 
@@ -740,46 +731,38 @@ class GPTRewriter:
     """
     
     MIN_WORDS = 120
-    MAX_WORDS = 220
-    MAX_SENTENCE_WORDS = 20
+    MAX_WORDS = 200
+    MAX_SENTENCE_WORDS = 25  # Etwas lockerer
     
-    SYSTEM_PROMPT = """Du bist Redakteur bei transfernews.de.
+    SYSTEM_PROMPT = """Du bist Sportredakteur bei transfernews.de.
 
-AUFGABE: Verbessere den Artikel strukturell und sprachlich.
+AUFGABE: Schreibe einen sachlichen Transfer-Artikel.
 
-WICHTIGSTE REGEL: Output muss MINDESTENS so lang sein wie Input!
+LÄNGE: Exakt 120-180 Wörter. Nicht mehr, nicht weniger.
 
-STRUKTUR (PFLICHT - 4 Absätze):
-1. FAKTEN (1-2 Sätze): Wer wechselt wohin? Was ist passiert?
-2. KONTEXT (2-3 Sätze): Vereinssituation, Quelle, Hintergrund aus dem Original
-3. EINORDNUNG (2-3 Sätze): Was bedeutet der Transfer? Stärkt er das Team?
-4. AUSBLICK (1-2 Sätze): Was ist der nächste Schritt?
+STRUKTUR (4 kurze Absätze):
+Absatz 1: Die Nachricht in 2 Sätzen (Wer, Was, Wohin)
+Absatz 2: Hintergrund in 2-3 Sätzen (Quelle, Kontext)
+Absatz 3: Bedeutung in 2-3 Sätzen (Was heißt das für Verein/Spieler)
+Absatz 4: Ausblick in 1-2 Sätzen (Nächster Schritt)
 
-LÄNGE: 120-200 Wörter. Wenn Input länger, dann Output auch länger!
+REGELN:
+- Maximal 22 Wörter pro Satz
+- Keine ## Überschriften
+- Keine *Kursiv* oder **Fett**
+- Keine Zeitstempel
+- Aktive Sprache
 
-ABSOLUT VERBOTEN - FÜHRT ZU SOFORTIGER ABLEHNUNG:
-- ERFUNDENE FAKTEN (Spielerzahlen, Statistiken, Geburtsort, frühere Vereine)
-- ERFUNDENE ZITATE
-- ERFUNDENE ABLÖSESUMMEN
-- "Es bleibt abzuwarten", "Die Zeit wird zeigen", "Es wird spannend"
-- "Man darf gespannt sein", "Möglicherweise", "Eventuell"
-- "In den kommenden Wochen", "In naher Zukunft"
-- "Bemerkenswert", "Interessanterweise"
-- Informationen aus Original weglassen
+VERBOTEN:
+- Erfundene Zahlen oder Statistiken
+- "Es bleibt abzuwarten"
+- "Möglicherweise"
+- "Bemerkenswert"
+- "In naher Zukunft"
+- "Es wird spannend"
+- Jede Spekulation
 
-ERLAUBT zur Kontext-Erweiterung:
-- Allgemeine Aussagen: "Der Spieler soll das Mittelfeld verstärken"
-- Position benennen wenn im Original genannt
-- Liga benennen wenn klar
-- KEINE spezifischen Zahlen, Daten, Statistiken erfinden!
-
-SATZREGELN:
-- Max 18 Wörter pro Satz
-- Subjekt-Verb-Objekt
-- Aktiv statt Passiv
-- Keine Wiederholungen
-
-OUTPUT: Nur der Artikel-Text. Keine Überschriften. Keine Markdown-Formatierung."""
+NUR OUTPUT: Der Artikel-Text, sonst nichts."""
     
     def __init__(self, db: AsyncIOMotorDatabase):
         self.db = db
