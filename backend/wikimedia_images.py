@@ -542,6 +542,43 @@ class WikimediaSearcher:
         elif any(part in title_lower for part in name_parts):
             score += 5
         
+        # ===== EINZELBILD vs GRUPPENFOTO (+20 / -35) =====
+        # Indikatoren für Gruppenfotos (mehrere Personen)
+        group_indicators = [
+            " and ", " und ", " avec ", " con ",  # Mehrere Namen
+            "team", "squad", "mannschaft", "lineup", "aufstellung",
+            "group", "gruppe", "training session",
+            "celebration", "jubel",
+        ]
+        
+        # Prüfe auf Komma-getrennte Namen (mehr als 1 Komma = Gruppenfoto)
+        comma_count = title_lower.count(",")
+        
+        # Indikatoren für Einzelbilder
+        single_indicators = [
+            "portrait", "porträt", "headshot", "profile",
+            "close-up", "closeup", "nahaufnahme",
+            "(cropped)", "extracted",
+        ]
+        
+        # Prüfe ob der Spielername allein im Titel steht
+        title_words = title_lower.replace(",", " ").replace(".", " ").split()
+        player_words = player_name.lower().split()
+        other_capitalized = [w for w in img.title.split() if w[0].isupper() and w.lower() not in player_words and len(w) > 2]
+        
+        is_group_photo = (
+            any(ind in title_lower for ind in group_indicators) or
+            comma_count >= 2 or  # Mehrere Kommas = mehrere Namen
+            len(other_capitalized) > 2  # Mehr als 2 andere Eigennamen
+        )
+        is_single_photo = any(ind in title_lower for ind in single_indicators)
+        
+        if is_single_photo and not is_group_photo:
+            score += 20  # Bonus für Einzelbilder
+        elif is_group_photo:
+            score -= 35  # STARKER Malus für Gruppenfotos
+            rejection_reasons.append("Gruppenfoto erkannt")
+        
         # ===== NEGATIVE SIGNALE =====
         negative_terms = ["logo", "wappen", "crest", "badge", "poster", 
                          "collage", "screenshot", "icon", "flag", "map",
@@ -549,11 +586,6 @@ class WikimediaSearcher:
         if any(term in title_lower for term in negative_terms):
             score -= 30
             rejection_reasons.append("Logo/Grafik erkannt")
-        
-        # ===== GRUPPEN-SIGNALE =====
-        group_terms = ["team photo", "squad photo", "mannschaftsfoto", "group photo"]
-        if any(term in title_lower for term in group_terms):
-            score -= 15
         
         # ===== AUTOR VORHANDEN (+5) =====
         if img.author and len(img.author) > 2:
@@ -563,7 +595,11 @@ class WikimediaSearcher:
             rejection_reasons.append("Kein Autor")
         
         # ===== FINALE VALIDIERUNG =====
-        final_score = max(0, min(100, score))
+        # Gruppenfotos werden gecapped
+        if is_group_photo:
+            final_score = min(85, score)  # Gruppenfotos maximal 85
+        else:
+            final_score = max(0, min(100, score))
         
         # Bild ist valid wenn Score >= 50 UND keine kritischen Ablehnungsgründe
         critical_rejections = [r for r in rejection_reasons if "Lizenz" in r or "Kein Fußballer" in r]
