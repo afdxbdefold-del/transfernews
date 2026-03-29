@@ -878,19 +878,29 @@ NUR OUTPUT: Der Artikel-Text mit H2-Überschriften."""
             club = article.get('club_name', '')
             from_club = article.get('from_club', '')
             
-            # === KONTEXT-RECHERCHE ===
-            researcher = get_context_researcher()
-            context_data = await researcher.research_transfer(
-                player_name=player,
-                from_club=from_club,
-                to_club=club
-            )
+            # === AGGRESSIVES KONTEXT-SCRAPING ===
+            from context_scraper import get_context_service
             
-            context_text = context_data.get("context_text", "")
-            has_context = context_data.get("has_context", False)
+            context_service = get_context_service(self.db)
             
-            if has_context:
-                logger.info(f"[GPT] Found online context for {player}/{club}")
+            # Paralleles Scraping aller Quellen
+            player_context = await context_service.get_full_player_context(player or title)
+            
+            if player_context.found:
+                context_text = player_context.to_context_text()
+                has_context = True
+                logger.info(f"[GPT] ENRICHED: {player} from {', '.join(player_context.sources)}")
+            else:
+                # Fallback auf altes System
+                from context_research import get_context_researcher
+                researcher = get_context_researcher()
+                context_data = await researcher.research_transfer(
+                    player_name=player,
+                    from_club=from_club,
+                    to_club=club
+                )
+                context_text = context_data.get("context_text", "")
+                has_context = context_data.get("has_context", False)
             
             # GPT-Rewrite mit Kontext
             chat = LlmChat(
