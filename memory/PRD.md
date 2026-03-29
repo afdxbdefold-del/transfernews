@@ -26,6 +26,11 @@ Deutschsprachige Fußball-Transfer-News-Plattform auf der Domain transfernews.de
 ## What's Been Implemented
 
 ### 29. März 2026 - E-E-A-T TRUSTWORTHINESS SYSTEM ✅ NEU!
+- ✅ **Datenschutz-Seite** (`/datenschutz`):
+  - DSGVO-konforme Datenschutzerklärung
+  - 9 Abschnitte: Verantwortlicher, erhobene Daten, Cookies, Rechtsgrundlage, Ihre Rechte, Drittanbieter, Datensicherheit, Kontakt, Beschwerderecht
+  - Auskunfts-, Berichtigungs-, Löschungsrecht erklärt
+  - SSL-Verschlüsselung Hinweis
 - ✅ **Impressum-Seite** (`/impressum`):
   - Vollständige rechtliche Angaben gemäß § 5 TMG
   - Handelsregister, USt-IdNr., Kontaktdaten
