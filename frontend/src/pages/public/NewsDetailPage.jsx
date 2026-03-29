@@ -362,7 +362,7 @@ export default function NewsDetailPage() {
                 {/* Feature/Hero Image - Optimiert für Google Discover (min 1200px) */}
                 {(article.hero_image || article.feature_image) ? (
                   <div className="relative">
-                    <div className="aspect-video bg-gray-100">
+                    <div className="aspect-[16/10] bg-gray-100">
                       <img
                         src={article.hero_image || article.feature_image}
                         alt={article.hero_image_alt || article.title}
