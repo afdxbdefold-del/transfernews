@@ -366,7 +366,7 @@ export default function NewsDetailPage() {
                       <img
                         src={article.hero_image || article.feature_image}
                         alt={article.hero_image_alt || article.title}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover object-top"
                         width={article.hero_image_width || 1200}
                         height={article.hero_image_height || 675}
                       />
