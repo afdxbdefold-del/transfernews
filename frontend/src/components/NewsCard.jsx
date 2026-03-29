@@ -130,7 +130,7 @@ export function HeroCard({ article, isLive = false }) {
     <Link to={"/news/" + article.slug} className="block relative" data-testid={"hero-" + article.id}>
       <div className="relative aspect-[16/8] bg-gray-900">
         <ArticleImage
-          src={article.feature_image}
+          src={article.hero_image || article.feature_image}
           alt={article.title}
           className="w-full h-full object-cover"
           articleId={article.id}
@@ -195,7 +195,7 @@ export function NewsCardHorizontal({ article, showVideo = false }) {
       {/* Image */}
       <div className="relative w-[100px] h-[70px] flex-shrink-0 bg-gray-100 overflow-hidden rounded">
         <ArticleImage
-          src={article.feature_image}
+          src={article.hero_image || article.feature_image}
           alt={article.title}
           className="w-full h-full object-cover"
           articleId={article.id}
