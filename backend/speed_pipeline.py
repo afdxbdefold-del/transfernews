@@ -700,22 +700,154 @@ class SpeedPipeline:
 
 
 # =============================================================================
-# GPT REWRITE SYSTEM (Async, Hintergrund)
+# GPT REWRITE SYSTEM - QUALITÄTS-ENGINE
 # =============================================================================
+
+# Verbotene AI-Phrasen
+FORBIDDEN_PHRASES = [
+    "es bleibt abzuwarten",
+    "es wird spannend",
+    "die zeit wird zeigen",
+    "nur die zukunft wird zeigen",
+    "es ist noch unklar",
+    "es könnte sein",
+    "möglicherweise",
+    "eventuell",
+    "unter umständen",
+    "in den kommenden wochen",
+    "in naher zukunft",
+    "es ist nicht auszuschließen",
+    "es ist anzunehmen",
+    "man darf gespannt sein",
+    "es zeichnet sich ab",
+    "bemerkenswert",
+    "interessanterweise",
+    "überraschenderweise",
+]
+
 
 class GPTRewriter:
     """
-    Verbessert Instant-Artikel asynchron mit GPT.
-    Läuft im Hintergrund, blockiert nicht die Veröffentlichung.
+    Qualitäts-Rewrite-Engine für Transfer-Artikel.
+    
+    REGELN:
+    - Mindestens 120 Wörter, Ziel 120-220
+    - Strukturierte Absätze (Fakten → Kontext → Einordnung)
+    - Keine Kürzungen
+    - Keine AI-Floskeln
+    - Max 20 Wörter pro Satz
+    - Fallback auf Original wenn Rewrite schlechter
     """
+    
+    MIN_WORDS = 120
+    MAX_WORDS = 220
+    MAX_SENTENCE_WORDS = 20
+    
+    SYSTEM_PROMPT = """Du bist Redakteur bei transfernews.de.
+
+AUFGABE: Verbessere den Artikel strukturell und sprachlich.
+
+WICHTIGSTE REGEL: Output muss MINDESTENS so lang sein wie Input!
+
+STRUKTUR (PFLICHT - 4 Absätze):
+1. FAKTEN (1-2 Sätze): Wer wechselt wohin? Was ist passiert?
+2. KONTEXT (2-3 Sätze): Vereinssituation, Quelle, Hintergrund aus dem Original
+3. EINORDNUNG (2-3 Sätze): Was bedeutet der Transfer? Stärkt er das Team?
+4. AUSBLICK (1-2 Sätze): Was ist der nächste Schritt?
+
+LÄNGE: 120-200 Wörter. Wenn Input länger, dann Output auch länger!
+
+ABSOLUT VERBOTEN - FÜHRT ZU SOFORTIGER ABLEHNUNG:
+- ERFUNDENE FAKTEN (Spielerzahlen, Statistiken, Geburtsort, frühere Vereine)
+- ERFUNDENE ZITATE
+- ERFUNDENE ABLÖSESUMMEN
+- "Es bleibt abzuwarten", "Die Zeit wird zeigen", "Es wird spannend"
+- "Man darf gespannt sein", "Möglicherweise", "Eventuell"
+- "In den kommenden Wochen", "In naher Zukunft"
+- "Bemerkenswert", "Interessanterweise"
+- Informationen aus Original weglassen
+
+ERLAUBT zur Kontext-Erweiterung:
+- Allgemeine Aussagen: "Der Spieler soll das Mittelfeld verstärken"
+- Position benennen wenn im Original genannt
+- Liga benennen wenn klar
+- KEINE spezifischen Zahlen, Daten, Statistiken erfinden!
+
+SATZREGELN:
+- Max 18 Wörter pro Satz
+- Subjekt-Verb-Objekt
+- Aktiv statt Passiv
+- Keine Wiederholungen
+
+OUTPUT: Nur der Artikel-Text. Keine Überschriften. Keine Markdown-Formatierung."""
     
     def __init__(self, db: AsyncIOMotorDatabase):
         self.db = db
     
+    def validate_rewrite(self, original: str, rewrite: str) -> tuple[bool, str]:
+        """
+        Validiert den Rewrite gegen Qualitätsregeln.
+        
+        Returns:
+            (is_valid, rejection_reason)
+        """
+        import re
+        
+        original_words = len(original.split())
+        rewrite_words = len(rewrite.split())
+        
+        # Regel 1: Mindestlänge
+        if rewrite_words < self.MIN_WORDS:
+            return (False, f"Zu kurz: {rewrite_words} < {self.MIN_WORDS} Wörter")
+        
+        # Regel 2: Nicht kürzer als Original (mit 5% Toleranz)
+        min_required = int(original_words * 0.95)
+        if rewrite_words < min_required:
+            return (False, f"Kürzer als Original: {rewrite_words} vs {original_words}")
+        
+        # Regel 3: Keine verbotenen Phrasen
+        rewrite_lower = rewrite.lower()
+        for phrase in FORBIDDEN_PHRASES:
+            if phrase in rewrite_lower:
+                return (False, f"Verbotene Phrase: '{phrase}'")
+        
+        # Regel 4: Satzlänge prüfen
+        sentences = [s.strip() for s in rewrite.replace('\n', ' ').split('.') if s.strip()]
+        long_sentences = [s for s in sentences if len(s.split()) > self.MAX_SENTENCE_WORDS]
+        if len(long_sentences) > 1:  # Max 1 langer Satz erlaubt
+            return (False, f"Zu viele lange Sätze (>{self.MAX_SENTENCE_WORDS} Wörter): {len(long_sentences)}")
+        
+        # Regel 5: Mindestens 5 Sätze
+        if len(sentences) < 5:
+            return (False, f"Zu wenig Sätze: {len(sentences)} < 5")
+        
+        # Regel 6: Prüfe auf erfundene Statistiken (Zahlen die nicht im Original waren)
+        original_numbers = set(re.findall(r'\b\d+\b', original))
+        rewrite_numbers = set(re.findall(r'\b\d+\b', rewrite))
+        new_numbers = rewrite_numbers - original_numbers
+        # Filtere harmlose Zahlen (Jahre, kleine Zahlen)
+        suspicious_numbers = [n for n in new_numbers if int(n) > 10 and int(n) < 2020]
+        if len(suspicious_numbers) > 2:
+            return (False, f"Verdacht auf erfundene Statistiken: {suspicious_numbers}")
+        
+        return (True, "OK")
+    
+    def clean_rewrite(self, text: str) -> str:
+        """Bereinigt den Rewrite-Output"""
+        # Entferne ## Überschriften
+        import re
+        text = re.sub(r'^##\s*.*$', '', text, flags=re.MULTILINE)
+        # Entferne mehrfache Leerzeilen
+        text = re.sub(r'\n{3,}', '\n\n', text)
+        # Entferne Markdown
+        text = re.sub(r'\*\*([^*]+)\*\*', r'\1', text)
+        text = re.sub(r'\*([^*]+)\*', r'\1', text)
+        return text.strip()
+    
     async def rewrite_article(self, article_id: str) -> bool:
         """
         Verbessert einen Artikel mit GPT.
-        NUR Umformulierung, KEINE neuen Fakten!
+        Fallback auf Original wenn Rewrite schlechter.
         """
         try:
             from dotenv import load_dotenv
@@ -737,73 +869,125 @@ class GPTRewriter:
             if not article:
                 return False
             
-            # GPT-Rewrite mit korrekter emergentintegrations Syntax
+            original_body = article.get('body', '')
+            original_words = len(original_body.split())
+            title = article.get('title', '')
+            player = article.get('player_name', '')
+            club = article.get('club_name', '')
+            
+            # GPT-Rewrite
             chat = LlmChat(
                 api_key=api_key,
                 session_id=f"rewrite-{article_id}",
-                system_message="""Du bist ein erfahrener Sportjournalist bei transfernews.de, Deutschlands führendem Transfer-Portal.
-
-AUFGABE: Schreibe den folgenden Artikel-Entwurf zu einem hochwertigen, professionellen Nachrichtenartikel um.
-
-QUALITÄTSSTANDARDS:
-1. FAKTEN: NUR die vorhandenen Informationen verwenden. KEINE neuen Details erfinden!
-2. LÄNGE: Mindestens 150 Wörter, optimal 200-300 Wörter
-3. STRUKTUR:
-   - Einleitung: Das Wichtigste zuerst (Wer? Was? Wann?)
-   - ## Hintergrund (Kontext zum Transfer/Spieler)
-   - ## Einschätzung (Was bedeutet das? Wie geht es weiter?)
-4. STIL:
-   - Deutscher Sportjournalismus (kein AI-Sprech!)
-   - Aktive Formulierungen, lebendige Sprache
-   - Fachbegriffe aus dem Fußball nutzen
-   - Keine Floskeln wie "Es bleibt abzuwarten"
-5. SEO: Spieler- und Vereinsnamen im Text wiederholen
-
-VERBOTEN:
-- Neue Fakten erfinden
-- "Laut Berichten" ohne konkrete Quelle
-- Übertriebene Spekulationen
-- Englische Begriffe (außer Fachbegriffe)
-
-OUTPUT: Nur der fertige Artikel-Body, keine Metadaten."""
+                system_message=self.SYSTEM_PROMPT
             ).with_model("openai", "gpt-4o")
             
-            prompt = f"""Verbessere diesen Artikel:
+            prompt = f"""ARTIKEL ZUM VERBESSERN:
 
-TITEL: {article.get('title', '')}
+TITEL: {title}
+SPIELER: {player}
+VEREIN: {club}
 
-AKTUELLER TEXT:
-{article.get('body', '')}
+ORIGINAL ({original_words} Wörter):
+{original_body}
 
-Liefere NUR den verbesserten Text."""
+WICHTIG: Dein Output muss mindestens {max(self.MIN_WORDS, original_words)} Wörter haben!
+Liefere NUR den verbesserten Artikel-Text."""
             
             user_message = UserMessage(text=prompt)
             response = await chat.send_message(user_message)
             
-            if response and len(response) > 100:
-                await self.db.articles.update_one(
-                    {"id": article_id},
-                    {
-                        "$set": {
-                            "body": response,
-                            "needs_gpt_rewrite": False,
-                            "gpt_rewritten_at": datetime.now(timezone.utc).isoformat(),
-                            "word_count": len(response.split()),
-                            "reading_time_minutes": max(1, len(response.split()) // 200),
-                        }
+            if not response:
+                logger.warning(f"[GPT] Empty response for {title[:30]}")
+                return False
+            
+            # Bereinigen
+            rewrite = self.clean_rewrite(response)
+            
+            # Validieren
+            is_valid, reason = self.validate_rewrite(original_body, rewrite)
+            
+            if not is_valid:
+                logger.warning(f"[GPT] REJECTED: {reason} - {title[:30]}")
+                
+                # Retry mit expliziterem Prompt
+                retry_prompt = f"""DEIN VORHERIGER OUTPUT WURDE ABGELEHNT!
+Grund: {reason}
+
+ORIGINAL ({original_words} Wörter):
+{original_body}
+
+ANFORDERUNGEN:
+- Mindestens {self.MIN_WORDS} Wörter (du hattest {len(rewrite.split())})
+- Mindestens 3 Absätze
+- Keine verbotenen Phrasen
+- Max 20 Wörter pro Satz
+
+Schreibe den Artikel JETZT korrekt!"""
+                
+                user_message = UserMessage(text=retry_prompt)
+                response = await chat.send_message(user_message)
+                
+                if response:
+                    rewrite = self.clean_rewrite(response)
+                    is_valid, reason = self.validate_rewrite(original_body, rewrite)
+                
+                if not is_valid:
+                    logger.error(f"[GPT] FINAL REJECT: {reason} - Using original")
+                    # Fallback: Original behalten, aber Flag entfernen
+                    await self.db.articles.update_one(
+                        {"id": article_id},
+                        {"$set": {"needs_gpt_rewrite": False, "rewrite_failed": True}}
+                    )
+                    return False
+            
+            # Erfolg: Speichern
+            new_words = len(rewrite.split())
+            await self.db.articles.update_one(
+                {"id": article_id},
+                {
+                    "$set": {
+                        "body": rewrite,
+                        "needs_gpt_rewrite": False,
+                        "gpt_rewritten_at": datetime.now(timezone.utc).isoformat(),
+                        "word_count": new_words,
+                        "reading_time_minutes": max(1, new_words // 200),
+                        "rewrite_validation": "passed",
                     }
-                )
-                logger.info(f"[GPT] Article rewritten: {article.get('title', '')[:40]}")
-                return True
+                }
+            )
+            logger.info(f"[GPT] ✓ {title[:30]}... ({original_words} → {new_words} Wörter)")
+            return True
         
         except Exception as e:
             logger.error(f"[GPT] Rewrite error: {e}")
         
         return False
     
+    async def generate_meta_description(self, article: dict) -> str:
+        """
+        Generiert Meta-Description nach Regeln:
+        - 1-2 Sätze
+        - Nur Fakten
+        - Keine Werbung/Clickbait
+        """
+        title = article.get('title', '')
+        player = article.get('player_name', 'Spieler')
+        club = article.get('club_name', 'Verein')
+        status = article.get('transfer_status', 'GERÜCHT')
+        
+        if status == "OFFIZIELL":
+            return f"{player} wechselt zu {club}. Der Transfer wurde offiziell bestätigt."
+        elif status == "BESTÄTIGT":
+            return f"{player} und {club} haben sich geeinigt. Offizielle Bestätigung steht aus."
+        elif status == "FORTGESCHRITTEN":
+            return f"{player} verhandelt mit {club}. Einigung in Sicht."
+        else:
+            return f"{player} wird mit {club} in Verbindung gebracht. Details zum möglichen Transfer."
+    
     async def process_rewrite_queue(self, limit: int = 5) -> dict:
         """Verarbeitet ausstehende Rewrites"""
-        result = {"rewritten": 0, "errors": 0}
+        result = {"rewritten": 0, "errors": 0, "rejected": 0}
         
         # Artikel die Rewrite brauchen
         articles = await self.db.articles.find(
@@ -815,7 +999,12 @@ Liefere NUR den verbesserten Text."""
             if success:
                 result["rewritten"] += 1
             else:
-                result["errors"] += 1
+                # Prüfen ob rejected oder error
+                updated = await self.db.articles.find_one({"id": article.get("id")})
+                if updated and updated.get("rewrite_failed"):
+                    result["rejected"] += 1
+                else:
+                    result["errors"] += 1
         
         return result
 
