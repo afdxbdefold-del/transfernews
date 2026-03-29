@@ -207,13 +207,18 @@ export default function NewsDetailPage() {
           <meta name="description" content={article.excerpt || article.title || ''} />
           <meta property="og:title" content={article.title || 'Transfer News'} />
           <meta property="og:description" content={article.excerpt || article.title || ''} />
-          <meta property="og:image" content={article.feature_image ? window.location.origin + article.feature_image : ''} />
+          {/* Google Discover optimiertes Bild (min 1200px) */}
+          <meta property="og:image" content={article.og_image || article.hero_image || (article.feature_image ? window.location.origin + article.feature_image : '')} />
+          <meta property="og:image:width" content={article.hero_image_width || "1200"} />
+          <meta property="og:image:height" content={article.hero_image_height || "675"} />
           <meta property="og:type" content="article" />
           <meta property="article:published_time" content={article.published_at || ''} />
+          <meta property="article:modified_time" content={article.updated_at || article.published_at || ''} />
           <meta property="article:section" content="Transfer News" />
           <meta name="twitter:card" content="summary_large_image" />
           <meta name="twitter:title" content={article.title || 'Transfer News'} />
           <meta name="twitter:description" content={article.excerpt || article.title || ''} />
+          <meta name="twitter:image" content={article.og_image || article.hero_image || ''} />
           <meta name="robots" content="max-image-preview:large" />
         </Helmet>
       )}
@@ -247,13 +252,15 @@ export default function NewsDetailPage() {
 
               {/* Article Card */}
               <div className="bg-white">
-                {/* Feature Image */}
-                {article.feature_image ? (
+                {/* Feature/Hero Image - Optimiert für Google Discover (min 1200px) */}
+                {(article.hero_image || article.feature_image) ? (
                   <div className="relative aspect-video bg-gray-100">
                     <img
-                      src={article.feature_image}
-                      alt={article.title}
+                      src={article.hero_image || article.feature_image}
+                      alt={article.hero_image_alt || article.title}
                       className="w-full h-full object-cover"
+                      width={article.hero_image_width || 1200}
+                      height={article.hero_image_height || 675}
                     />
                     {/* Breaking Badge on Image */}
                     {article.is_breaking && (

@@ -178,11 +178,52 @@ Es handelt sich um ein Gerücht. Konkrete Verhandlungen sind nicht bestätigt.
         # Default: Rumour
         return "rumour"
     
-    def extract_entities(self, headline: str, body: str = "") -> Dict[str, str]:
-        """Extrahiert Spieler und Club aus Text"""
+    def extract_entities(self, headline: str, body: str = "") -> Dict[str, any]:
+        """
+        Extrahiert Spieler und Club aus Text.
+        Nutzt die erweiterte entity_recognition.py für bessere Ergebnisse.
+        """
+        try:
+            from entity_recognition import get_entity_recognizer
+            recognizer = get_entity_recognizer()
+            
+            text = f"{headline} {body}"
+            result = recognizer.recognize_all(text)
+            
+            player_match = result.get("player")
+            club_match = result.get("to_club")
+            from_club_match = result.get("from_club")
+            
+            player = player_match.canonical_name if player_match else "Unbekannter Spieler"
+            club = club_match.canonical_name if club_match else "Unbekannter Verein"
+            from_club = from_club_match.canonical_name if from_club_match else None
+            
+            # Zusätzliche Metadaten für Bilder und SEO
+            player_metadata = player_match.metadata if player_match else {}
+            club_metadata = club_match.metadata if club_match else {}
+            
+            return {
+                "player": player,
+                "club": club,
+                "from_club": from_club,
+                "transfer_type": result.get("transfer_type", "unknown"),
+                "confidence": result.get("confidence", 0.3),
+                "player_position": player_metadata.get("position"),
+                "player_nationality": player_metadata.get("nationality"),
+                "player_popularity": player_metadata.get("popularity", 50),
+                "club_country": club_metadata.get("country"),
+                "club_league": club_metadata.get("league"),
+                "club_popularity": club_metadata.get("popularity", 50),
+            }
+        except Exception as e:
+            logger.warning(f"[ENTITY] Fallback to simple extraction: {e}")
+            # Fallback zur einfachen Extraktion
+            return self._simple_extract_entities(headline, body)
+    
+    def _simple_extract_entities(self, headline: str, body: str = "") -> Dict[str, str]:
+        """Fallback: Einfache Entity-Extraktion"""
         text = f"{headline} {body}".lower()
         
-        # Known players (erweitert)
         KNOWN_PLAYERS = {
             "mbappe": "Kylian Mbappé", "haaland": "Erling Haaland",
             "bellingham": "Jude Bellingham", "messi": "Lionel Messi",
@@ -191,24 +232,14 @@ Es handelt sich um ein Gerücht. Konkrete Verhandlungen sind nicht bestätigt.
             "wirtz": "Florian Wirtz", "saka": "Bukayo Saka",
             "palmer": "Cole Palmer", "vinicius": "Vinícius Jr.",
             "pedri": "Pedri", "gavi": "Gavi", "yamal": "Lamine Yamal",
-            "sancho": "Jadon Sancho", "rashford": "Marcus Rashford",
-            "trafford": "James Trafford", "vicario": "Guglielmo Vicario",
         }
         
-        # Known clubs
         KNOWN_CLUBS = {
             "real madrid": "Real Madrid", "barcelona": "FC Barcelona",
             "bayern": "FC Bayern München", "dortmund": "Borussia Dortmund",
-            "manchester city": "Manchester City", "man city": "Manchester City",
-            "liverpool": "FC Liverpool", "chelsea": "FC Chelsea",
-            "arsenal": "FC Arsenal", "manchester united": "Manchester United",
-            "man united": "Manchester United", "tottenham": "Tottenham Hotspur",
-            "psg": "Paris Saint-Germain", "juventus": "Juventus Turin",
-            "inter": "Inter Mailand", "milan": "AC Milan",
-            "napoli": "SSC Neapel", "roma": "AS Rom",
-            "atletico": "Atlético Madrid", "sevilla": "FC Sevilla",
-            "newcastle": "Newcastle United", "west ham": "West Ham United",
-            "everton": "FC Everton", "leicester": "Leicester City",
+            "manchester city": "Manchester City", "liverpool": "FC Liverpool",
+            "chelsea": "FC Chelsea", "arsenal": "FC Arsenal",
+            "manchester united": "Manchester United", "psg": "Paris Saint-Germain",
         }
         
         player = "Unbekannter Spieler"
@@ -224,7 +255,7 @@ Es handelt sich um ein Gerücht. Konkrete Verhandlungen sind nicht bestätigt.
                 club = name
                 break
         
-        return {"player": player, "club": club}
+        return {"player": player, "club": club, "confidence": 0.5}
     
     def generate_title(self, event: dict) -> str:
         """Generiert SEO-optimierten Titel"""
@@ -319,6 +350,11 @@ Es handelt sich um ein Gerücht. Konkrete Verhandlungen sind nicht bestätigt.
             "source_name": source_name,
             "player_name": player,
             "club_name": club,
+            "from_club": entities.get("from_club"),
+            "player_position": entities.get("player_position"),
+            "player_nationality": entities.get("player_nationality"),
+            "club_league": entities.get("club_league"),
+            "entity_confidence": entities.get("confidence", 0.5),
             "needs_gpt_rewrite": True,  # Markierung für async Rewrite
             "is_instant": True,
             "word_count": len(body.split()),
@@ -455,6 +491,25 @@ class SpeedPipeline:
         # 5. Neuen Artikel erstellen (INSTANT!)
         article_data = self.instant_generator.generate_instant_article(event)
         article_data["dedupe_key"] = dedupe_key
+        
+        # 5b. Bild für Google Discover zuweisen
+        try:
+            from image_system import get_image_selector
+            selector = get_image_selector()
+            image_data = selector.get_image_for_article(
+                player_name=article_data.get("player_name"),
+                club_name=article_data.get("club_name"),
+                league=article_data.get("club_league"),
+                transfer_status=article_data.get("transfer_status")
+            )
+            article_data["hero_image"] = image_data["url"]
+            article_data["hero_image_width"] = image_data["width"]
+            article_data["hero_image_height"] = image_data["height"]
+            article_data["hero_image_alt"] = image_data["alt"]
+            article_data["og_image"] = image_data["url"]
+            logger.debug(f"[IMAGE] Assigned {image_data['source']} image")
+        except Exception as e:
+            logger.warning(f"[IMAGE] Could not assign image: {e}")
         
         # 6. In DB speichern
         from models import generate_uuid
@@ -640,11 +695,14 @@ class GPTRewriter:
         NUR Umformulierung, KEINE neuen Fakten!
         """
         try:
-            from emergentintegrations.llm.chat import LlmChat
+            from dotenv import load_dotenv
+            load_dotenv()
             
-            api_key = os.environ.get("LLM_API_KEY")
+            from emergentintegrations.llm.chat import LlmChat, UserMessage
+            
+            api_key = os.environ.get("EMERGENT_LLM_KEY")
             if not api_key:
-                logger.warning("[GPT] No API key, skipping rewrite")
+                logger.warning("[GPT] No EMERGENT_LLM_KEY found, skipping rewrite")
                 return False
             
             # Artikel laden
@@ -656,7 +714,7 @@ class GPTRewriter:
             if not article:
                 return False
             
-            # GPT-Rewrite
+            # GPT-Rewrite mit korrekter emergentintegrations Syntax
             chat = LlmChat(
                 api_key=api_key,
                 session_id=f"rewrite-{article_id}",
@@ -673,7 +731,7 @@ REGELN:
 6. Max 300 Wörter
 
 OUTPUT: Nur der verbesserte Artikel-Body, kein JSON."""
-            )
+            ).with_model("openai", "gpt-4o")
             
             prompt = f"""Verbessere diesen Artikel:
 
@@ -684,7 +742,8 @@ AKTUELLER TEXT:
 
 Liefere NUR den verbesserten Text."""
             
-            response = await chat.send_async(prompt)
+            user_message = UserMessage(text=prompt)
+            response = await chat.send_message(user_message)
             
             if response and len(response) > 100:
                 await self.db.articles.update_one(

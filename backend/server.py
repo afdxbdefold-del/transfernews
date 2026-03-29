@@ -2243,6 +2243,34 @@ async def get_pipeline_status(current_user: dict = Depends(get_current_user)):
     }
 
 
+@api_router.post("/pipeline/update-images")
+async def trigger_image_update(current_user: dict = Depends(require_admin)):
+    """Update images for articles missing hero_image (for Google Discover)"""
+    try:
+        from image_system import create_image_service
+        image_service = await create_image_service(db)
+        result = await image_service.update_missing_images(limit=50)
+        return {"triggered": "image_update", "result": result}
+    except Exception as e:
+        logger.error(f"Image update error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/pipeline/image-status")
+async def get_image_status(current_user: dict = Depends(get_current_user)):
+    """Get image assignment status"""
+    total_articles = await db.articles.count_documents({})
+    with_hero_image = await db.articles.count_documents({"hero_image": {"$exists": True}})
+    without_hero_image = await db.articles.count_documents({"hero_image": {"$exists": False}})
+    
+    return {
+        "total_articles": total_articles,
+        "with_hero_image": with_hero_image,
+        "without_hero_image": without_hero_image,
+        "coverage_percent": round((with_hero_image / total_articles * 100) if total_articles > 0 else 0, 1)
+    }
+
+
 # =============================================================================
 # STARTUP - Auto-start scheduler
 # =============================================================================

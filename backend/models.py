@@ -417,6 +417,12 @@ class ArticleBase(BaseModel):
     social_title: Optional[str] = None
     social_description: Optional[str] = None
     feature_image: Optional[str] = None
+    # Google Discover optimierte Bilder (min 1200px)
+    hero_image: Optional[str] = None
+    hero_image_width: Optional[int] = None
+    hero_image_height: Optional[int] = None
+    hero_image_alt: Optional[str] = None
+    og_image: Optional[str] = None
     linked_player_ids: List[str] = []
     linked_club_ids: List[str] = []
     linked_competition_ids: List[str] = []
@@ -429,6 +435,12 @@ class ArticleBase(BaseModel):
     transfer_probability: Optional[int] = None  # 0-100%
     transfer_status: Optional[str] = None  # GERÜCHT, FORTGESCHRITTEN, BESTÄTIGT, OFFIZIELL
     transfer_status_raw: Optional[str] = None  # rumour, advanced, confirmed, official
+    # Entity-Erkennung Felder
+    player_name: Optional[str] = None
+    club_name: Optional[str] = None
+    from_club: Optional[str] = None
+    club_league: Optional[str] = None
+    entity_confidence: Optional[float] = None
     author_name: Optional[str] = "Redaktion"
     author_slug: Optional[str] = "redaktion"
     reading_time_minutes: Optional[int] = None

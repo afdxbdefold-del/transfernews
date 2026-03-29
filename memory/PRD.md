@@ -17,10 +17,28 @@ Deutschsprachige Fußball-Transfer-News-Plattform auf der Domain transfernews.de
 - **Datenbank:** MongoDB
 - **Auth:** JWT-basiertes Admin-Login
 - **LLM:** emergentintegrations (GPT-4o via Emergent LLM Key)
-- **RSS:** feedparser für 6 deutsche Nachrichtenquellen
-- **Bilder:** aiohttp für Downloads, Unsplash/Pexels für Stadionbilder
+- **RSS:** feedparser für 15 internationale Nachrichtenquellen (DE/EN/ES)
+- **Bilder:** Unsplash für Google Discover-optimierte Hero-Images (≥1200px)
 
 ## What's Been Implemented
+
+### 29. März 2026 - ENTITY & IMAGE SYSTEM für Google Discover
+- ✅ **Entity Recognition System** (`/app/backend/entity_recognition.py`):
+  - 500+ Spieler-Datenbank mit Metadaten (Position, Nationalität, Popularität)
+  - 200+ Club-Datenbank mit Liga-Zuordnung
+  - Transfer-Typ-Erkennung (Leihe, Permanent, Ablösefrei, etc.)
+  - Confidence-Score für bessere Deduplizierung
+- ✅ **Image System** (`/app/backend/image_system.py`):
+  - Automatische Zuweisung von ≥1200px Bildern für Google Discover
+  - Club- und Liga-spezifische Bilder
+  - `og:image` Tags mit korrekten Dimensionen
+  - `twitter:card` Summary Large Image
+- ✅ **GPT-Rewrite Fix**:
+  - `EMERGENT_LLM_KEY` korrekt in `speed_pipeline.py` integriert
+  - Async Rewrite funktioniert jetzt zuverlässig
+- ✅ **API Endpoints**:
+  - `POST /api/pipeline/update-images` - Bilder für alte Artikel nachträglich zuweisen
+  - `GET /api/pipeline/image-status` - Image-Coverage-Status
 
 ### 28. März 2026 - SPEED-PIPELINE OPTIMIZATION
 - ✅ **Instant-Artikel System** (`/app/backend/speed_pipeline.py`):
