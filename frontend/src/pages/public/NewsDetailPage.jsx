@@ -246,7 +246,16 @@ export default function NewsDetailPage() {
   // Split body into paragraphs for ad insertion
   // Handle both \n\n (double newline) and ## headings
   const paragraphs = article?.body
-    ?.split(/\n\n|\n(?=## )/)
+    ?.split(/\n\n/)
+    .flatMap(block => {
+      // Check if block contains a heading followed by text
+      const headingMatch = block.match(/^(## .+?)(?:\n(.+))?$/s);
+      if (headingMatch && headingMatch[2]) {
+        // Split heading and following text
+        return [headingMatch[1], headingMatch[2]];
+      }
+      return [block];
+    })
     .map(p => p.trim())
     .filter(Boolean) || [];
 
