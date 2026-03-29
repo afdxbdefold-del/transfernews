@@ -1254,130 +1254,202 @@ class RSSFeedScraper:
     
     FEEDS = {
         # =============================================
-        # TIER 1 - BREAKING NEWS (Höchste Priorität)
+        # 🌍 GLOBAL SOURCES (Priority 1 - Instant)
         # =============================================
+        "caughtoffside": {
+            "url": "https://www.caughtoffside.com/feed/",
+            "name": "CaughtOffside",
+            "category": "tier_1",
+            "language": "en",
+            "trust_score": 85,
+            "region": "global",
+            "speed": "fast",
+        },
+        "90min": {
+            "url": "https://www.90min.com/posts.rss",
+            "name": "90min",
+            "category": "tier_1",
+            "language": "en",
+            "trust_score": 82,
+            "region": "global",
+            "speed": "fast",
+        },
+        "footballtransfers": {
+            "url": "https://www.footballtransfers.com/en/feed",
+            "name": "FootballTransfers",
+            "category": "tier_2",
+            "language": "en",
+            "trust_score": 88,
+            "region": "global",
+            "speed": "medium",
+        },
+        "goal_com": {
+            "url": "https://www.goal.com/feeds/en/news",
+            "name": "Goal",
+            "category": "tier_2",
+            "language": "en",
+            "trust_score": 80,
+            "region": "global",
+            "speed": "medium",
+        },
         
-        # Internationale Top-Quellen
+        # =============================================
+        # 🇬🇧 UK SOURCES (Premier League Dominanz)
+        # =============================================
         "sky_sports_uk": {
-            "url": "https://www.skysports.com/rss/12040",  # Football News
-            "name": "Sky Sports UK",
+            "url": "https://www.skysports.com/rss/12040",
+            "name": "Sky Sports",
             "category": "tier_1",
             "language": "en",
             "trust_score": 95,
-        },
-        "espn_fc": {
-            "url": "https://www.espn.com/espn/rss/soccer/news",
-            "name": "ESPN FC",
-            "category": "tier_1",
-            "language": "en",
-            "trust_score": 88,
+            "region": "uk",
+            "speed": "very_fast",
         },
         "bbc_football": {
-            "url": "https://feeds.bbci.co.uk/sport/football/rss.xml",
-            "name": "BBC Football",
-            "category": "tier_1",
-            "language": "en",
-            "trust_score": 92,
-        },
-        
-        # =============================================
-        # TIER 1 - DEUTSCHE TRANSFER-SPEZIALISTEN
-        # =============================================
-        "transfermarkt_news": {
-            "url": "https://www.transfermarkt.de/rss/news",
-            "name": "Transfermarkt",
-            "category": "tier_1",
-            "language": "de",
-            "trust_score": 90,
-        },
-        "kicker_transfers": {
-            "url": "https://rss.kicker.de/news/aktuell",
-            "name": "Kicker",
-            "category": "tier_1",
-            "language": "de",
-            "trust_score": 88,
-        },
-        "sport1_fussball": {
-            "url": "https://www.sport1.de/rss/fussball",
-            "name": "Sport1",
-            "category": "tier_1",
-            "language": "de",
-            "trust_score": 82,
-        },
-        
-        # =============================================
-        # TIER 2 - INTERNATIONALE QUELLEN
-        # =============================================
-        "goal_com": {
-            "url": "https://www.goal.com/feeds/en/news",
-            "name": "Goal.com",
+            "url": "http://feeds.bbci.co.uk/sport/football/rss.xml",
+            "name": "BBC Sport",
             "category": "tier_2",
             "language": "en",
-            "trust_score": 75,
+            "trust_score": 92,
+            "region": "uk",
+            "speed": "medium",
         },
-        "football_italia": {
-            "url": "https://www.football-italia.net/rss.xml",
-            "name": "Football Italia",
+        "teamtalk": {
+            "url": "https://www.teamtalk.com/feed",
+            "name": "TEAMtalk",
             "category": "tier_2",
             "language": "en",
             "trust_score": 78,
-        },
-        "marca_football": {
-            "url": "https://e00-marca.uecdn.es/rss/futbol/futbol-internacional.xml",
-            "name": "Marca",
-            "category": "tier_2",
-            "language": "es",
-            "trust_score": 80,
-        },
-        "guardian_football": {
-            "url": "https://www.theguardian.com/football/rss",
-            "name": "The Guardian Football",
-            "category": "tier_2",
-            "language": "en",
-            "trust_score": 85,
+            "region": "uk",
+            "speed": "fast",
         },
         
         # =============================================
-        # TIER 3 - DEUTSCHE MAINSTREAM-QUELLEN
+        # 🇪🇸 SPAIN SOURCES (La Liga + Südamerika)
         # =============================================
-        "sportbuzzer": {
-            "url": "https://www.sportbuzzer.de/rss/fussball.xml",
-            "name": "Sportbuzzer",
-            "category": "tier_3",
-            "language": "de",
-            "trust_score": 70,
+        "marca": {
+            "url": "https://e00-marca.uecdn.es/rss/futbol.xml",
+            "name": "Marca",
+            "category": "tier_1",
+            "language": "es",
+            "trust_score": 90,
+            "region": "spain",
+            "speed": "very_fast",
         },
-        "spox_fussball": {
-            "url": "https://www.spox.com/de/rss/fussball.xml",
-            "name": "SPOX",
-            "category": "tier_3",
-            "language": "de",
-            "trust_score": 72,
+        "as_spain": {
+            "url": "https://as.com/rss/tags/ultimas_noticias.xml",
+            "name": "AS",
+            "category": "tier_2",
+            "language": "es",
+            "trust_score": 85,
+            "region": "spain",
+            "speed": "fast",
         },
-        "t_online_sport": {
-            "url": "https://www.t-online.de/sport/feed.rss",
-            "name": "T-Online Sport",
-            "category": "tier_3",
-            "language": "de",
-            "trust_score": 68,
+        "mundo_deportivo": {
+            "url": "https://www.mundodeportivo.com/rss/futbol.xml",
+            "name": "Mundo Deportivo",
+            "category": "tier_2",
+            "language": "es",
+            "trust_score": 83,
+            "region": "spain",
+            "speed": "fast",
         },
-        "welt_sport": {
-            "url": "https://www.welt.de/feeds/section/sport.rss",
-            "name": "Welt Sport", 
-            "category": "tier_3",
-            "language": "de",
-            "trust_score": 70,
+        
+        # =============================================
+        # 🇮🇹 ITALY SOURCES (Serie A Leak Zone)
+        # =============================================
+        "gazzetta": {
+            "url": "https://www.gazzetta.it/rss/home.xml",
+            "name": "Gazzetta dello Sport",
+            "category": "tier_1",
+            "language": "it",
+            "trust_score": 88,
+            "region": "italy",
+            "speed": "very_fast",
         },
-        "spiegel_sport": {
-            "url": "https://www.spiegel.de/sport/index.rss",
-            "name": "Spiegel Sport",
-            "category": "tier_3",
+        "corriere_sport": {
+            "url": "https://www.corrieredellosport.it/rss/home.xml",
+            "name": "Corriere dello Sport",
+            "category": "tier_2",
+            "language": "it",
+            "trust_score": 82,
+            "region": "italy",
+            "speed": "fast",
+        },
+        "tuttosport": {
+            "url": "https://www.tuttosport.com/rss/home.xml",
+            "name": "Tuttosport",
+            "category": "tier_2",
+            "language": "it",
+            "trust_score": 80,
+            "region": "italy",
+            "speed": "fast",
+        },
+        
+        # =============================================
+        # 🇫🇷 FRANCE SOURCES (PSG + Talents)
+        # =============================================
+        "lequipe": {
+            "url": "https://www.lequipe.fr/rss/actu_rss_Football.xml",
+            "name": "L'Équipe",
+            "category": "tier_1",
+            "language": "fr",
+            "trust_score": 90,
+            "region": "france",
+            "speed": "very_fast",
+        },
+        "rmc_sport": {
+            "url": "https://rmcsport.bfmtv.com/rss/football/",
+            "name": "RMC Sport",
+            "category": "tier_2",
+            "language": "fr",
+            "trust_score": 82,
+            "region": "france",
+            "speed": "fast",
+        },
+        "foot_mercato": {
+            "url": "https://www.footmercato.net/rss",
+            "name": "Foot Mercato",
+            "category": "tier_2",
+            "language": "fr",
+            "trust_score": 85,
+            "region": "france",
+            "speed": "fast",
+        },
+        
+        # =============================================
+        # 🇩🇪 GERMANY SOURCES (Bundesliga)
+        # =============================================
+        "bild_fussball": {
+            "url": "https://www.bild.de/rssfeeds/vw-fussball.xml",
+            "name": "BILD",
+            "category": "tier_1",
             "language": "de",
-            "trust_score": 75,
+            "trust_score": 85,
+            "region": "germany",
+            "speed": "very_fast",
+        },
+        "kicker": {
+            "url": "https://newsfeed.kicker.de/news/aktuell",
+            "name": "kicker",
+            "category": "tier_2",
+            "language": "de",
+            "trust_score": 90,
+            "region": "germany",
+            "speed": "medium",
+        },
+        "sport1": {
+            "url": "https://www.sport1.de/rss/news",
+            "name": "Sport1",
+            "category": "tier_2",
+            "language": "de",
+            "trust_score": 82,
+            "region": "germany",
+            "speed": "fast",
         },
     }
     
-    # Transfer keywords für verschiedene Sprachen
+    # Transfer keywords für verschiedene Sprachen (erweitert)
     TRANSFER_KEYWORDS = {
         "de": [
             "transfer", "verpflichtet", "verpflichtung",
@@ -1387,7 +1459,7 @@ class RSSFeedScraper:
             "leihe von", "leihe zu", "leihgeschäft", "ausgeliehen",
             "verkauft", "gekauft", "transfer-", "transfersumme",
             "kommt von", "geht zu", "verlässt den",
-            "neuzugang", "abgang", "rückkehr zu"
+            "neuzugang", "abgang", "rückkehr zu", "medizincheck"
         ],
         "en": [
             "transfer", "signs for", "signed for", "signing",
@@ -1396,13 +1468,31 @@ class RSSFeedScraper:
             "completes move", "agrees terms", "personal terms",
             "medical", "here we go", "done deal", "confirmed",
             "targets", "interested in", "pursuing", "chase",
-            "release clause", "contract", "extension"
+            "release clause", "contract", "extension", "agreement"
         ],
         "es": [
-            "fichaje", "ficha por", "firma con", "cesión",
-            "traspaso", "acuerdo", "negociaciones",
-            "oficial", "confirmado"
-        ]
+            "fichaje", "ficha por", "contrato", "cesión",
+            "traspaso", "acuerdo", "cierre", "llega a",
+            "se marcha", "renovación", "firma", "oficial",
+            "préstamo", "cláusula", "millones"
+        ],
+        "it": [
+            "trasferimento", "affare", "accordo", "contratto",
+            "prestito", "cessione", "ufficiale", "firma",
+            "clausola", "milioni", "arriva", "va via"
+        ],
+        "fr": [
+            "transfert", "prêt", "signature", "accord",
+            "contrat", "officiel", "rejoint", "quitte",
+            "clause", "millions", "mercato"
+        ],
+    }
+    
+    # Priority Handling für Speed-Kategorien
+    PRIORITY_SPEED = {
+        "very_fast": 0,   # Sofortige Verarbeitung
+        "fast": 1,        # Priorität 1
+        "medium": 2,      # Priorität 2
     }
     
     def _generate_dedupe_key(self, title: str, source: str) -> str:
