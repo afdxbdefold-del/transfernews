@@ -28,6 +28,8 @@ import SearchPage from "@/pages/public/SearchPage";
 import AuthorPage from "@/pages/public/AuthorPage";
 import ThemePage from "@/pages/public/ThemePage";
 import AuthorsPage from "@/pages/public/AuthorsPage";
+import ImpressumPage from "@/pages/public/ImpressumPage";
+import AboutPage from "@/pages/public/AboutPage";
 
 // Admin Pages
 import AdminLogin from "@/pages/admin/AdminLogin";
@@ -63,6 +65,8 @@ function App() {
             <Route path="/suche" element={<SearchPage />} />
             <Route path="/autor/:slug" element={<AuthorPage />} />
             <Route path="/redaktion" element={<AuthorsPage />} />
+            <Route path="/impressum" element={<ImpressumPage />} />
+            <Route path="/ueber-uns" element={<AboutPage />} />
             
             {/* Admin Routes */}
             <Route path="/admin/login" element={<AdminLogin />} />

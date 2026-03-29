@@ -25,7 +25,34 @@ Deutschsprachige Fußball-Transfer-News-Plattform auf der Domain transfernews.de
 
 ## What's Been Implemented
 
-### 29. März 2026 - STORY ENGINE (DUPLICATE KILLER) ✅ NEU!
+### 29. März 2026 - E-E-A-T TRUSTWORTHINESS SYSTEM ✅ NEU!
+- ✅ **Impressum-Seite** (`/impressum`):
+  - Vollständige rechtliche Angaben gemäß § 5 TMG
+  - Handelsregister, USt-IdNr., Kontaktdaten
+  - Verantwortlicher für Inhalt nach § 55 RStV
+  - Haftungsausschluss und Streitschlichtung
+- ✅ **Über-Uns-Seite** (`/ueber-uns`):
+  - Mission Statement und Statistiken (2M+ Leser, 12 Redakteure)
+  - Werte-Sektion: Zuverlässigkeit, Geschwindigkeit, Transparenz
+  - "So arbeiten wir" 4-Schritte-Prozess
+  - Quellen-Tier-System Erklärung
+  - Link zur Redaktionsseite
+- ✅ **Source Badge Komponente** (`NewsDetailPage.jsx`):
+  - Tier 1/2/3 Klassifizierung der Quelle
+  - Konfidenz-Score Balken (0-100%)
+  - Sekundärquellen-Anzeige
+- ✅ **Fact-Check Badge**:
+  - "Geprüfter Artikel" Siegel mit Autor
+  - Autorrolle und Aktualisierungsdatum
+- ✅ **Schema.org NewsArticle**:
+  - Vollständiges JSON-LD Markup
+  - Autor mit URL, Publisher mit Logo
+  - articleSection, wordCount, keywords
+- ✅ **Footer-Update**:
+  - "Über Uns" Sektion mit Links zu allen E-E-A-T Seiten
+  - Redaktion, Impressum, Datenschutz verlinkt
+
+### 29. März 2026 - STORY ENGINE (DUPLICATE KILLER) ✅
 - ✅ **Story-basiertes System** (`/app/backend/story_engine.py`):
   - Eine Transfer-Story = Eine URL (SEO-optimiert)
   - Mehrere Quellen → Update statt neuer Artikel
@@ -291,6 +318,7 @@ Deutschsprachige Fußball-Transfer-News-Plattform auf der Domain transfernews.de
 - [x] **AUTOR-PROFILE** (AuthorPage.jsx mit Artikel-Liste)
 - [x] **CRAWLER-SERVING** (Pre-Rendered HTML für GoogleBot & Co.)
 - [x] **WIKIMEDIA IMAGE SYSTEM** (CC-lizenzierte Spielerbilder mit Attribution)
+- [x] **E-E-A-T TRUSTWORTHINESS** (Impressum, Über Uns, Fact-Check Badges, Schema.org) ✅ NEU
 
 ### P1 (In Arbeit)
 - [x] Breaking-Engine Score-Berechnung (Event-Scoring nach Quelle, Spieler-Level, Club-Level) ✅
