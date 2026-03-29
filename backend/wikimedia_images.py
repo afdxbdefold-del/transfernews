@@ -35,22 +35,41 @@ PREFERRED_RATIO = 16 / 9
 
 # Akzeptierte Lizenzen (kommerziell nutzbar)
 ALLOWED_LICENSES = [
-    "cc-by-sa-4.0", "cc-by-sa-3.0", "cc-by-sa-2.5", "cc-by-sa-2.0",
-    "cc-by-4.0", "cc-by-3.0", "cc-by-2.5", "cc-by-2.0",
-    "cc-zero", "cc0", "public domain", "pd",
+    # CC-BY-SA Varianten
+    "cc-by-sa", "cc by-sa", "cc by sa",
+    # CC-BY Varianten  
+    "cc-by", "cc by",
+    # CC0 / Public Domain
+    "cc-zero", "cc0", "cc 0", "public domain", "pd", "pd-",
+    # GFDL und FAL
     "gfdl", "fal",
+    # Attribution
+    "attribution",
 ]
 
 # Begriffe die KEINE Spieler sind
 IGNORED_TERMS = {
+    # Ligen
     "bundesliga", "premier league", "la liga", "serie a", "ligue 1",
     "champions league", "europa league", "conference league",
+    # Deutsche Clubs
     "bayern", "dortmund", "leipzig", "leverkusen", "frankfurt",
+    "wolfsburg", "freiburg", "mainz", "köln", "stuttgart", "schalke",
+    "gladbach", "bremen", "hertha", "hoffenheim", "augsburg", "bochum",
+    "union berlin", "heidenheim",
+    # Internationale Clubs
+    "real madrid", "barcelona", "atletico madrid", "sevilla", "valencia",
+    "manchester", "liverpool", "chelsea", "arsenal", "tottenham",
+    "juventus", "milan", "inter", "napoli", "roma",
+    "paris", "psg", "marseille", "lyon",
+    # Allgemeine Begriffe
     "transfer", "transfers", "gerücht", "gerüchte", "wechsel",
     "trainer", "manager", "coach", "verein", "club", "team",
     "saison", "spieltag", "tabelle", "ergebnis", "spiel",
     "millionen", "euro", "ablöse", "vertrag", "zukunft",
     "offiziell", "bestätigt", "interesse", "verhandlung",
+    # Wörter die oft am Ende stehen
+    "madrid", "city", "united",
 }
 
 # Fallback-Bilder (eigene, lizenzfreie Bilder)
@@ -167,9 +186,12 @@ class PlayerDetector:
     """Erkennt Spielernamen aus Artikeltext"""
     
     # Muster für typische Spielernamen (Vorname Nachname)
+    # Unterstützt: Akzente (é, á, ñ, etc.), Umlaute (ä, ö, ü), Bindestriche
     NAME_PATTERN = re.compile(
-        r'\b([A-ZÄÖÜ][a-zäöüß]+(?:\s+(?:de|van|von|der|dos|da|di))?'
-        r'\s+[A-ZÄÖÜ][a-zäöüß]+(?:-[A-ZÄÖÜ][a-zäöüß]+)?)\b'
+        r'\b([A-ZÄÖÜÉÈÊÁÀÂÍÌÎÓÒÔÚÙÛÑÇ][a-zäöüßéèêëáàâãíìîïóòôõúùûñç]+'
+        r'(?:\s+(?:de|van|von|der|dos|da|di|el|la|del))?'
+        r'\s+[A-ZÄÖÜÉÈÊÁÀÂÍÌÎÓÒÔÚÙÛÑÇ][a-zäöüßéèêëáàâãíìîïóòôõúùûñç]+'
+        r'(?:-[A-ZÄÖÜÉÈÊÁÀÂÍÌÎÓÒÔÚÙÛÑÇ][a-zäöüßéèêëáàâãíìîïóòôõúùûñç]+)?)\b'
     )
     
     def detect_player(self, title: str, body: str) -> Optional[str]:
@@ -411,14 +433,34 @@ class WikimediaSearcher:
                 score -= 10
         
         # Lizenz (+/- 15)
-        license_lower = img.license_name.lower()
-        if any(lic in license_lower for lic in ALLOWED_LICENSES):
+        license_lower = img.license_name.lower().replace(" ", "").replace("-", "")
+        
+        # Normalisierte Lizenz-Checks
+        is_valid_license = False
+        
+        # CC-BY-SA (alle Versionen)
+        if "ccbysa" in license_lower or "ccbysam" in license_lower:
+            is_valid_license = True
+        # CC-BY (alle Versionen)
+        elif "ccby" in license_lower and "nc" not in license_lower:  # Exclude CC-BY-NC
+            is_valid_license = True
+        # CC0 / Public Domain
+        elif "cc0" in license_lower or "publicdomain" in license_lower or license_lower.startswith("pd"):
+            is_valid_license = True
+        # GFDL
+        elif "gfdl" in license_lower:
+            is_valid_license = True
+        # Attribution nur
+        elif "attribution" in license_lower:
+            is_valid_license = True
+        
+        if is_valid_license:
             score += 15
             img.is_valid = True
         else:
             score -= 30
             img.is_valid = False
-            img.rejection_reason = "Ungeeignete Lizenz"
+            img.rejection_reason = f"Ungeeignete Lizenz: {img.license_name}"
         
         # Name im Titel (+15)
         title_lower = img.title.lower()
@@ -563,7 +605,7 @@ class ArticleImageService:
     
     async def update_article_image(self, article_id: str, image: ArticleImage) -> bool:
         """Speichert Bild-Metadaten zum Artikel"""
-        if not self.db:
+        if self.db is None:
             return False
         
         try:
@@ -575,6 +617,7 @@ class ArticleImageService:
                         "hero_image_width": image.width,
                         "hero_image_height": image.height,
                         "hero_image_meta": image.to_dict(),
+                        "hero_image_source": "wikimedia" if not image.is_fallback else "fallback",
                         "og_image": image.url,
                     }
                 }
@@ -588,7 +631,7 @@ class ArticleImageService:
         """Sucht Bild und aktualisiert Artikel"""
         image = await self.process_article(article)
         
-        if self.db and article.get("id"):
+        if self.db is not None and article.get("id"):
             await self.update_article_image(article["id"], image)
         
         return image
@@ -599,7 +642,7 @@ class ArticleImageService:
     
     async def set_manual_image(self, article_id: str, image_data: dict) -> bool:
         """Setzt manuell ein Bild (für Admin)"""
-        if not self.db:
+        if self.db is None:
             return False
         
         image = ArticleImage(

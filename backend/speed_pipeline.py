@@ -476,32 +476,39 @@ class SpeedPipeline:
         article_data = self.instant_generator.generate_instant_article(event)
         article_data["dedupe_key"] = dedupe_key
         
-        # 5b. Bild für Google Discover zuweisen (mit RSS-Bild Priorität)
+        # 5b. Bild für Google Discover zuweisen - WIKIMEDIA SYSTEM (Priorität)
         try:
-            from image_system import ImageSelector
-            selector = ImageSelector()
+            from wikimedia_images import get_article_image_service
             
-            # RSS-Bild aus Event holen
-            rss_image_url = event.get("image_url")
+            # Wikimedia Service mit DB initialisieren
+            image_service = get_article_image_service(self.db)
             
-            # Async Bildsuche mit RSS-Priorität
-            image_data = await selector.get_best_image(
-                rss_image_url=rss_image_url,
-                player_name=article_data.get("player_name"),
-                club_name=article_data.get("club_name"),
-                league=article_data.get("club_league"),
-            )
+            # Artikel-Daten für Bildsuche vorbereiten
+            article_for_image = {
+                "title": article_data.get("title", ""),
+                "body": article_data.get("body", ""),
+            }
             
-            article_data["hero_image"] = image_data["url"]
-            article_data["hero_image_width"] = image_data["width"]
-            article_data["hero_image_height"] = image_data["height"]
-            article_data["hero_image_alt"] = image_data["alt"]
-            article_data["hero_image_source"] = image_data.get("source", "unknown")
-            article_data["og_image"] = image_data["url"]
-            logger.info(f"[IMAGE] Assigned {image_data.get('source', 'unknown')} image: {image_data['url'][:60]}...")
+            # Wikimedia-Bild suchen
+            wikimedia_result = await image_service.process_article(article_for_image)
+            
+            # Ergebnis zuweisen
+            article_data["hero_image"] = wikimedia_result.url
+            article_data["hero_image_width"] = wikimedia_result.width
+            article_data["hero_image_height"] = wikimedia_result.height
+            article_data["hero_image_alt"] = f"Transfer-News: {article_data.get('player_name', 'Spieler')}"
+            article_data["hero_image_source"] = "wikimedia" if not wikimedia_result.is_fallback else "fallback"
+            article_data["og_image"] = wikimedia_result.url
+            
+            # Wikimedia-spezifische Metadaten
+            article_data["hero_image_meta"] = wikimedia_result.to_dict()
+            
+            source_type = "Wikimedia" if not wikimedia_result.is_fallback else "Fallback"
+            logger.info(f"[IMAGE] Assigned {source_type} image (score={wikimedia_result.quality_score}): {wikimedia_result.url[:60]}...")
+            
         except Exception as e:
-            logger.warning(f"[IMAGE] Could not assign image: {e}")
-            # Fallback zu synchroner Methode
+            logger.warning(f"[IMAGE] Wikimedia system error: {e}")
+            # Fallback zu altem System
             try:
                 from image_system import get_image_selector
                 selector = get_image_selector()
@@ -514,9 +521,10 @@ class SpeedPipeline:
                 article_data["hero_image_width"] = image_data["width"]
                 article_data["hero_image_height"] = image_data["height"]
                 article_data["hero_image_alt"] = image_data["alt"]
+                article_data["hero_image_source"] = "legacy_fallback"
                 article_data["og_image"] = image_data["url"]
             except Exception as e2:
-                logger.error(f"[IMAGE] Fallback also failed: {e2}")
+                logger.error(f"[IMAGE] All image systems failed: {e2}")
         
         # 6. In DB speichern
         from models import generate_uuid

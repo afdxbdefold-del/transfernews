@@ -258,20 +258,53 @@ export default function NewsDetailPage() {
               <div className="bg-white">
                 {/* Feature/Hero Image - Optimiert für Google Discover (min 1200px) */}
                 {(article.hero_image || article.feature_image) ? (
-                  <div className="relative aspect-video bg-gray-100">
-                    <img
-                      src={article.hero_image || article.feature_image}
-                      alt={article.hero_image_alt || article.title}
-                      className="w-full h-full object-cover"
-                      width={article.hero_image_width || 1200}
-                      height={article.hero_image_height || 675}
-                    />
-                    {/* Breaking Badge on Image */}
-                    {article.is_breaking && (
-                      <div className="absolute top-4 left-4">
-                        <span className="bg-red-600 text-white text-xs font-bold px-2 py-1 uppercase">
-                          Breaking
+                  <div className="relative">
+                    <div className="aspect-video bg-gray-100">
+                      <img
+                        src={article.hero_image || article.feature_image}
+                        alt={article.hero_image_alt || article.title}
+                        className="w-full h-full object-cover"
+                        width={article.hero_image_width || 1200}
+                        height={article.hero_image_height || 675}
+                      />
+                      {/* Breaking Badge on Image */}
+                      {article.is_breaking && (
+                        <div className="absolute top-4 left-4">
+                          <span className="bg-red-600 text-white text-xs font-bold px-2 py-1 uppercase">
+                            Breaking
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    {/* Bild-Attribution (Wikimedia Commons / Unsplash) */}
+                    {article.hero_image_meta && (
+                      <div 
+                        className="bg-gray-800 text-gray-300 text-xs px-3 py-1.5 flex items-center justify-between"
+                        data-testid="image-attribution"
+                      >
+                        <span>
+                          {article.hero_image_meta.is_fallback ? (
+                            <>Foto: {article.hero_image_meta.author} / {article.hero_image_meta.license_name}</>
+                          ) : (
+                            <>
+                              Foto: {article.hero_image_meta.author || 'Unbekannt'} / 
+                              <a 
+                                href={article.hero_image_meta.source_url || '#'} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="hover:text-white ml-1 underline"
+                              >
+                                Wikimedia Commons
+                              </a>
+                              <span className="ml-1">/ {article.hero_image_meta.license_name || 'CC'}</span>
+                            </>
+                          )}
                         </span>
+                        {article.hero_image_meta.quality_score > 0 && (
+                          <span className="text-gray-500 ml-2" title="Bildqualitäts-Score">
+                            Q{article.hero_image_meta.quality_score}
+                          </span>
+                        )}
                       </div>
                     )}
                   </div>

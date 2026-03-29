@@ -2263,12 +2263,158 @@ async def get_image_status(current_user: dict = Depends(get_current_user)):
     with_hero_image = await db.articles.count_documents({"hero_image": {"$exists": True}})
     without_hero_image = await db.articles.count_documents({"hero_image": {"$exists": False}})
     
+    # Wikimedia vs Fallback stats
+    wikimedia_images = await db.articles.count_documents({"hero_image_source": "wikimedia"})
+    fallback_images = await db.articles.count_documents({"hero_image_source": "fallback"})
+    
     return {
         "total_articles": total_articles,
         "with_hero_image": with_hero_image,
         "without_hero_image": without_hero_image,
+        "wikimedia_images": wikimedia_images,
+        "fallback_images": fallback_images,
         "coverage_percent": round((with_hero_image / total_articles * 100) if total_articles > 0 else 0, 1)
     }
+
+
+# =============================================================================
+# WIKIMEDIA IMAGE SYSTEM ROUTES
+# =============================================================================
+
+@api_router.post("/wikimedia/search")
+async def wikimedia_search_image(
+    query: str = Query(..., description="Search term (e.g., player name)"),
+    current_user: dict = Depends(get_current_user)
+):
+    """Search for images on Wikimedia Commons"""
+    try:
+        from wikimedia_images import WikimediaSearcher
+        
+        searcher = WikimediaSearcher()
+        images = await searcher.search_player_image(query)
+        
+        return {
+            "query": query,
+            "count": len(images),
+            "images": [
+                {
+                    "url": img.url,
+                    "width": img.width,
+                    "height": img.height,
+                    "title": img.title,
+                    "license_name": img.license_name,
+                    "author": img.author,
+                    "quality_score": img.quality_score,
+                    "is_valid": img.is_valid,
+                    "rejection_reason": img.rejection_reason,
+                    "source_url": img.source_url,
+                }
+                for img in images
+            ]
+        }
+    except Exception as e:
+        logger.error(f"Wikimedia search error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.post("/wikimedia/process-article/{article_id}")
+async def wikimedia_process_article(
+    article_id: str,
+    current_user: dict = Depends(require_admin)
+):
+    """Process article with Wikimedia image system"""
+    try:
+        from wikimedia_images import ArticleImageService
+        
+        # Get article
+        article = await db.articles.find_one({"id": article_id}, {"_id": 0})
+        if not article:
+            raise HTTPException(status_code=404, detail="Artikel nicht gefunden")
+        
+        # Process with Wikimedia system - pass db explicitly
+        service = ArticleImageService(db)
+        image_result = await service.search_and_update(article)
+        
+        return {
+            "article_id": article_id,
+            "image": image_result.to_dict(),
+            "attribution": image_result.get_attribution(),
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Wikimedia process error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.post("/wikimedia/update-all")
+async def wikimedia_update_all_articles(
+    limit: int = Query(10, ge=1, le=50),
+    current_user: dict = Depends(require_admin)
+):
+    """Update images for all articles using Wikimedia system"""
+    try:
+        from wikimedia_images import ArticleImageService
+        
+        service = ArticleImageService(db)
+        
+        # Get articles without wikimedia images
+        articles = await db.articles.find(
+            {"$or": [
+                {"hero_image_source": {"$ne": "wikimedia"}},
+                {"hero_image_source": {"$exists": False}},
+            ]},
+            {"_id": 0}
+        ).sort("published_at", -1).limit(limit).to_list(limit)
+        
+        results = {
+            "processed": 0,
+            "wikimedia_found": 0,
+            "fallback_used": 0,
+            "errors": []
+        }
+        
+        for article in articles:
+            try:
+                image_result = await service.search_and_update(article)
+                results["processed"] += 1
+                
+                if image_result.is_fallback:
+                    results["fallback_used"] += 1
+                else:
+                    results["wikimedia_found"] += 1
+                    
+            except Exception as e:
+                results["errors"].append(f"{article.get('id', 'unknown')}: {str(e)}")
+        
+        return results
+    except Exception as e:
+        logger.error(f"Wikimedia update all error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.post("/wikimedia/use-fallback/{article_id}")
+async def wikimedia_use_fallback(
+    article_id: str,
+    category: str = Query("stadium", description="Fallback category: stadium, football, fans, match"),
+    current_user: dict = Depends(require_admin)
+):
+    """Force use of fallback image for article"""
+    try:
+        from wikimedia_images import ArticleImageService
+        
+        service = ArticleImageService(db)
+        success = await service.use_fallback(article_id, category)
+        
+        if not success:
+            raise HTTPException(status_code=500, detail="Failed to set fallback")
+        
+        return {"success": True, "article_id": article_id, "fallback_category": category}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Wikimedia fallback error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # =============================================================================

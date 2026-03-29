@@ -10,6 +10,7 @@ Deutschsprachige Fußball-Transfer-News-Plattform auf der Domain transfernews.de
 - **Content: Streng limitiert auf Fußball-Transfers**
 - **SEO: Google Discover + Google News optimiert**
 - **NEU: GOOGLE NEWS DOMINANCE SYSTEM**
+- **NEU: WIKIMEDIA IMAGE SYSTEM**
 
 ## Technical Architecture
 - **Frontend:** React 19 mit Tailwind CSS, Shadcn UI, Phosphor Icons, react-helmet-async
@@ -18,9 +19,49 @@ Deutschsprachige Fußball-Transfer-News-Plattform auf der Domain transfernews.de
 - **Auth:** JWT-basiertes Admin-Login
 - **LLM:** emergentintegrations (GPT-4o via Emergent LLM Key)
 - **RSS:** feedparser für 15 internationale Nachrichtenquellen (DE/EN/ES)
-- **Bilder:** Unsplash für Google Discover-optimierte Hero-Images (≥1200px)
+- **Bilder:** Wikimedia Commons mit CC-BY/CC0 Lizenzen (≥1200px für Google Discover)
 
 ## What's Been Implemented
+
+### 29. März 2026 - WIKIMEDIA IMAGE SYSTEM (NEU!)
+- ✅ **Wikimedia Image Pipeline** (`/app/backend/wikimedia_images.py`):
+  - Automatische Spieler-Erkennung aus Artikeltext (Regex mit Akzent-Unterstützung)
+  - Wikimedia Commons API-Integration mit sauberem User-Agent
+  - **Quality-Scoring (0-100)** basierend auf:
+    - Bildgröße (≥1200px Bonus)
+    - Seitenverhältnis (16:9 ideal)
+    - Lizenz (CC-BY, CC-BY-SA, CC0, Public Domain)
+    - Name im Titel, Autor vorhanden
+    - Negative Signale (Logo, Wappen, Gruppenfotos)
+  - Fallback-System mit Unsplash-Bildern wenn kein Spieler erkannt
+  - **Attribution-Generierung**: "Foto: [Autor] / Wikimedia Commons / [Lizenz]"
+- ✅ **Frontend Attribution** (`NewsDetailPage.jsx`):
+  - Dunkler Balken unter Hero-Bild mit vollständiger Lizenz-Attribution
+  - Link zu Wikimedia Commons Quellseite
+  - Quality-Score Anzeige (Q100)
+- ✅ **API Endpoints**:
+  - `POST /api/wikimedia/search?query=` - Suche nach Spielerbildern
+  - `POST /api/wikimedia/process-article/{id}` - Artikel mit Wikimedia-Bild aktualisieren
+  - `POST /api/wikimedia/update-all?limit=` - Batch-Update aller Artikel
+  - `POST /api/wikimedia/use-fallback/{id}` - Manuell Fallback setzen
+  - `GET /api/pipeline/image-status` - Wikimedia vs Fallback Statistiken
+- ✅ **Integration in Speed-Pipeline**:
+  - Neue Artikel erhalten automatisch Wikimedia-Bilder
+  - `hero_image_meta` mit vollständigen Lizenz-Metadaten in MongoDB
+  - `hero_image_source: "wikimedia" | "fallback"` Tracking
+
+### 29. März 2026 - GPT-REWRITE QUALITY ENGINE
+- ✅ **Wikipedia-Kontext-Recherche** (`/app/backend/context_research.py`):
+  - Live-Daten von Wikipedia für längere, faktisch korrekte Artikel
+  - Spieler-Karriere, Club-Geschichte, Transfer-Kontext
+- ✅ **Validierungsregeln für GPT-Rewrite**:
+  - Mindestens 150 Wörter, max 300
+  - Mindestens 2 H2-Überschriften (##) für Google Discover
+  - **Phrasen-Banliste**: "Es bleibt abzuwarten", "Möglicherweise", etc.
+  - Ablehnung bei erfundenen Statistiken oder kürzerem Output
+  - Retry-Mechanismus bei Validierungsfehler
+- ✅ **H2-Rendering im Frontend**:
+  - Markdown `##` wird sauber zu `<h2>` mit Oswald-Font
 
 ### 29. März 2026 - ENTITY & IMAGE SYSTEM für Google Discover
 - ✅ **Entity Recognition System** (`/app/backend/entity_recognition.py`):
@@ -198,15 +239,20 @@ Deutschsprachige Fußball-Transfer-News-Plattform auf der Domain transfernews.de
 - [x] **CRONJOB SYSTEM** (APScheduler: RSS 30min, Events 30min, Prerender 12h, Google Ping 1h)
 - [x] **AUTOR-PROFILE** (AuthorPage.jsx mit Artikel-Liste)
 - [x] **CRAWLER-SERVING** (Pre-Rendered HTML für GoogleBot & Co.)
+- [x] **WIKIMEDIA IMAGE SYSTEM** (CC-lizenzierte Spielerbilder mit Attribution)
 
-### P1 (Nächste Phase)
+### P1 (In Arbeit)
 - [x] Breaking-Engine Score-Berechnung (Event-Scoring nach Quelle, Spieler-Level, Club-Level) ✅
 - [x] Trend-System Zeitfenster-Logik (15m, 1h, 6h, 24h Cluster für trend_score) ✅
 - [x] SEO-Landingpages dynamische Routen (`/wettbewerb/{slug}`, `/thema/...`) ✅
 - [x] Google Search Console Integration (`/admin/gsc`) ✅
+- [ ] Admin-Panel für Bild-Kontrolle (Wikimedia-Bilder manuell neu suchen, ablehnen, Fallback erzwingen)
 - [ ] Homepage als Live-Feed (Auto-Refresh alle 60s)
 
 ### P2 (Später)
+- [ ] Alte 4 Artikel ohne H2 manuell rewriten (Rewrite wurde wegen Phrasen abgelehnt)
+- [ ] `image_system.py` mit `wikimedia_images.py` konsolidieren
+- [ ] Bilder lokal speichern (Hotlinking vermeiden)
 - [ ] Newsletter-Integration
 - [ ] Performance-Optimierung (Redis Caching)
 - [ ] Push-Benachrichtigungen für Breaking News
@@ -222,6 +268,9 @@ Deutschsprachige Fußball-Transfer-News-Plattform auf der Domain transfernews.de
 - `/app/backend/sitemap.py` - Sitemap-Generierung, Google Ping, robots.txt
 - `/app/backend/trending.py` - Event-Scoring, Trend-Detection
 - `/app/backend/data_import.py` - RSS Scraper, LLM Generator, Update-Logik
+- `/app/backend/wikimedia_images.py` - **NEU: Wikimedia Commons Bild-Pipeline**
+- `/app/backend/context_research.py` - **NEU: Wikipedia-Kontext für GPT-Rewrite**
+- `/app/backend/speed_pipeline.py` - Instant-Artikel & GPT-Rewrite Engine
 
 ### Frontend
 - `/app/frontend/src/components/TrendingWidget.jsx` - Trending Sidebar + Bar
