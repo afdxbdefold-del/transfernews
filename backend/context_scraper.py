@@ -463,41 +463,31 @@ class WikipediaScraper:
 
 
 class TransfermarktScraper:
-    """Scraper für Transfermarkt.de"""
-    
-    SEARCH_URL = "https://www.transfermarkt.de/schnellsuche/ergebnis/schnellsuche"
+    """
+    Scraper für Transfermarkt.de mit Playwright.
+    Holt Marktwert, Vertragsdaten, etc.
+    """
     
     def __init__(self):
         self.cache = {}
+        self._browser = None
+        self._context = None
     
-    async def search_player(self, name: str) -> Optional[str]:
-        """Sucht Spieler und gibt Profil-URL zurück"""
-        try:
-            await random_delay(1.0, 2.0)
-            
-            params = {"query": name, "x": "0", "y": "0"}
-            
-            timeout = aiohttp.ClientTimeout(total=15)
-            async with aiohttp.ClientSession(timeout=timeout) as session:
-                async with session.get(self.SEARCH_URL, params=params, headers=get_random_headers()) as resp:
-                    if resp.status == 200:
-                        html = await resp.text()
-                        soup = BeautifulSoup(html, 'html.parser')
-                        
-                        # Finde ersten Spieler-Link
-                        player_link = soup.select_one('a.spielprofil_tooltip')
-                        if player_link:
-                            href = player_link.get('href', '')
-                            if href:
-                                return f"https://www.transfermarkt.de{href}"
-            
-        except Exception as e:
-            logger.debug(f"Transfermarkt search error: {e}")
-        
-        return None
+    async def _get_browser(self):
+        """Lazy Browser-Initialisierung"""
+        if self._browser is None:
+            from playwright.async_api import async_playwright
+            self._playwright = await async_playwright().start()
+            self._browser = await self._playwright.chromium.launch(headless=True)
+            self._context = await self._browser.new_context(
+                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                viewport={"width": 1920, "height": 1080},
+                locale="de-DE",
+            )
+        return self._context
     
     async def get_player(self, name: str) -> PlayerContext:
-        """Holt Spieler-Infos von Transfermarkt"""
+        """Holt Spieler-Infos von Transfermarkt via Playwright"""
         ctx = PlayerContext(name=name)
         
         cache_key = f"tm:{name}"
@@ -505,81 +495,100 @@ class TransfermarktScraper:
             return self.cache[cache_key]
         
         try:
-            # Erst Suche
-            profile_url = await self.search_player(name)
-            if not profile_url:
+            context = await self._get_browser()
+            page = await context.new_page()
+            
+            await random_delay(1.0, 2.0)
+            
+            # Suche
+            search_url = f"https://www.transfermarkt.de/schnellsuche/ergebnis/schnellsuche?query={name.replace(' ', '+')}"
+            await page.goto(search_url, timeout=20000, wait_until="domcontentloaded")
+            await page.wait_for_timeout(1500)
+            
+            # Finde Spieler-Link
+            player_link = await page.query_selector('td.hauptlink a[href*="/profil/spieler/"]')
+            
+            if not player_link:
+                await page.close()
                 self.cache[cache_key] = ctx
                 return ctx
             
-            await random_delay(1.0, 2.5)
+            href = await player_link.get_attribute('href')
+            player_url = f"https://www.transfermarkt.de{href}"
             
-            timeout = aiohttp.ClientTimeout(total=15)
-            async with aiohttp.ClientSession(timeout=timeout) as session:
-                async with session.get(profile_url, headers=get_random_headers()) as resp:
-                    if resp.status == 200:
-                        html = await resp.text()
-                        soup = BeautifulSoup(html, 'html.parser')
-                        
-                        ctx.found = True
-                        ctx.sources.append("Transfermarkt")
-                        
-                        # Name
-                        name_el = soup.select_one('h1.data-header__headline-wrapper')
-                        if name_el:
-                            ctx.full_name = name_el.get_text(strip=True)
-                        
-                        # Marktwert
-                        value_el = soup.select_one('a.data-header__market-value-wrapper')
-                        if value_el:
-                            ctx.market_value = value_el.get_text(strip=True)
-                        
-                        # Info-Tabelle
-                        info_table = soup.select('span.info-table__content')
-                        labels = soup.select('span.info-table__content--regular')
-                        
-                        for i, label in enumerate(labels):
-                            label_text = label.get_text(strip=True).lower()
-                            if i < len(info_table):
-                                value = info_table[i].get_text(strip=True)
-                                
-                                if "geburt" in label_text or "birth" in label_text:
-                                    ctx.birth_date = value
-                                    year_match = re.search(r'(\d{4})', value)
-                                    if year_match:
-                                        ctx.birth_year = int(year_match.group(1))
-                                        ctx.age = datetime.now().year - ctx.birth_year
-                                
-                                elif "nation" in label_text:
-                                    ctx.nationality = value
-                                
-                                elif "position" in label_text:
-                                    ctx.position = value
-                                
-                                elif "fuß" in label_text or "foot" in label_text:
-                                    ctx.foot = value
-                                
-                                elif "größe" in label_text or "height" in label_text:
-                                    ctx.height = value
-                                
-                                elif "verein" in label_text or "club" in label_text:
-                                    ctx.current_club = value
-                                
-                                elif "vertrag" in label_text or "contract" in label_text:
-                                    ctx.contract_until = value
-                        
-                        # Länderspiel-Stats
-                        nt_stats = soup.select_one('div.data-header__details')
-                        if nt_stats:
-                            text = nt_stats.get_text()
-                            caps_match = re.search(r'(\d+)\s*(?:Länderspiel|cap)', text, re.I)
-                            goals_match = re.search(r'(\d+)\s*(?:Tor|goal)', text, re.I)
-                            if caps_match:
-                                ctx.national_team_caps = int(caps_match.group(1))
-                            if goals_match:
-                                ctx.national_team_goals = int(goals_match.group(1))
-                        
+            await random_delay(0.8, 1.5)
+            await page.goto(player_url, timeout=20000, wait_until="domcontentloaded")
+            await page.wait_for_timeout(1500)
+            
+            ctx.found = True
+            ctx.sources.append("Transfermarkt")
+            
+            # Marktwert
+            value_el = await page.query_selector('a.data-header__market-value-wrapper')
+            if value_el:
+                value_text = await value_el.text_content()
+                # Extrahiere nur den Wert (z.B. "110,00 Mio. €")
+                import re
+                match = re.search(r'([\d,]+(?:\s*(?:Mio|Tsd)\.?\s*)?€)', value_text)
+                if match:
+                    ctx.market_value = match.group(1).strip()
+            
+            # Info-Tabelle scrapen
+            info_items = await page.query_selector_all('.info-table__content--bold')
+            info_labels = await page.query_selector_all('.info-table__content--regular')
+            
+            for i, label_el in enumerate(info_labels):
+                if i >= len(info_items):
+                    break
+                    
+                label = await label_el.text_content()
+                value = await info_items[i].text_content()
+                
+                label = label.strip().lower() if label else ""
+                value = value.strip() if value else ""
+                
+                if "name" in label and not ctx.full_name:
+                    ctx.full_name = value
+                elif "geburt" in label or "geb" in label:
+                    ctx.birth_date = value
+                    # Parse Jahr und Alter
+                    match = re.search(r'\((\d+)\)', value)
+                    if match:
+                        ctx.age = int(match.group(1))
+                    match = re.search(r'(\d{4})', value)
+                    if match:
+                        ctx.birth_year = int(match.group(1))
+                elif "größe" in label or "height" in label:
+                    ctx.height = value
+                elif "nation" in label:
+                    ctx.nationality = value
+                elif "position" in label:
+                    ctx.position = value
+                elif "fuß" in label:
+                    ctx.foot = value
+                elif "verein" in label and "aktuell" in label:
+                    ctx.current_club = value
+                elif "im team seit" in label or "dabei seit" in label:
+                    ctx.current_club_since = value
+                elif "vertrag" in label:
+                    ctx.contract_until = value
+            
+            # Länderspiel-Stats aus Header
+            header = await page.query_selector('.data-header__details')
+            if header:
+                header_text = await header.text_content()
+                caps_match = re.search(r'(\d+)\s*(?:Länderspiel|Einsätz)', header_text)
+                goals_match = re.search(r'(\d+)\s*(?:Tor|Treffer)', header_text)
+                if caps_match:
+                    ctx.national_team_caps = int(caps_match.group(1))
+                if goals_match:
+                    ctx.national_team_goals = int(goals_match.group(1))
+            
+            await page.close()
+            logger.info(f"[TM] {name}: Marktwert={ctx.market_value}, Vertrag={ctx.contract_until}")
+            
         except Exception as e:
-            logger.warning(f"Transfermarkt scrape error for {name}: {e}")
+            logger.warning(f"[TM] Error for {name}: {e}")
         
         self.cache[cache_key] = ctx
         return ctx
@@ -665,46 +674,69 @@ class AggressiveContextService:
         # Parallel alle Quellen abfragen
         wikidata_task = asyncio.create_task(self.wikidata.get_player(player_name))
         wiki_task = asyncio.create_task(self.wikipedia.get_player(player_name))
-        # Transfermarkt oft blockiert, trotzdem versuchen
-        # tm_task = asyncio.create_task(self.transfermarkt.get_player(player_name))
+        tm_task = asyncio.create_task(self.transfermarkt.get_player(player_name))
         news_task = asyncio.create_task(self.kicker.get_recent_news(player_name))
         
         # Auf alle warten (mit Timeout)
         try:
             results = await asyncio.wait_for(
-                asyncio.gather(wikidata_task, wiki_task, news_task, return_exceptions=True),
-                timeout=30
+                asyncio.gather(wikidata_task, wiki_task, tm_task, news_task, return_exceptions=True),
+                timeout=45
             )
         except asyncio.TimeoutError:
             logger.warning(f"[CONTEXT] Timeout for {player_name}")
-            results = [PlayerContext(name=player_name), PlayerContext(name=player_name), []]
+            results = [PlayerContext(name=player_name)] * 4
         
         wikidata_ctx = results[0] if isinstance(results[0], PlayerContext) else PlayerContext(name=player_name)
         wiki_ctx = results[1] if isinstance(results[1], PlayerContext) else PlayerContext(name=player_name)
-        news = results[2] if isinstance(results[2], list) else []
+        tm_ctx = results[2] if isinstance(results[2], PlayerContext) else PlayerContext(name=player_name)
+        news = results[3] if isinstance(results[3], list) else []
         
-        # Merge: Wikidata hat Priorität für strukturierte Daten, Wikipedia für Bio
+        # Merge: Transfermarkt > Wikidata > Wikipedia
         merged = PlayerContext(name=player_name)
-        merged.found = wikidata_ctx.found or wiki_ctx.found
+        merged.found = wikidata_ctx.found or wiki_ctx.found or tm_ctx.found
         
-        # Von Wikidata (genaueste strukturierte Daten)
+        # Von Transfermarkt (BESTE Quelle für Marktwert & Vertrag)
+        if tm_ctx.found:
+            merged.full_name = tm_ctx.full_name
+            merged.birth_date = tm_ctx.birth_date
+            merged.birth_year = tm_ctx.birth_year
+            merged.age = tm_ctx.age
+            merged.nationality = tm_ctx.nationality
+            merged.position = tm_ctx.position
+            merged.height = tm_ctx.height
+            merged.foot = tm_ctx.foot
+            merged.current_club = tm_ctx.current_club
+            merged.current_club_since = tm_ctx.current_club_since
+            merged.contract_until = tm_ctx.contract_until
+            merged.market_value = tm_ctx.market_value  # WICHTIG!
+            merged.national_team_caps = tm_ctx.national_team_caps
+            merged.national_team_goals = tm_ctx.national_team_goals
+            merged.sources.extend(tm_ctx.sources)
+        
+        # Von Wikidata (Fallback für strukturierte Daten)
         if wikidata_ctx.found:
-            merged.full_name = wikidata_ctx.full_name
-            merged.birth_date = wikidata_ctx.birth_date
-            merged.birth_year = wikidata_ctx.birth_year
-            merged.age = wikidata_ctx.age
-            merged.nationality = wikidata_ctx.nationality
-            merged.position = wikidata_ctx.position
-            merged.height = wikidata_ctx.height
-            merged.current_club = wikidata_ctx.current_club
-            merged.national_team_caps = wikidata_ctx.national_team_caps
-            merged.national_team_goals = wikidata_ctx.national_team_goals
+            if not merged.full_name:
+                merged.full_name = wikidata_ctx.full_name
+            if not merged.birth_date:
+                merged.birth_date = wikidata_ctx.birth_date
+                merged.birth_year = wikidata_ctx.birth_year
+                merged.age = wikidata_ctx.age
+            if not merged.nationality:
+                merged.nationality = wikidata_ctx.nationality
+            if not merged.position:
+                merged.position = wikidata_ctx.position
+            if not merged.current_club:
+                merged.current_club = wikidata_ctx.current_club
+            if not merged.national_team_caps:
+                merged.national_team_caps = wikidata_ctx.national_team_caps
+                merged.national_team_goals = wikidata_ctx.national_team_goals
             merged.sources.extend(wikidata_ctx.sources)
         
         # Von Wikipedia (für Bio)
         if wiki_ctx.found:
             merged.wikipedia_summary = wiki_ctx.wikipedia_summary
-            # Fallback-Werte wenn Wikidata leer
+            # Fallback-Werte
             if not merged.birth_year and wiki_ctx.birth_year:
                 merged.birth_year = wiki_ctx.birth_year
                 merged.age = wiki_ctx.age
@@ -723,7 +755,7 @@ class AggressiveContextService:
         self.cache[cache_key] = merged
         
         sources_str = ", ".join(merged.sources) if merged.sources else "keine"
-        logger.info(f"[CONTEXT] {player_name}: found={merged.found}, sources=[{sources_str}]")
+        logger.info(f"[CONTEXT] {player_name}: found={merged.found}, market_value={merged.market_value}, sources=[{sources_str}]")
         
         return merged
     
