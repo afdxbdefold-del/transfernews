@@ -577,12 +577,19 @@ class ArticleImageService:
         logger.info(f"[IMAGE] Processing: {title[:50]}...")
         
         # Schritt 1: Spieler erkennen
-        player = self.player_detector.detect_player(title, body)
+        # Priorität: Explizites player_name Feld > Automatische Erkennung
+        player = article.get("player_name")
+        
+        if not player or len(player) < 3:
+            # Fallback auf automatische Erkennung
+            player = self.player_detector.detect_player(title, body)
         
         if not player:
             # Kein Spieler erkannt -> Fallback
             logger.info(f"[IMAGE] No player detected, using fallback")
             return self._create_fallback("stadium", ImageStatus.NO_PLAYER, "", "Kein Spieler erkannt")
+        
+        logger.info(f"[IMAGE] Searching for player: {player}")
         
         # Schritt 2: Wikimedia-Suche
         images = await self.searcher.search_player_image(player)
