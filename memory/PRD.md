@@ -23,6 +23,22 @@ Deutschsprachige Fußball-Transfer-News-Plattform auf der Domain transfernews.de
 
 ## What's Been Implemented
 
+### 29. März 2026 - MARKTWERT INFO-BOX SYSTEM (NEU!)
+- ✅ **PlayerInfoBox Komponente** (`NewsDetailPage.jsx`):
+  - Dunkle Info-Box unter dem Hero-Bild
+  - Zeigt Marktwert (grün hervorgehoben), Vertragslaufzeit, Alter, Position
+  - Zusätzliche Zeile mit vollständigem Namen, Nationalität, Verein
+  - Responsive Grid-Layout (2-4 Spalten)
+- ✅ **Backend-Integration** (`speed_pipeline.py`):
+  - Extrahiert strukturierte Spielerdaten aus Context-Scraper (Transfermarkt, Wikidata)
+  - Speichert `market_value`, `contract_until`, `player_age`, `player_position` als DB-Felder
+  - Automatische Anreicherung beim GPT-Rewrite
+- ✅ **API Endpoints**:
+  - `POST /api/pipeline/enrich-article/{id}` - Einzelnen Artikel mit Spielerdaten anreichern
+  - `POST /api/pipeline/enrich-all?limit=` - Batch-Anreicherung aller Artikel ohne Marktwert
+- ✅ **Schema-Erweiterung** (`models.py`):
+  - Neue Felder: `market_value`, `contract_until`, `player_age`, `player_nationality`, `player_position`, `player_full_name`
+
 ### 29. März 2026 - WIKIMEDIA IMAGE SYSTEM (NEU!)
 - ✅ **Wikimedia Image Pipeline** (`/app/backend/wikimedia_images.py`):
   - Automatische Spieler-Erkennung aus Artikeltext (Regex mit Akzent-Unterstützung)
@@ -246,8 +262,10 @@ Deutschsprachige Fußball-Transfer-News-Plattform auf der Domain transfernews.de
 - [x] Trend-System Zeitfenster-Logik (15m, 1h, 6h, 24h Cluster für trend_score) ✅
 - [x] SEO-Landingpages dynamische Routen (`/wettbewerb/{slug}`, `/thema/...`) ✅
 - [x] Google Search Console Integration (`/admin/gsc`) ✅
+- [x] **Marktwert Info-Box** (Strukturierte Spielerdaten: Marktwert, Vertrag, Alter, Position) ✅
 - [ ] Admin-Panel für Bild-Kontrolle (Wikimedia-Bilder manuell neu suchen, ablehnen, Fallback erzwingen)
 - [ ] Homepage als Live-Feed (Auto-Refresh alle 60s)
+- [ ] Enrichment-Batch-Job (Alle Artikel ohne Marktwert anreichern)
 
 ### P2 (Später)
 - [ ] Alte 4 Artikel ohne H2 manuell rewriten (Rewrite wurde wegen Phrasen abgelehnt)

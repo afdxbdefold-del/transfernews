@@ -441,6 +441,14 @@ class ArticleBase(BaseModel):
     from_club: Optional[str] = None
     club_league: Optional[str] = None
     entity_confidence: Optional[float] = None
+    
+    # Strukturierte Spieler-Daten (aus Transfermarkt/Wikidata)
+    market_value: Optional[str] = None  # z.B. "110 Mio. €"
+    contract_until: Optional[str] = None  # z.B. "30.06.2027"
+    player_age: Optional[int] = None
+    player_nationality: Optional[str] = None
+    player_position: Optional[str] = None
+    player_full_name: Optional[str] = None
     author_name: Optional[str] = "Redaktion"
     author_slug: Optional[str] = "redaktion"
     reading_time_minutes: Optional[int] = None

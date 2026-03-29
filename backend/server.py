@@ -2277,6 +2277,156 @@ async def get_image_status(current_user: dict = Depends(get_current_user)):
     }
 
 
+@api_router.post("/pipeline/enrich-article/{article_id}")
+async def enrich_article_with_context(
+    article_id: str,
+    current_user: dict = Depends(require_admin)
+):
+    """
+    Reichert einen einzelnen Artikel mit strukturierten Spielerdaten an.
+    Holt Marktwert, Vertrag, Alter etc. von Transfermarkt/Wikidata.
+    """
+    from context_scraper import get_context_service
+    
+    # Artikel laden
+    article = await db.articles.find_one({"id": article_id}, {"_id": 0})
+    if not article:
+        raise HTTPException(status_code=404, detail="Artikel nicht gefunden")
+    
+    player_name = article.get("player_name", "")
+    if not player_name:
+        raise HTTPException(status_code=400, detail="Kein Spielername im Artikel gefunden")
+    
+    # Context Service aufrufen
+    context_service = get_context_service(db)
+    player_context = await context_service.get_full_player_context(player_name)
+    
+    if not player_context.found:
+        return {"success": False, "message": f"Keine Daten für {player_name} gefunden"}
+    
+    # Strukturierte Felder speichern
+    update_fields = {}
+    if player_context.market_value:
+        update_fields["market_value"] = player_context.market_value
+    if player_context.contract_until:
+        update_fields["contract_until"] = player_context.contract_until
+    if player_context.age:
+        update_fields["player_age"] = player_context.age
+    if player_context.nationality:
+        update_fields["player_nationality"] = player_context.nationality
+    if player_context.position:
+        update_fields["player_position"] = player_context.position
+    if player_context.full_name:
+        update_fields["player_full_name"] = player_context.full_name
+    if player_context.current_club:
+        update_fields["current_club"] = player_context.current_club
+    
+    if update_fields:
+        update_fields["enriched_at"] = datetime.now(timezone.utc).isoformat()
+        update_fields["context_sources"] = player_context.sources
+        
+        await db.articles.update_one(
+            {"id": article_id},
+            {"$set": update_fields}
+        )
+        
+        return {
+            "success": True,
+            "player": player_name,
+            "fields_updated": list(update_fields.keys()),
+            "sources": player_context.sources
+        }
+    
+    return {"success": False, "message": "Keine neuen Daten gefunden"}
+
+
+@api_router.post("/pipeline/enrich-all")
+async def enrich_all_articles(
+    limit: int = Query(default=10, le=50),
+    current_user: dict = Depends(require_admin)
+):
+    """
+    Reichert mehrere Artikel mit strukturierten Spielerdaten an.
+    Nur Artikel ohne market_value werden angereichert.
+    """
+    from context_scraper import get_context_service
+    
+    # Artikel ohne Marktwert-Daten laden
+    articles = await db.articles.find(
+        {
+            "market_value": {"$exists": False},
+            "player_name": {"$exists": True, "$ne": None, "$ne": ""}
+        },
+        {"_id": 0, "id": 1, "player_name": 1, "title": 1}
+    ).limit(limit).to_list(limit)
+    
+    if not articles:
+        return {"success": True, "message": "Alle Artikel bereits angereichert", "enriched": 0}
+    
+    context_service = get_context_service(db)
+    results = {"enriched": 0, "skipped": 0, "details": []}
+    
+    for article in articles:
+        try:
+            player_name = article.get("player_name", "")
+            if not player_name:
+                results["skipped"] += 1
+                continue
+            
+            player_context = await context_service.get_full_player_context(player_name)
+            
+            if not player_context.found:
+                results["skipped"] += 1
+                results["details"].append({"id": article["id"], "player": player_name, "status": "not_found"})
+                continue
+            
+            # Strukturierte Felder speichern
+            update_fields = {}
+            if player_context.market_value:
+                update_fields["market_value"] = player_context.market_value
+            if player_context.contract_until:
+                update_fields["contract_until"] = player_context.contract_until
+            if player_context.age:
+                update_fields["player_age"] = player_context.age
+            if player_context.nationality:
+                update_fields["player_nationality"] = player_context.nationality
+            if player_context.position:
+                update_fields["player_position"] = player_context.position
+            if player_context.full_name:
+                update_fields["player_full_name"] = player_context.full_name
+            if player_context.current_club:
+                update_fields["current_club"] = player_context.current_club
+            
+            if update_fields:
+                update_fields["enriched_at"] = datetime.now(timezone.utc).isoformat()
+                update_fields["context_sources"] = player_context.sources
+                
+                await db.articles.update_one(
+                    {"id": article["id"]},
+                    {"$set": update_fields}
+                )
+                results["enriched"] += 1
+                results["details"].append({
+                    "id": article["id"],
+                    "player": player_name,
+                    "status": "enriched",
+                    "market_value": player_context.market_value
+                })
+            else:
+                results["skipped"] += 1
+        
+        except Exception as e:
+            logger.error(f"Enrich error for {article.get('id')}: {e}")
+            results["details"].append({"id": article["id"], "status": "error", "error": str(e)})
+    
+    return {
+        "success": True,
+        "enriched": results["enriched"],
+        "skipped": results["skipped"],
+        "details": results["details"]
+    }
+
+
 # =============================================================================
 # WIKIMEDIA IMAGE SYSTEM ROUTES
 # =============================================================================

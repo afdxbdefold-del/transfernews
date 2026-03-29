@@ -7,9 +7,103 @@ import { RelatedLinks } from "@/components/RelatedLinks";
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { getArticleBySlug, getPublishedArticles, getPlayer, getClub, getPublicNewsDetail } from "@/api";
-import { Clock, CaretLeft, ShareNetwork, User, Buildings, FacebookLogo, XLogo, WhatsappLogo, EnvelopeSimple } from "@phosphor-icons/react";
+import { Clock, CaretLeft, ShareNetwork, User, Buildings, FacebookLogo, XLogo, WhatsappLogo, EnvelopeSimple, CurrencyEur, Calendar, MapPin, SoccerBall } from "@phosphor-icons/react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Helmet } from "react-helmet-async";
+
+// Info-Box Komponente für strukturierte Spielerdaten (Marktwert, Vertrag, etc.)
+function PlayerInfoBox({ article }) {
+  // Nur anzeigen wenn mindestens ein strukturiertes Feld vorhanden
+  const hasData = article.market_value || article.contract_until || article.player_age || article.player_position;
+  
+  if (!hasData) return null;
+  
+  return (
+    <div 
+      className="bg-gradient-to-r from-gray-900 to-gray-800 text-white p-4 md:p-5"
+      data-testid="player-info-box"
+    >
+      <div className="flex items-center gap-2 mb-3">
+        <SoccerBall size={18} weight="fill" className="text-[#79B92A]" />
+        <span 
+          className="text-sm font-bold uppercase tracking-wide text-gray-300"
+          style={{ fontFamily: "'Oswald', sans-serif" }}
+        >
+          Spieler-Profil
+        </span>
+      </div>
+      
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {/* Marktwert */}
+        {article.market_value && (
+          <div className="space-y-1">
+            <div className="flex items-center gap-1.5 text-gray-400 text-xs uppercase">
+              <CurrencyEur size={14} />
+              <span>Marktwert</span>
+            </div>
+            <div className="text-lg md:text-xl font-bold text-[#79B92A]">
+              {article.market_value}
+            </div>
+          </div>
+        )}
+        
+        {/* Vertrag bis */}
+        {article.contract_until && (
+          <div className="space-y-1">
+            <div className="flex items-center gap-1.5 text-gray-400 text-xs uppercase">
+              <Calendar size={14} />
+              <span>Vertrag bis</span>
+            </div>
+            <div className="text-lg md:text-xl font-bold">
+              {article.contract_until}
+            </div>
+          </div>
+        )}
+        
+        {/* Alter */}
+        {article.player_age && (
+          <div className="space-y-1">
+            <div className="flex items-center gap-1.5 text-gray-400 text-xs uppercase">
+              <User size={14} />
+              <span>Alter</span>
+            </div>
+            <div className="text-lg md:text-xl font-bold">
+              {article.player_age} Jahre
+            </div>
+          </div>
+        )}
+        
+        {/* Position */}
+        {article.player_position && (
+          <div className="space-y-1">
+            <div className="flex items-center gap-1.5 text-gray-400 text-xs uppercase">
+              <MapPin size={14} />
+              <span>Position</span>
+            </div>
+            <div className="text-lg md:text-xl font-bold">
+              {article.player_position}
+            </div>
+          </div>
+        )}
+      </div>
+      
+      {/* Zusätzliche Infos in zweiter Reihe */}
+      {(article.player_nationality || article.current_club || article.player_full_name) && (
+        <div className="mt-3 pt-3 border-t border-gray-700 flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-400">
+          {article.player_full_name && article.player_full_name !== article.player_name && (
+            <span>Name: <span className="text-white">{article.player_full_name}</span></span>
+          )}
+          {article.player_nationality && (
+            <span>Nationalität: <span className="text-white">{article.player_nationality}</span></span>
+          )}
+          {article.current_club && (
+            <span>Verein: <span className="text-white">{article.current_club}</span></span>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 // Schema.org NewsArticle for Google Discover
 function ArticleSchema({ article }) {
@@ -313,6 +407,9 @@ export default function NewsDetailPage() {
                     <span className="text-white/20 text-8xl font-black">TN</span>
                   </div>
                 )}
+                
+                {/* Player Info Box (Marktwert, Vertrag, etc.) */}
+                <PlayerInfoBox article={article} />
                 
                 {/* Article Header */}
                 <div className="p-4 md:p-6">

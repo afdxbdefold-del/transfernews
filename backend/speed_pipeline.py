@@ -972,20 +972,39 @@ Schreibe jetzt korrekt!"""
             
             # Erfolg: Speichern
             new_words = len(rewrite.split())
+            
+            # Strukturierte Spieler-Daten aus Context extrahieren
+            update_fields = {
+                "body": rewrite,
+                "needs_gpt_rewrite": False,
+                "is_gpt_rewritten": True,
+                "gpt_rewritten_at": datetime.now(timezone.utc).isoformat(),
+                "word_count": new_words,
+                "reading_time_minutes": max(1, new_words // 200),
+                "rewrite_validation": "passed",
+                "has_researched_context": has_context,
+            }
+            
+            # Füge strukturierte Daten hinzu wenn Kontext vorhanden
+            if player_context.found:
+                if player_context.market_value:
+                    update_fields["market_value"] = player_context.market_value
+                if player_context.contract_until:
+                    update_fields["contract_until"] = player_context.contract_until
+                if player_context.age:
+                    update_fields["player_age"] = player_context.age
+                if player_context.nationality:
+                    update_fields["player_nationality"] = player_context.nationality
+                if player_context.position:
+                    update_fields["player_position"] = player_context.position
+                if player_context.full_name:
+                    update_fields["player_full_name"] = player_context.full_name
+                if player_context.current_club:
+                    update_fields["current_club"] = player_context.current_club
+            
             await self.db.articles.update_one(
                 {"id": article_id},
-                {
-                    "$set": {
-                        "body": rewrite,
-                        "needs_gpt_rewrite": False,
-                        "is_gpt_rewritten": True,
-                        "gpt_rewritten_at": datetime.now(timezone.utc).isoformat(),
-                        "word_count": new_words,
-                        "reading_time_minutes": max(1, new_words // 200),
-                        "rewrite_validation": "passed",
-                        "has_researched_context": has_context,
-                    }
-                }
+                {"$set": update_fields}
             )
             logger.info(f"[GPT] ✓ {title[:30]}... ({original_words} → {new_words} Wörter, context={has_context})")
             return True
