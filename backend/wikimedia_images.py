@@ -73,6 +73,48 @@ IGNORED_TERMS = {
 }
 
 # Fallback-Bilder (eigene, lizenzfreie Bilder)
+# Club-spezifische Fallback-Bilder (Stadien von Wikimedia)
+CLUB_STADIUM_IMAGES = {
+    # Bundesliga
+    "bayern": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/50/Allianz_Arena_zu_verschiedenen_Zeiten.jpg/1280px-Allianz_Arena_zu_verschiedenen_Zeiten.jpg",
+    "dortmund": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/Signal_Iduna_Park%2C_Dortmund%2C_131012%2C_ako.jpg/1280px-Signal_Iduna_Park%2C_Dortmund%2C_131012%2C_ako.jpg",
+    "leipzig": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4b/Red_Bull_Arena_2015.JPG/1280px-Red_Bull_Arena_2015.JPG",
+    "leverkusen": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/58/BayArena-exterior.jpg/1280px-BayArena-exterior.jpg",
+    "frankfurt": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0a/Waldstadion_2018.jpg/1280px-Waldstadion_2018.jpg",
+    "wolfsburg": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/59/Volkswagen-Arena_Wolfsburg.jpg/1280px-Volkswagen-Arena_Wolfsburg.jpg",
+    "freiburg": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/25/Europa-Park-Stadion_Freiburg.jpg/1280px-Europa-Park-Stadion_Freiburg.jpg",
+    "stuttgart": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/03/Mercedes-Benz-Arena_Stuttgart.jpg/1280px-Mercedes-Benz-Arena_Stuttgart.jpg",
+    "gladbach": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Borussia-Park-v-Suedwesten.jpg/1280px-Borussia-Park-v-Suedwesten.jpg",
+    "köln": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7a/RheinEnergieStadion-14-06-23.jpg/1280px-RheinEnergieStadion-14-06-23.jpg",
+    "union": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/95/Alte_F%C3%B6rsterei_Panorama.jpg/1280px-Alte_F%C3%B6rsterei_Panorama.jpg",
+    "hertha": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/26/Olympiastadion_Berlin_Sep_2015.jpg/1280px-Olympiastadion_Berlin_Sep_2015.jpg",
+    
+    # Premier League
+    "manchester city": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6d/City_of_Manchester_Stadium_2.jpg/1280px-City_of_Manchester_Stadium_2.jpg",
+    "manchester united": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a3/Old_Trafford_inside_20060726_1.jpg/1280px-Old_Trafford_inside_20060726_1.jpg",
+    "liverpool": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b2/Bill_Shankly_statue%2C_Anfield_2018.jpg/1280px-Bill_Shankly_statue%2C_Anfield_2018.jpg",
+    "chelsea": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/84/Stamford_Bridge_Clear_Skies.JPG/1280px-Stamford_Bridge_Clear_Skies.JPG",
+    "arsenal": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e3/Emirates_Stadium_-_East_side_-_2023.jpg/1280px-Emirates_Stadium_-_East_side_-_2023.jpg",
+    "tottenham": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/Tottenham_Hotspur_Stadium_-_April_2019.jpg/1280px-Tottenham_Hotspur_Stadium_-_April_2019.jpg",
+    
+    # La Liga
+    "real madrid": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/66/Nuevo_Estadio_Santiago_Bernab%C3%A9u-_Vista_exterior.jpg/1280px-Nuevo_Estadio_Santiago_Bernab%C3%A9u-_Vista_exterior.jpg",
+    "barcelona": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a9/2014._Camp_Nou._M%C3%A9s_que_un_club._Barcelona_B40.jpg/1280px-2014._Camp_Nou._M%C3%A9s_que_un_club._Barcelona_B40.jpg",
+    "atletico": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/Wanda_Metropolitano_-_2019.jpg/1280px-Wanda_Metropolitano_-_2019.jpg",
+    
+    # Serie A
+    "juventus": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b9/Juventus_v_Chievo%2C_31_January_2016.jpg/1280px-Juventus_v_Chievo%2C_31_January_2016.jpg",
+    "inter": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/fd/San_Siro_Stadium_%28AC_Milan_and_Inter%29%2C_2014.jpg/1280px-San_Siro_Stadium_%28AC_Milan_and_Inter%29%2C_2014.jpg",
+    "milan": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/fd/San_Siro_Stadium_%28AC_Milan_and_Inter%29%2C_2014.jpg/1280px-San_Siro_Stadium_%28AC_Milan_and_Inter%29%2C_2014.jpg",
+    "napoli": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Stadio_Diego_Armando_Maradona_%283%29.jpg/1280px-Stadio_Diego_Armando_Maradona_%283%29.jpg",
+    "roma": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e2/Stadio_Olimpico_in_Rome.jpg/1280px-Stadio_Olimpico_in_Rome.jpg",
+    
+    # Ligue 1
+    "psg": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c2/Paris_Parc_des_Princes_1.jpg/1280px-Paris_Parc_des_Princes_1.jpg",
+    "paris": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c2/Paris_Parc_des_Princes_1.jpg/1280px-Paris_Parc_des_Princes_1.jpg",
+}
+
+# Generische Fallback-Bilder wenn kein Verein erkannt
 FALLBACK_IMAGES = {
     "stadium": {
         "url": "https://images.unsplash.com/photo-1522778119026-d647f0596c20?w=1200",
@@ -82,16 +124,6 @@ FALLBACK_IMAGES = {
     "football": {
         "url": "https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=1200",
         "attribution": "Unsplash", 
-        "license": "Unsplash License",
-    },
-    "fans": {
-        "url": "https://images.unsplash.com/photo-1459865264687-595d652de67e?w=1200",
-        "attribution": "Unsplash",
-        "license": "Unsplash License",
-    },
-    "match": {
-        "url": "https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=1200",
-        "attribution": "Unsplash",
         "license": "Unsplash License",
     },
 }
@@ -573,6 +605,7 @@ class ArticleImageService:
         title = article.get("title", "")
         body = article.get("body", "")
         article_id = article.get("id", "")
+        club_name = article.get("club_name", "")  # Für Club-spezifische Fallbacks
         
         logger.info(f"[IMAGE] Processing: {title[:50]}...")
         
@@ -585,9 +618,9 @@ class ArticleImageService:
             player = self.player_detector.detect_player(title, body)
         
         if not player:
-            # Kein Spieler erkannt -> Fallback
-            logger.info(f"[IMAGE] No player detected, using fallback")
-            return self._create_fallback("stadium", ImageStatus.NO_PLAYER, "", "Kein Spieler erkannt")
+            # Kein Spieler erkannt -> Club-Fallback
+            logger.info(f"[IMAGE] No player detected, using club fallback for: {club_name}")
+            return self._create_fallback("stadium", ImageStatus.NO_PLAYER, "", "Kein Spieler erkannt", club_name)
         
         logger.info(f"[IMAGE] Searching for player: {player}")
         
@@ -595,8 +628,8 @@ class ArticleImageService:
         images = await self.searcher.search_player_image(player)
         
         if not images:
-            logger.info(f"[IMAGE] No results for: {player}")
-            return self._create_fallback("football", ImageStatus.NO_RESULTS, player, "Keine Treffer")
+            logger.info(f"[IMAGE] No results for: {player}, using club fallback")
+            return self._create_fallback("football", ImageStatus.NO_RESULTS, player, "Keine Treffer", club_name)
         
         # Schritt 3: Bestes valides Bild finden
         best_image = None
@@ -614,10 +647,10 @@ class ArticleImageService:
                 break
         
         if not best_image:
-            # Kein passendes Bild
+            # Kein passendes Bild -> Club-Fallback
             reason = images[0].rejection_reason if images else "Alle Treffer ungeeignet"
-            logger.info(f"[IMAGE] No suitable image for: {player}, reason: {reason}")
-            return self._create_fallback("football", ImageStatus.LOW_QUALITY, player, reason)
+            logger.info(f"[IMAGE] No suitable image for: {player}, using club fallback. Reason: {reason}")
+            return self._create_fallback("football", ImageStatus.LOW_QUALITY, player, reason, club_name)
         
         # Schritt 4: ArticleImage erstellen
         logger.info(f"[IMAGE] Found image for {player}: {best_image.title[:50]}... (score={best_image.quality_score})")
@@ -644,9 +677,40 @@ class ArticleImageService:
         category: str, 
         status: ImageStatus, 
         player: str, 
-        reason: str
+        reason: str,
+        club_name: str = ""
     ) -> ArticleImage:
-        """Erstellt ein Fallback-Bild"""
+        """Erstellt ein Fallback-Bild - bevorzugt vom Verein"""
+        
+        # Versuche Club-spezifisches Stadionbild zu finden
+        club_image_url = None
+        club_key = None
+        
+        if club_name:
+            club_lower = club_name.lower()
+            for key in CLUB_STADIUM_IMAGES.keys():
+                if key in club_lower or club_lower in key:
+                    club_image_url = CLUB_STADIUM_IMAGES[key]
+                    club_key = key
+                    break
+        
+        if club_image_url:
+            logger.info(f"[IMAGE] Using club stadium fallback: {club_key}")
+            return ArticleImage(
+                url=club_image_url,
+                width=1280,
+                height=720,
+                status=status,
+                license_name="CC BY-SA 4.0",
+                author="Wikimedia Commons",
+                detected_player=player,
+                error_reason=reason,
+                is_fallback=True,
+                fallback_category=f"club:{club_key}",
+                created_at=datetime.now(timezone.utc).isoformat(),
+            )
+        
+        # Generisches Fallback wenn kein Verein erkannt
         fallback = FALLBACK_IMAGES.get(category, FALLBACK_IMAGES["stadium"])
         
         return ArticleImage(
