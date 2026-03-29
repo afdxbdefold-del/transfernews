@@ -491,22 +491,32 @@ class WikimediaSearcher:
             # Kein klarer Kontext - vorsichtig sein
             score -= 10
         
-        # ===== GRÖßE (+/- 20) =====
-        if img.width >= 1200:
-            score += 20
-        elif img.width >= 800:
+        # ===== GRÖßE - HARTES KRITERIUM (>=1200px) =====
+        if img.width < 1200:
+            score -= 50  # Starker Malus
+            rejection_reasons.append(f"Zu klein: {img.width}px (min. 1200px)")
+            img.is_valid = False
+        elif img.width >= 1600:
+            score += 20  # Bonus für große Bilder
+        elif img.width >= 1200:
             score += 10
-        elif img.width < 600:
-            score -= 20
-            rejection_reasons.append("Bild zu klein")
         
-        # ===== SEITENVERHÄLTNIS (+/- 10) =====
+        # ===== SEITENVERHÄLTNIS - 16:9 PRIORITÄT =====
         if img.width > 0 and img.height > 0:
             ratio = img.width / img.height
-            if 1.3 < ratio < 2.0:  # Nahe 16:9
-                score += 10
-            elif ratio < 0.8 or ratio > 2.5:  # Extrem
-                score -= 10
+            
+            # 16:9 = 1.78, mit Toleranz 1.6-1.9
+            if 1.6 <= ratio <= 1.9:
+                score += 40  # SEHR GROSSER Bonus für 16:9
+            # Akzeptabel: 4:3 (1.33) bis 2:1 (2.0)  
+            elif 1.3 <= ratio <= 2.0:
+                score += 15
+            # Portrait (Hochformat) - Google Discover mag das nicht
+            elif ratio < 1.0:
+                score -= 35  # STARKER Hochformat-Malus für Google Discover
+            # Extrem breit
+            elif ratio > 2.5:
+                score -= 15
         
         # ===== LIZENZ (+/- 15) =====
         license_lower = img.license_name.lower().replace(" ", "").replace("-", "")
@@ -598,6 +608,9 @@ class WikimediaSearcher:
         # Gruppenfotos werden gecapped
         if is_group_photo:
             final_score = min(85, score)  # Gruppenfotos maximal 85
+        # Portrait-Bilder (Hochformat) werden auch gecapped
+        elif img.width > 0 and img.height > 0 and (img.width / img.height) < 1.0:
+            final_score = min(90, score)  # Portrait maximal 90
         else:
             final_score = max(0, min(100, score))
         
