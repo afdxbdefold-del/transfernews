@@ -290,8 +290,8 @@ class WikimediaSearcher:
     
     async def search_player_image(self, player_name: str) -> List[WikimediaImage]:
         """
-        Sucht nach Bildern eines Spielers.
-        Probiert mehrere Suchvarianten.
+        Sucht nach Bildern eines Fußball-Spielers.
+        Priorisiert Suchvarianten mit Fußball-Kontext.
         """
         # Cache prüfen
         cache_key = player_name.lower()
@@ -299,14 +299,14 @@ class WikimediaSearcher:
             logger.debug(f"[WIKIMEDIA] Cache hit: {player_name}")
             return self.cache[cache_key]
         
-        # Suchvarianten
+        # Suchvarianten - FUSSBALL-SPEZIFISCH priorisieren!
         search_variants = [
-            player_name,
-            f"{player_name} footballer",
-            f"{player_name} football",
-            f"{player_name} soccer",
-            f"{player_name} 2024",
-            f"{player_name} 2023",
+            f"{player_name} footballer",       # Englisch - beste Treffer
+            f"{player_name} soccer player",    # US-Englisch
+            f"{player_name} Fußballer",        # Deutsch
+            f"{player_name} football player",  # Alternativ
+            f"{player_name} footballer 2024",
+            f"{player_name} footballer 2023",
         ]
         
         all_images = []
@@ -319,7 +319,7 @@ class WikimediaSearcher:
                     seen_urls.add(img.url)
                     all_images.append(img)
             
-            # Wenn wir genug haben, stoppen
+            # Wenn wir genug Fußballer-Bilder haben, stoppen
             if len(all_images) >= 10:
                 break
         
@@ -413,18 +413,62 @@ class WikimediaSearcher:
             return None
     
     def _calculate_score(self, img: WikimediaImage, player_name: str) -> int:
-        """Berechnet Quality-Score (0-100)"""
+        """Berechnet Quality-Score (0-100) mit Fußball-Validierung"""
         score = 50  # Basis
+        title_lower = img.title.lower()
+        rejection_reasons = []
         
-        # Größe (+/- 20)
+        # ===== FUSSBALL-VALIDIERUNG (KRITISCH!) =====
+        # Begriffe die auf Fußball hindeuten
+        football_indicators = [
+            "footballer", "soccer", "fußballer", "fussball", "football player",
+            "bundesliga", "premier league", "la liga", "serie a", "ligue 1",
+            "champions league", "europa league", "world cup", "euro 202",
+            "fc ", " fc", "real madrid", "barcelona", "bayern", "dortmund",
+            "manchester", "liverpool", "chelsea", "arsenal", "juventus",
+            "inter", "milan", "psg", "napoli", "atletico",
+            "wm 20", "em 20", "dfb", "nationalmannschaft", "national team",
+            "goal", "match", "stadium", "stadion",
+        ]
+        
+        has_football_context = any(term in title_lower for term in football_indicators)
+        
+        # Auch im Suchterm prüfen
+        search_lower = img.search_term.lower()
+        if "footballer" in search_lower or "soccer" in search_lower or "fußballer" in search_lower:
+            has_football_context = True
+        
+        # Begriffe die KEINE Fußballer sind (andere Sportler, Politiker, etc.)
+        non_football_indicators = [
+            "basketball", "baseball", "hockey", "tennis", "golf", "cricket",
+            "rugby", "nfl", "nba", "mlb", "nhl", "olympics", "swimmer",
+            "politician", "actor", "singer", "musician", "author", "writer",
+            "president", "minister", "senator", "ceo", "businessman",
+            "basketball player", "tennis player", "golf player",
+        ]
+        
+        is_non_footballer = any(term in title_lower for term in non_football_indicators)
+        
+        # Fußball-Bonus / Malus
+        if has_football_context:
+            score += 25  # Großer Bonus für Fußball-Kontext
+        elif is_non_footballer:
+            score -= 50  # Starker Malus für Nicht-Fußballer
+            rejection_reasons.append("Kein Fußballer (andere Sportart/Beruf)")
+        else:
+            # Kein klarer Kontext - vorsichtig sein
+            score -= 10
+        
+        # ===== GRÖßE (+/- 20) =====
         if img.width >= 1200:
             score += 20
         elif img.width >= 800:
             score += 10
         elif img.width < 600:
             score -= 20
+            rejection_reasons.append("Bild zu klein")
         
-        # Seitenverhältnis (+/- 10)
+        # ===== SEITENVERHÄLTNIS (+/- 10) =====
         if img.width > 0 and img.height > 0:
             ratio = img.width / img.height
             if 1.3 < ratio < 2.0:  # Nahe 16:9
@@ -432,17 +476,16 @@ class WikimediaSearcher:
             elif ratio < 0.8 or ratio > 2.5:  # Extrem
                 score -= 10
         
-        # Lizenz (+/- 15)
+        # ===== LIZENZ (+/- 15) =====
         license_lower = img.license_name.lower().replace(" ", "").replace("-", "")
         
-        # Normalisierte Lizenz-Checks
         is_valid_license = False
         
         # CC-BY-SA (alle Versionen)
         if "ccbysa" in license_lower or "ccbysam" in license_lower:
             is_valid_license = True
         # CC-BY (alle Versionen)
-        elif "ccby" in license_lower and "nc" not in license_lower:  # Exclude CC-BY-NC
+        elif "ccby" in license_lower and "nc" not in license_lower:
             is_valid_license = True
         # CC0 / Public Domain
         elif "cc0" in license_lower or "publicdomain" in license_lower or license_lower.startswith("pd"):
@@ -450,47 +493,57 @@ class WikimediaSearcher:
         # GFDL
         elif "gfdl" in license_lower:
             is_valid_license = True
-        # Attribution nur
+        # Attribution
         elif "attribution" in license_lower:
             is_valid_license = True
         
         if is_valid_license:
             score += 15
-            img.is_valid = True
         else:
             score -= 30
-            img.is_valid = False
-            img.rejection_reason = f"Ungeeignete Lizenz: {img.license_name}"
+            rejection_reasons.append(f"Ungeeignete Lizenz: {img.license_name}")
         
-        # Name im Titel (+15)
-        title_lower = img.title.lower()
+        # ===== NAME IM TITEL (+15) =====
         name_parts = player_name.lower().split()
         if all(part in title_lower for part in name_parts):
             score += 15
         elif any(part in title_lower for part in name_parts):
             score += 5
         
-        # Negative Signale
+        # ===== NEGATIVE SIGNALE =====
         negative_terms = ["logo", "wappen", "crest", "badge", "poster", 
-                         "collage", "screenshot", "icon", "flag", "map"]
+                         "collage", "screenshot", "icon", "flag", "map",
+                         "signature", "autograph", "cartoon", "drawing"]
         if any(term in title_lower for term in negative_terms):
             score -= 30
-            img.is_valid = False
-            img.rejection_reason = "Logo/Grafik erkannt"
+            rejection_reasons.append("Logo/Grafik erkannt")
         
-        # Gruppen-Signale
-        group_terms = ["team", "squad", "mannschaft", "group", "national"]
+        # ===== GRUPPEN-SIGNALE =====
+        group_terms = ["team photo", "squad photo", "mannschaftsfoto", "group photo"]
         if any(term in title_lower for term in group_terms):
             score -= 15
         
-        # Autor vorhanden (+5)
+        # ===== AUTOR VORHANDEN (+5) =====
         if img.author and len(img.author) > 2:
             score += 5
         else:
-            img.is_valid = False
-            img.rejection_reason = "Kein Autor"
+            score -= 10
+            rejection_reasons.append("Kein Autor")
         
-        return max(0, min(100, score))
+        # ===== FINALE VALIDIERUNG =====
+        final_score = max(0, min(100, score))
+        
+        # Bild ist valid wenn Score >= 50 UND keine kritischen Ablehnungsgründe
+        critical_rejections = [r for r in rejection_reasons if "Lizenz" in r or "Kein Fußballer" in r]
+        
+        if final_score >= 50 and not critical_rejections:
+            img.is_valid = True
+            img.rejection_reason = ""
+        else:
+            img.is_valid = False
+            img.rejection_reason = "; ".join(rejection_reasons) if rejection_reasons else "Score zu niedrig"
+        
+        return final_score
 
 
 # =============================================================================
