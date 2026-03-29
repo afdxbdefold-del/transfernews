@@ -444,17 +444,28 @@ export default function NewsDetailPage() {
                   {/* Author & Reading Time */}
                   <div className="flex items-center gap-4 mb-4 text-sm">
                     <Link 
-                      to={`/autor/${article.author_slug || 'redaktion'}`}
+                      to={`/autor/${article.author_id || 'redaktion'}`}
                       className="flex items-center gap-2 hover:opacity-80 transition-opacity"
                     >
-                      <div className="w-8 h-8 rounded-full bg-[#79B92A] flex items-center justify-center text-white font-bold text-xs">
-                        {article.author_name?.charAt(0) || 'R'}
-                      </div>
+                      {article.author_image ? (
+                        <img 
+                          src={article.author_image} 
+                          alt={article.author_name}
+                          className="w-10 h-10 rounded-full object-cover object-top"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-[#79B92A] flex items-center justify-center text-white font-bold text-sm">
+                          {article.author_name?.charAt(0) || 'R'}
+                        </div>
+                      )}
                       <div>
                         <span className="font-medium text-gray-900 hover:text-[#79B92A] transition-colors">{article.author_name || 'Redaktion'}</span>
-                        <span className="text-gray-400 mx-2">·</span>
-                        <span className="text-gray-500">{article.reading_time_minutes || 1} Min. Lesezeit</span>
+                        {article.author_role && (
+                          <span className="text-gray-400 text-xs block">{article.author_role}</span>
+                        )}
                       </div>
+                      <span className="text-gray-400 mx-1">·</span>
+                      <span className="text-gray-500">{article.reading_time_minutes || 1} Min. Lesezeit</span>
                     </Link>
                     {article.word_count > 0 && (
                       <span className="text-gray-400 text-xs hidden md:inline">

@@ -451,6 +451,9 @@ class ArticleBase(BaseModel):
     player_full_name: Optional[str] = None
     author_name: Optional[str] = "Redaktion"
     author_slug: Optional[str] = "redaktion"
+    author_id: Optional[str] = None
+    author_role: Optional[str] = None
+    author_image: Optional[str] = None
     reading_time_minutes: Optional[int] = None
     word_count: Optional[int] = None
 

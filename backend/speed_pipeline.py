@@ -574,6 +574,15 @@ class SpeedPipeline:
         # Dedupe Key basierend auf Story
         article_data["dedupe_key"] = story_result.get("story_key")
         
+        # Zufälligen Autor zuweisen (basierend auf Region)
+        from story_engine import get_author_by_region, get_random_author
+        story_region = story.get("story_region", "global")
+        author = get_author_by_region(story_region) if story_region != "global" else get_random_author()
+        article_data["author_id"] = author["id"]
+        article_data["author_name"] = author["name"]
+        article_data["author_role"] = author["role"]
+        article_data["author_image"] = author["image"]
+        
         # Draft-Status falls niedrige Confidence
         if is_draft:
             article_data["status"] = "draft"

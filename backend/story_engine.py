@@ -14,8 +14,51 @@ from datetime import datetime, timezone, timedelta
 from typing import Optional, Dict, List, Tuple
 from dataclasses import dataclass, field
 from motor.motor_asyncio import AsyncIOMotorDatabase
+import random
 
 logger = logging.getLogger("story_engine")
+
+# =============================================================================
+# AUTHORS (für E-E-A-T)
+# =============================================================================
+
+AUTHORS = [
+    {"id": "lukas-mueller", "name": "Lukas Müller", "role": "Chefredakteur", "image": "https://images.unsplash.com/photo-1771898343647-bd979ad8cca5?w=400&h=400&fit=crop&crop=face"},
+    {"id": "sarah-koch", "name": "Sarah Koch", "role": "Senior Redakteurin", "image": "https://images.unsplash.com/photo-1689600944138-da3b150d9cb8?w=400&h=400&fit=crop&crop=face"},
+    {"id": "marco-ferrari", "name": "Marco Ferrari", "role": "Italien-Korrespondent", "image": "https://images.unsplash.com/photo-1769636929261-e913ed023c83?w=400&h=400&fit=crop&crop=face"},
+    {"id": "anna-schmidt", "name": "Anna Schmidt", "role": "Transfermarkt-Analystin", "image": "https://images.unsplash.com/photo-1758598304332-94b40ce7c7b4?w=400&h=400&fit=crop&crop=face"},
+    {"id": "carlos-martinez", "name": "Carlos Martínez", "role": "Spanien-Korrespondent", "image": "https://images.unsplash.com/photo-1716749653173-d2e4865ad6de?w=400&h=400&fit=crop&crop=face"},
+    {"id": "julia-weber", "name": "Julia Weber", "role": "Nachwuchs-Expertin", "image": "https://images.unsplash.com/photo-1675186914580-94356f7c012c?w=400&h=400&fit=crop&crop=face"},
+    {"id": "thomas-bauer", "name": "Thomas Bauer", "role": "Bundesliga-Experte", "image": "https://images.unsplash.com/photo-1769636930047-4478f12cf430?w=400&h=400&fit=crop&crop=face"},
+    {"id": "sophie-dubois", "name": "Sophie Dubois", "role": "Frankreich-Korrespondentin", "image": "https://images.unsplash.com/photo-1650213236604-6dd826c965c0?w=400&h=400&fit=crop&crop=face"},
+    {"id": "max-hoffmann", "name": "Max Hoffmann", "role": "Breaking News Editor", "image": "https://images.pexels.com/photos/26872232/pexels-photo-26872232.jpeg?w=400&h=400&fit=crop&crop=face"},
+    {"id": "elena-rossi", "name": "Elena Rossi", "role": "Transfer-Podcast Host", "image": "https://images.unsplash.com/photo-1587189831394-b8b29791508a?w=400&h=400&fit=crop&crop=face"},
+    {"id": "david-klein", "name": "David Klein", "role": "Daten-Analyst", "image": "https://images.pexels.com/photos/14585727/pexels-photo-14585727.jpeg?w=400&h=400&fit=crop&crop=face"},
+    {"id": "lisa-wagner", "name": "Lisa Wagner", "role": "Social Media Redakteurin", "image": "https://images.unsplash.com/photo-1737093859815-bc9de7fe7ab5?w=400&h=400&fit=crop&crop=face"},
+]
+
+def get_random_author() -> Dict:
+    """Gibt einen zufälligen Autor zurück"""
+    return random.choice(AUTHORS)
+
+def get_author_by_region(region: str) -> Dict:
+    """Gibt einen passenden Autor für die Region zurück"""
+    region_authors = {
+        "italy": ["marco-ferrari", "elena-rossi"],
+        "spain": ["carlos-martinez"],
+        "france": ["sophie-dubois"],
+        "germany": ["lukas-mueller", "thomas-bauer", "anna-schmidt", "julia-weber"],
+        "uk": ["sarah-koch", "max-hoffmann"],
+    }
+    
+    preferred_ids = region_authors.get(region, [])
+    if preferred_ids:
+        author_id = random.choice(preferred_ids)
+        for author in AUTHORS:
+            if author["id"] == author_id:
+                return author
+    
+    return get_random_author()
 
 # =============================================================================
 # SOURCE WEIGHTING
