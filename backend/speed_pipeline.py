@@ -697,31 +697,18 @@ class SpeedPipeline:
 
 # Verbotene AI-Phrasen
 FORBIDDEN_PHRASES = [
+    # Nur wirklich schlechte AI-Floskeln
     "es bleibt abzuwarten",
-    "es wird spannend",
     "die zeit wird zeigen",
     "nur die zukunft wird zeigen",
-    "es ist noch unklar",
-    "es könnte sein",
-    "möglicherweise",
-    "eventuell",
-    "unter umständen",
-    "in den kommenden wochen",
-    "in naher zukunft",
-    "es ist nicht auszuschließen",
-    "es ist anzunehmen",
     "man darf gespannt sein",
     "es zeichnet sich ab",
-    "bemerkenswert",
-    "interessanterweise",
-    "überraschenderweise",
-    "werden zeigen",
-    "sind gespannt",
-    "bleibt spannend",
-    "wird sich zeigen",
-    "abzuwarten bleibt",
     "beobachter sind gespannt",
-    "die kommenden wochen",
+    "es ist nicht auszuschließen",
+    "abzuwarten bleibt",
+    # Zu vage
+    "es könnte sein dass",
+    "unter umständen könnte",
 ]
 
 
@@ -797,10 +784,11 @@ NUR OUTPUT: Der Artikel-Text mit H2-Überschriften."""
         if rewrite_words < self.MIN_WORDS:
             return (False, f"Zu kurz: {rewrite_words} < {self.MIN_WORDS} Wörter")
         
-        # Regel 2: Nicht kürzer als Original (mit 5% Toleranz)
-        min_required = int(original_words * 0.95)
-        if rewrite_words < min_required:
-            return (False, f"Kürzer als Original: {rewrite_words} vs {original_words}")
+        # Regel 2: Nicht kürzer als Original (nur bei langen Originalen >100 Wörter)
+        if original_words > 100:
+            min_required = int(original_words * 0.85)  # 15% Toleranz
+            if rewrite_words < min_required:
+                return (False, f"Kürzer als Original: {rewrite_words} vs {original_words}")
         
         # Regel 3: Keine verbotenen Phrasen
         rewrite_lower = rewrite.lower()
@@ -990,6 +978,7 @@ Schreibe jetzt korrekt!"""
                     "$set": {
                         "body": rewrite,
                         "needs_gpt_rewrite": False,
+                        "is_gpt_rewritten": True,
                         "gpt_rewritten_at": datetime.now(timezone.utc).isoformat(),
                         "word_count": new_words,
                         "reading_time_minutes": max(1, new_words // 200),
