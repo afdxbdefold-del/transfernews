@@ -460,7 +460,7 @@ class WikimediaSearcher:
             "manchester", "liverpool", "chelsea", "arsenal", "juventus",
             "inter", "milan", "psg", "napoli", "atletico",
             "wm 20", "em 20", "dfb", "nationalmannschaft", "national team",
-            "goal", "match", "stadium", "stadion",
+            "match", "stadium", "stadion",  # ENTFERNT: "goal" (zu allgemein, fängt Grafiken)
         ]
         
         has_football_context = any(term in title_lower for term in football_indicators)
@@ -484,12 +484,22 @@ class WikimediaSearcher:
         # Fußball-Bonus / Malus
         if has_football_context:
             score += 25  # Großer Bonus für Fußball-Kontext
+            
+            # EXTRA Bonus für Match-Fotos (Spielszenen sind ideal)
+            match_indicators = [" v ", " vs ", "match", "game", "spiel"]
+            if any(ind in title_lower for ind in match_indicators):
+                score += 15  # Zusätzlicher Bonus für Spielfotos
+                
         elif is_non_footballer:
             score -= 50  # Starker Malus für Nicht-Fußballer
             rejection_reasons.append("Kein Fußballer (andere Sportart/Beruf)")
         else:
             # Kein klarer Kontext - vorsichtig sein
             score -= 10
+        
+        # Malus für Street Art / Murals (keine echten Fotos)
+        if "mural" in title_lower or "graffiti" in title_lower or "street art" in title_lower or "visits" in title_lower:
+            score -= 15
         
         # ===== GRÖßE - HARTES KRITERIUM (>=1200px) =====
         if img.width < 1200:
@@ -591,9 +601,31 @@ class WikimediaSearcher:
         
         # ===== NEGATIVE SIGNALE =====
         negative_terms = ["logo", "wappen", "crest", "badge", "poster", 
-                         "collage", "screenshot", "icon", "flag", "map",
-                         "signature", "autograph", "cartoon", "drawing"]
-        if any(term in title_lower for term in negative_terms):
+                         "collage", "screenshot", "icon", "flag",
+                         "signature", "autograph", "cartoon", "drawing",
+                         # Statistik-Grafiken ausschließen
+                         "shot map", "heat map", "heatmap", "statistics", 
+                         "stats", "chart", "graph", "diagram", "pass map", 
+                         "touch map", "xg", "expected goals", "location",
+                         "by location", "goals by", "goal map"]
+        
+        # Auch URL prüfen für Grafiken
+        url_lower = img.url.lower()
+        
+        # Spezifische Grafik-Dateinamen
+        is_statistics_graphic = (
+            "goals" in title_lower and ("location" in title_lower or "map" in title_lower or "chart" in title_lower) or
+            "goals_by" in url_lower or
+            "_goals_" in url_lower or
+            "shot_map" in url_lower or
+            "heat_map" in url_lower
+        )
+        
+        if is_statistics_graphic:
+            score -= 100  # KOMPLETT ablehnen - Statistik-Grafiken
+            rejection_reasons.append("Statistik-Grafik erkannt")
+            img.is_valid = False  # Komplett ungültig
+        elif any(term in title_lower for term in negative_terms):
             score -= 30
             rejection_reasons.append("Logo/Grafik erkannt")
         
