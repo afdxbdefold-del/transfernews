@@ -730,44 +730,45 @@ class GPTRewriter:
     - Fallback auf Original wenn Rewrite schlechter
     """
     
-    MIN_WORDS = 120
-    MAX_WORDS = 200
-    MAX_SENTENCE_WORDS = 25  # Etwas lockerer
+    MIN_WORDS = 150
+    MAX_WORDS = 300
+    MAX_SENTENCE_WORDS = 25
     
     SYSTEM_PROMPT = """Du bist Sportredakteur bei transfernews.de.
 
-AUFGABE: Schreibe einen sachlichen Transfer-Artikel.
+AUFGABE: Schreibe einen ausführlichen, faktenbasierten Transfer-Artikel.
 
-LÄNGE: Exakt 120-180 Wörter. Nicht mehr, nicht weniger.
+WICHTIG: Nutze ALLE bereitgestellten Kontext-Informationen!
 
-STRUKTUR (4 kurze Absätze):
-Absatz 1: Die Nachricht in 2 Sätzen (Wer, Was, Wohin)
-Absatz 2: Hintergrund in 2-3 Sätzen (Quelle, Kontext)
-Absatz 3: Bedeutung in 2-3 Sätzen (Was heißt das für Verein/Spieler)
-Absatz 4: Ausblick in 1-2 Sätzen (Nächster Schritt)
+STRUKTUR (5-6 Absätze):
+Absatz 1: Die Nachricht (Wer, Was, Wohin) - 2-3 Sätze
+Absatz 2: Spieler-Hintergrund (aus KONTEXT) - 2-3 Sätze
+Absatz 3: Vereins-Kontext - 2-3 Sätze
+Absatz 4: Bedeutung des Transfers - 2-3 Sätze
+Absatz 5: Ausblick - 1-2 Sätze
+
+LÄNGE: 180-280 Wörter. Je mehr Kontext, desto länger!
 
 REGELN:
-- Maximal 22 Wörter pro Satz
+- Nutze NUR Fakten aus dem Original oder dem KONTEXT
+- Erfinde KEINE Statistiken, Zahlen oder Zitate
+- Maximal 25 Wörter pro Satz
 - Keine ## Überschriften
-- Keine *Kursiv* oder **Fett**
-- Keine Zeitstempel
-- Aktive Sprache
+- Keine *Markdown*-Formatierung
 
 VERBOTEN:
-- Erfundene Zahlen oder Statistiken
 - "Es bleibt abzuwarten"
 - "Möglicherweise"
 - "Bemerkenswert"
-- "In naher Zukunft"
-- "Es wird spannend"
-- Jede Spekulation
+- "Die kommenden Wochen werden zeigen"
+- Jede Spekulation ohne Quelle
 
-NUR OUTPUT: Der Artikel-Text, sonst nichts."""
+NUR OUTPUT: Der Artikel-Text."""
     
     def __init__(self, db: AsyncIOMotorDatabase):
         self.db = db
     
-    def validate_rewrite(self, original: str, rewrite: str) -> tuple[bool, str]:
+    def validate_rewrite(self, original: str, rewrite: str, allow_context_numbers: bool = False) -> tuple[bool, str]:
         """
         Validiert den Rewrite gegen Qualitätsregeln.
         
@@ -797,21 +798,22 @@ NUR OUTPUT: Der Artikel-Text, sonst nichts."""
         # Regel 4: Satzlänge prüfen
         sentences = [s.strip() for s in rewrite.replace('\n', ' ').split('.') if s.strip()]
         long_sentences = [s for s in sentences if len(s.split()) > self.MAX_SENTENCE_WORDS]
-        if len(long_sentences) > 1:  # Max 1 langer Satz erlaubt
+        if len(long_sentences) > 2:  # Max 2 lange Sätze erlaubt
             return (False, f"Zu viele lange Sätze (>{self.MAX_SENTENCE_WORDS} Wörter): {len(long_sentences)}")
         
         # Regel 5: Mindestens 5 Sätze
         if len(sentences) < 5:
             return (False, f"Zu wenig Sätze: {len(sentences)} < 5")
         
-        # Regel 6: Prüfe auf erfundene Statistiken (Zahlen die nicht im Original waren)
-        original_numbers = set(re.findall(r'\b\d+\b', original))
-        rewrite_numbers = set(re.findall(r'\b\d+\b', rewrite))
-        new_numbers = rewrite_numbers - original_numbers
-        # Filtere harmlose Zahlen (Jahre, kleine Zahlen)
-        suspicious_numbers = [n for n in new_numbers if int(n) > 10 and int(n) < 2020]
-        if len(suspicious_numbers) > 2:
-            return (False, f"Verdacht auf erfundene Statistiken: {suspicious_numbers}")
+        # Regel 6: Prüfe auf erfundene Statistiken (nur wenn kein Kontext)
+        if not allow_context_numbers:
+            original_numbers = set(re.findall(r'\b\d+\b', original))
+            rewrite_numbers = set(re.findall(r'\b\d+\b', rewrite))
+            new_numbers = rewrite_numbers - original_numbers
+            # Filtere harmlose Zahlen (Jahre 2020+, kleine Zahlen)
+            suspicious_numbers = [n for n in new_numbers if 10 < int(n) < 2020]
+            if len(suspicious_numbers) > 3:
+                return (False, f"Verdacht auf erfundene Statistiken: {suspicious_numbers}")
         
         return (True, "OK")
     
@@ -829,14 +831,14 @@ NUR OUTPUT: Der Artikel-Text, sonst nichts."""
     
     async def rewrite_article(self, article_id: str) -> bool:
         """
-        Verbessert einen Artikel mit GPT.
-        Fallback auf Original wenn Rewrite schlechter.
+        Verbessert einen Artikel mit GPT + Online-Kontext-Recherche.
         """
         try:
             from dotenv import load_dotenv
             load_dotenv()
             
             from emergentintegrations.llm.chat import LlmChat, UserMessage
+            from context_research import get_context_researcher
             
             api_key = os.environ.get("EMERGENT_LLM_KEY")
             if not api_key:
@@ -857,13 +859,33 @@ NUR OUTPUT: Der Artikel-Text, sonst nichts."""
             title = article.get('title', '')
             player = article.get('player_name', '')
             club = article.get('club_name', '')
+            from_club = article.get('from_club', '')
             
-            # GPT-Rewrite
+            # === KONTEXT-RECHERCHE ===
+            researcher = get_context_researcher()
+            context_data = await researcher.research_transfer(
+                player_name=player,
+                from_club=from_club,
+                to_club=club
+            )
+            
+            context_text = context_data.get("context_text", "")
+            has_context = context_data.get("has_context", False)
+            
+            if has_context:
+                logger.info(f"[GPT] Found online context for {player}/{club}")
+            
+            # GPT-Rewrite mit Kontext
             chat = LlmChat(
                 api_key=api_key,
                 session_id=f"rewrite-{article_id}",
                 system_message=self.SYSTEM_PROMPT
             ).with_model("openai", "gpt-4o")
+            
+            # Prompt mit Kontext
+            min_words = max(self.MIN_WORDS, original_words)
+            if has_context:
+                min_words = max(180, original_words)  # Mit Kontext längere Artikel
             
             prompt = f"""ARTIKEL ZUM VERBESSERN:
 
@@ -871,11 +893,20 @@ TITEL: {title}
 SPIELER: {player}
 VEREIN: {club}
 
-ORIGINAL ({original_words} Wörter):
+ORIGINAL-TEXT:
 {original_body}
 
-WICHTIG: Dein Output muss mindestens {max(self.MIN_WORDS, original_words)} Wörter haben!
-Liefere NUR den verbesserten Artikel-Text."""
+"""
+            if context_text:
+                prompt += f"""=== RECHERCHIERTE FAKTEN (NUTZE DIESE!) ===
+{context_text}
+============================================
+
+"""
+            
+            prompt += f"""ANFORDERUNG: Schreibe einen Artikel mit mindestens {min_words} Wörtern.
+Nutze alle verfügbaren Fakten aus dem Original UND dem Kontext.
+Liefere NUR den Artikel-Text."""
             
             user_message = UserMessage(text=prompt)
             response = await chat.send_message(user_message)
@@ -887,37 +918,37 @@ Liefere NUR den verbesserten Artikel-Text."""
             # Bereinigen
             rewrite = self.clean_rewrite(response)
             
-            # Validieren
-            is_valid, reason = self.validate_rewrite(original_body, rewrite)
+            # Validieren (mit Kontext erlauben wir Zahlen aus Wikipedia)
+            is_valid, reason = self.validate_rewrite(original_body, rewrite, allow_context_numbers=has_context)
             
             if not is_valid:
                 logger.warning(f"[GPT] REJECTED: {reason} - {title[:30]}")
                 
-                # Retry mit expliziterem Prompt
-                retry_prompt = f"""DEIN VORHERIGER OUTPUT WURDE ABGELEHNT!
-Grund: {reason}
+                # Retry
+                retry_prompt = f"""DEIN OUTPUT WURDE ABGELEHNT: {reason}
 
-ORIGINAL ({original_words} Wörter):
+ORIGINAL:
 {original_body}
 
-ANFORDERUNGEN:
-- Mindestens {self.MIN_WORDS} Wörter (du hattest {len(rewrite.split())})
-- Mindestens 3 Absätze
-- Keine verbotenen Phrasen
-- Max 20 Wörter pro Satz
+{f"KONTEXT:{chr(10)}{context_text}" if context_text else ""}
 
-Schreibe den Artikel JETZT korrekt!"""
+ANFORDERUNGEN:
+- Mindestens {min_words} Wörter
+- 5 Absätze
+- Max 25 Wörter pro Satz
+- Keine verbotenen Phrasen
+
+Schreibe jetzt korrekt!"""
                 
                 user_message = UserMessage(text=retry_prompt)
                 response = await chat.send_message(user_message)
                 
                 if response:
                     rewrite = self.clean_rewrite(response)
-                    is_valid, reason = self.validate_rewrite(original_body, rewrite)
+                    is_valid, reason = self.validate_rewrite(original_body, rewrite, allow_context_numbers=has_context)
                 
                 if not is_valid:
-                    logger.error(f"[GPT] FINAL REJECT: {reason} - Using original")
-                    # Fallback: Original behalten, aber Flag entfernen
+                    logger.error(f"[GPT] FINAL REJECT: {reason}")
                     await self.db.articles.update_one(
                         {"id": article_id},
                         {"$set": {"needs_gpt_rewrite": False, "rewrite_failed": True}}
@@ -936,10 +967,11 @@ Schreibe den Artikel JETZT korrekt!"""
                         "word_count": new_words,
                         "reading_time_minutes": max(1, new_words // 200),
                         "rewrite_validation": "passed",
+                        "has_researched_context": has_context,
                     }
                 }
             )
-            logger.info(f"[GPT] ✓ {title[:30]}... ({original_words} → {new_words} Wörter)")
+            logger.info(f"[GPT] ✓ {title[:30]}... ({original_words} → {new_words} Wörter, context={has_context})")
             return True
         
         except Exception as e:
