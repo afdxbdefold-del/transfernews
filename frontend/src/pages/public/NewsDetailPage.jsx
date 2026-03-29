@@ -150,7 +150,11 @@ export default function NewsDetailPage() {
   };
 
   // Split body into paragraphs for ad insertion
-  const paragraphs = article?.body?.split("\n\n").filter(Boolean) || [];
+  // Handle both \n\n (double newline) and ## headings
+  const paragraphs = article?.body
+    ?.split(/\n\n|\n(?=## )/)
+    .map(p => p.trim())
+    .filter(Boolean) || [];
 
   if (loading) {
     return (
@@ -387,19 +391,37 @@ export default function NewsDetailPage() {
               {/* Article Body */}
               <div className="bg-white p-4 md:p-6">
                 <div className="prose prose-lg max-w-none">
-                  {paragraphs.map((paragraph, idx) => (
-                    <div key={idx}>
-                      <p className="mb-4 text-gray-700 leading-relaxed text-base md:text-lg">
-                        {paragraph}
-                      </p>
-                      {/* Insert ad after every 3rd paragraph */}
-                      {(idx + 1) % 3 === 0 && idx < paragraphs.length - 1 && (
-                        <div className="my-6">
-                          <AdSlot slotKey={`article_after_paragraph_${Math.min(idx + 1, 3)}`} minHeight="90px" />
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                  {paragraphs.map((paragraph, idx) => {
+                    // Check if paragraph is a H2 heading (starts with ##)
+                    const isH2 = paragraph.trim().startsWith('## ');
+                    
+                    if (isH2) {
+                      const headingText = paragraph.trim().replace(/^##\s*/, '');
+                      return (
+                        <h2 
+                          key={idx}
+                          className="text-xl md:text-2xl font-bold text-gray-900 mt-6 mb-3"
+                          style={{ fontFamily: "'Oswald', sans-serif" }}
+                        >
+                          {headingText}
+                        </h2>
+                      );
+                    }
+                    
+                    return (
+                      <div key={idx}>
+                        <p className="mb-4 text-gray-700 leading-relaxed text-base md:text-lg">
+                          {paragraph}
+                        </p>
+                        {/* Insert ad after every 3rd paragraph */}
+                        {(idx + 1) % 3 === 0 && idx < paragraphs.length - 1 && (
+                          <div className="my-6">
+                            <AdSlot slotKey={`article_after_paragraph_${Math.min(idx + 1, 3)}`} minHeight="90px" />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
 
                   {!article.body && (
                     <p className="text-gray-500 italic">Kein Inhalt verfügbar</p>
