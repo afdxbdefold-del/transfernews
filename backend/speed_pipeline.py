@@ -492,24 +492,47 @@ class SpeedPipeline:
         article_data = self.instant_generator.generate_instant_article(event)
         article_data["dedupe_key"] = dedupe_key
         
-        # 5b. Bild für Google Discover zuweisen
+        # 5b. Bild für Google Discover zuweisen (mit RSS-Bild Priorität)
         try:
-            from image_system import get_image_selector
-            selector = get_image_selector()
-            image_data = selector.get_image_for_article(
+            from image_system import ImageSelector
+            selector = ImageSelector()
+            
+            # RSS-Bild aus Event holen
+            rss_image_url = event.get("image_url")
+            
+            # Async Bildsuche mit RSS-Priorität
+            image_data = await selector.get_best_image(
+                rss_image_url=rss_image_url,
                 player_name=article_data.get("player_name"),
                 club_name=article_data.get("club_name"),
                 league=article_data.get("club_league"),
-                transfer_status=article_data.get("transfer_status")
             )
+            
             article_data["hero_image"] = image_data["url"]
             article_data["hero_image_width"] = image_data["width"]
             article_data["hero_image_height"] = image_data["height"]
             article_data["hero_image_alt"] = image_data["alt"]
+            article_data["hero_image_source"] = image_data.get("source", "unknown")
             article_data["og_image"] = image_data["url"]
-            logger.debug(f"[IMAGE] Assigned {image_data['source']} image")
+            logger.info(f"[IMAGE] Assigned {image_data.get('source', 'unknown')} image: {image_data['url'][:60]}...")
         except Exception as e:
             logger.warning(f"[IMAGE] Could not assign image: {e}")
+            # Fallback zu synchroner Methode
+            try:
+                from image_system import get_image_selector
+                selector = get_image_selector()
+                image_data = selector.get_image_for_article(
+                    player_name=article_data.get("player_name"),
+                    club_name=article_data.get("club_name"),
+                    league=article_data.get("club_league"),
+                )
+                article_data["hero_image"] = image_data["url"]
+                article_data["hero_image_width"] = image_data["width"]
+                article_data["hero_image_height"] = image_data["height"]
+                article_data["hero_image_alt"] = image_data["alt"]
+                article_data["og_image"] = image_data["url"]
+            except Exception as e2:
+                logger.error(f"[IMAGE] Fallback also failed: {e2}")
         
         # 6. In DB speichern
         from models import generate_uuid

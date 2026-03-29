@@ -8,9 +8,11 @@ Verwaltet hochauflösende Bilder (≥1200px) für:
 - Twitter Card Images
 - Article Hero Images
 
-Quellen:
-- Unsplash (Stadion/Fußball-Bilder)
-- Fallback: Generierte Placeholder
+Quellen (Priorität):
+1. RSS-Feed Bilder (wenn ≥1200px)
+2. Unsplash Suche nach Spieler/Club
+3. Club-/Liga-spezifische Fallbacks
+4. Generische Fußball-Bilder
 """
 
 import hashlib
@@ -18,8 +20,11 @@ import logging
 import os
 import aiohttp
 import asyncio
-from typing import Optional, Dict, List
+import re
+from typing import Optional, Dict, List, Tuple
 from datetime import datetime, timezone
+from PIL import Image
+from io import BytesIO
 
 logger = logging.getLogger(__name__)
 
@@ -79,6 +84,118 @@ GENERIC_FOOTBALL_IMAGES = [
 
 
 # =============================================================================
+# IMAGE VALIDATOR & FETCHER
+# =============================================================================
+
+class ImageValidator:
+    """Prüft und validiert Bildgrößen für Google Discover"""
+    
+    @staticmethod
+    async def check_image_size(url: str, timeout: int = 5) -> Tuple[bool, int, int]:
+        """
+        Prüft ob ein Bild die Mindestgröße für Google Discover erfüllt.
+        
+        Returns:
+            (is_valid, width, height)
+        """
+        if not url or not url.startswith(('http://', 'https://')):
+            return (False, 0, 0)
+        
+        # Überspringe Video-URLs
+        if any(ext in url.lower() for ext in ['.m3u8', '.mp4', '.webm', '.mov']):
+            return (False, 0, 0)
+        
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url, timeout=aiohttp.ClientTimeout(total=timeout)) as response:
+                    if response.status != 200:
+                        return (False, 0, 0)
+                    
+                    content_type = response.headers.get('content-type', '')
+                    if 'image' not in content_type:
+                        return (False, 0, 0)
+                    
+                    # Lade nur die ersten Bytes für Header-Info
+                    data = await response.read()
+                    
+                    try:
+                        img = Image.open(BytesIO(data))
+                        width, height = img.size
+                        is_valid = width >= MIN_WIDTH and height >= MIN_HEIGHT
+                        logger.debug(f"[IMAGE] {url[:50]}... → {width}x{height} (valid: {is_valid})")
+                        return (is_valid, width, height)
+                    except Exception as e:
+                        logger.debug(f"[IMAGE] Could not parse image: {e}")
+                        return (False, 0, 0)
+                        
+        except Exception as e:
+            logger.debug(f"[IMAGE] Error checking {url[:50]}...: {e}")
+            return (False, 0, 0)
+    
+    @staticmethod
+    def extract_size_from_url(url: str) -> Tuple[int, int]:
+        """
+        Extrahiert Bildgröße aus URL-Parametern (z.B. ?w=1200 oder _w520)
+        
+        Returns:
+            (width, height) oder (0, 0) wenn nicht erkennbar
+        """
+        # Pattern: w=1200, width=1200, _w1200, /1200x800
+        patterns = [
+            r'[?&]w=(\d+)',
+            r'[?&]width=(\d+)',
+            r'_w(\d+)',
+            r'/(\d{3,4})x(\d{3,4})',
+            r'w(\d+)_',
+        ]
+        
+        for pattern in patterns:
+            match = re.search(pattern, url)
+            if match:
+                groups = match.groups()
+                if len(groups) == 2:
+                    return (int(groups[0]), int(groups[1]))
+                elif len(groups) == 1:
+                    width = int(groups[0])
+                    # Schätze Höhe basierend auf 16:9
+                    return (width, int(width * 9 / 16))
+        
+        return (0, 0)
+    
+    @staticmethod
+    def upgrade_image_url(url: str, target_width: int = 1200) -> str:
+        """
+        Versucht eine Bild-URL auf höhere Auflösung zu upgraden.
+        Unterstützt gängige CDN-Formate.
+        """
+        if not url:
+            return url
+        
+        # Unsplash: ?w=XXX durch ?w=1200 ersetzen
+        if 'unsplash.com' in url:
+            url = re.sub(r'\?w=\d+', f'?w={target_width}', url)
+            if '?w=' not in url:
+                url += f'?w={target_width}'
+            return url
+        
+        # Spiegel CDN: _w520 durch _w1200 ersetzen
+        if 'spiegel.de' in url:
+            url = re.sub(r'_w\d+', f'_w{target_width}', url)
+            return url
+        
+        # Zeit.de: /original__640x360 durch /original ersetzen
+        if 'zeit.de' in url:
+            url = re.sub(r'/original__\d+x\d+', '/original', url)
+            return url
+        
+        # Generisch: Versuche Größenparameter zu ersetzen
+        url = re.sub(r'([?&])w=\d+', f'\\1w={target_width}', url)
+        url = re.sub(r'([?&])width=\d+', f'\\1width={target_width}', url)
+        
+        return url
+
+
+# =============================================================================
 # IMAGE SELECTOR
 # =============================================================================
 
@@ -87,6 +204,56 @@ class ImageSelector:
     
     def __init__(self):
         self.image_cache = {}
+        self.validator = ImageValidator()
+    
+    async def get_best_image(
+        self,
+        rss_image_url: Optional[str] = None,
+        player_name: Optional[str] = None,
+        club_name: Optional[str] = None,
+        league: Optional[str] = None,
+    ) -> Dict[str, any]:
+        """
+        Findet das beste Bild mit Priorität:
+        1. RSS-Feed Bild (wenn ≥1200px)
+        2. Upgraded RSS-Feed Bild
+        3. Club-spezifisches Fallback
+        4. Liga-spezifisches Fallback
+        5. Generisches Fußball-Bild
+        """
+        
+        # Priorität 1: RSS-Bild prüfen
+        if rss_image_url:
+            # Versuche URL zu upgraden
+            upgraded_url = self.validator.upgrade_image_url(rss_image_url)
+            
+            # Schnelle Größenschätzung aus URL
+            est_width, est_height = self.validator.extract_size_from_url(upgraded_url)
+            
+            if est_width >= MIN_WIDTH:
+                logger.info(f"[IMAGE] Using upgraded RSS image: {upgraded_url[:60]}...")
+                return {
+                    "url": upgraded_url,
+                    "width": est_width,
+                    "height": est_height or MIN_HEIGHT,
+                    "alt": f"Transfer-News: {player_name or 'Spieler'}",
+                    "source": "rss_upgraded"
+                }
+            
+            # Vollständige Prüfung (langsamer, aber genauer)
+            is_valid, width, height = await self.validator.check_image_size(upgraded_url)
+            if is_valid:
+                logger.info(f"[IMAGE] RSS image valid ({width}x{height}): {upgraded_url[:60]}...")
+                return {
+                    "url": upgraded_url,
+                    "width": width,
+                    "height": height,
+                    "alt": f"Transfer-News: {player_name or 'Spieler'}",
+                    "source": "rss"
+                }
+        
+        # Fallback zu statischen Bildern
+        return self.get_image_for_article(player_name, club_name, league)
     
     def get_image_for_article(
         self,
