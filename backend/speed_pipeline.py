@@ -736,34 +736,39 @@ class GPTRewriter:
     
     SYSTEM_PROMPT = """Du bist Sportredakteur bei transfernews.de.
 
-AUFGABE: Schreibe einen ausführlichen, faktenbasierten Transfer-Artikel.
+AUFGABE: Schreibe einen ausführlichen, SEO-optimierten Transfer-Artikel mit H2-Überschriften.
 
-WICHTIG: Nutze ALLE bereitgestellten Kontext-Informationen!
+STRUKTUR (PFLICHT):
+1. Einleitungs-Absatz (2-3 Sätze, keine Überschrift)
+2. ## Die Fakten
+   - Was ist passiert? Wer wechselt wohin?
+3. ## Hintergrund
+   - Spieler-Info, Karriere, Kontext
+4. ## Bedeutung für [Vereinsname]
+   - Was bedeutet der Transfer?
+5. ## Ausblick
+   - Nächste Schritte, was passiert als nächstes?
 
-STRUKTUR (5-6 Absätze):
-Absatz 1: Die Nachricht (Wer, Was, Wohin) - 2-3 Sätze
-Absatz 2: Spieler-Hintergrund (aus KONTEXT) - 2-3 Sätze
-Absatz 3: Vereins-Kontext - 2-3 Sätze
-Absatz 4: Bedeutung des Transfers - 2-3 Sätze
-Absatz 5: Ausblick - 1-2 Sätze
+H2-REGELN:
+- Jede H2 mit ## beginnen
+- Kurz und prägnant (max 5 Wörter)
+- Vereins- oder Spielernamen einbauen wenn passend
+- KEINE generischen H2s wie "Einleitung" oder "Fazit"
 
 LÄNGE: 180-280 Wörter. Je mehr Kontext, desto länger!
 
-REGELN:
-- Nutze NUR Fakten aus dem Original oder dem KONTEXT
-- Erfinde KEINE Statistiken, Zahlen oder Zitate
-- Maximal 25 Wörter pro Satz
-- Keine ## Überschriften
-- Keine *Markdown*-Formatierung
+SATZ-REGELN:
+- Max 25 Wörter pro Satz
+- Aktive Sprache
+- Keine Füllwörter
 
 VERBOTEN:
 - "Es bleibt abzuwarten"
 - "Möglicherweise"
-- "Bemerkenswert"
 - "Die kommenden Wochen werden zeigen"
-- Jede Spekulation ohne Quelle
+- Erfundene Statistiken
 
-NUR OUTPUT: Der Artikel-Text."""
+NUR OUTPUT: Der Artikel-Text mit H2-Überschriften."""
     
     def __init__(self, db: AsyncIOMotorDatabase):
         self.db = db
@@ -798,19 +803,23 @@ NUR OUTPUT: Der Artikel-Text."""
         # Regel 4: Satzlänge prüfen
         sentences = [s.strip() for s in rewrite.replace('\n', ' ').split('.') if s.strip()]
         long_sentences = [s for s in sentences if len(s.split()) > self.MAX_SENTENCE_WORDS]
-        if len(long_sentences) > 2:  # Max 2 lange Sätze erlaubt
+        if len(long_sentences) > 2:
             return (False, f"Zu viele lange Sätze (>{self.MAX_SENTENCE_WORDS} Wörter): {len(long_sentences)}")
         
         # Regel 5: Mindestens 5 Sätze
         if len(sentences) < 5:
             return (False, f"Zu wenig Sätze: {len(sentences)} < 5")
         
-        # Regel 6: Prüfe auf erfundene Statistiken (nur wenn kein Kontext)
+        # Regel 6: H2-Überschriften erforderlich (mindestens 2)
+        h2_count = len(re.findall(r'^##\s+\w', rewrite, re.MULTILINE))
+        if h2_count < 2:
+            return (False, f"Zu wenig H2-Überschriften: {h2_count} < 2")
+        
+        # Regel 7: Prüfe auf erfundene Statistiken (nur wenn kein Kontext)
         if not allow_context_numbers:
             original_numbers = set(re.findall(r'\b\d+\b', original))
             rewrite_numbers = set(re.findall(r'\b\d+\b', rewrite))
             new_numbers = rewrite_numbers - original_numbers
-            # Filtere harmlose Zahlen (Jahre 2020+, kleine Zahlen)
             suspicious_numbers = [n for n in new_numbers if 10 < int(n) < 2020]
             if len(suspicious_numbers) > 3:
                 return (False, f"Verdacht auf erfundene Statistiken: {suspicious_numbers}")
@@ -818,15 +827,15 @@ NUR OUTPUT: Der Artikel-Text."""
         return (True, "OK")
     
     def clean_rewrite(self, text: str) -> str:
-        """Bereinigt den Rewrite-Output"""
-        # Entferne ## Überschriften
+        """Bereinigt den Rewrite-Output (behält H2-Überschriften)"""
         import re
-        text = re.sub(r'^##\s*.*$', '', text, flags=re.MULTILINE)
         # Entferne mehrfache Leerzeilen
         text = re.sub(r'\n{3,}', '\n\n', text)
-        # Entferne Markdown
+        # Entferne **fett** und *kursiv* Markdown
         text = re.sub(r'\*\*([^*]+)\*\*', r'\1', text)
         text = re.sub(r'\*([^*]+)\*', r'\1', text)
+        # Normalisiere H2 (## Titel statt ##Titel)
+        text = re.sub(r'^##(\S)', r'## \1', text, flags=re.MULTILINE)
         return text.strip()
     
     async def rewrite_article(self, article_id: str) -> bool:
