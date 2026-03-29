@@ -408,14 +408,13 @@ class SpeedPipeline:
     """
     Optimierte Pipeline für schnelle News-Veröffentlichung.
     
-    FLOW:
+    FLOW (NEU mit Story Engine):
     1. RSS Event kommt rein
-    2. Dedupe-Check (< 10ms)
-    3. Instant-Artikel generieren (< 100ms)
-    4. Sofort veröffentlichen
-    5. Async: GPT-Rewrite queuen
-    6. Async: Internal Links updaten
-    7. Async: Sitemap updaten
+    2. Story Engine: Entity Extraction + Story Match
+    3. Story Engine: Source Weighting + Stage Detection
+    4. Story Engine Decision: create_article / update_article / merge_only / skip
+    5. Bei create/update: Instant-Artikel generieren
+    6. Async: GPT-Rewrite queuen
     """
     
     def __init__(self, db: AsyncIOMotorDatabase):
@@ -423,10 +422,243 @@ class SpeedPipeline:
         self.instant_generator = InstantArticleGenerator()
         self.dedupe = DedupeSystem()
         self.gpt_queue = []  # Queue für GPT-Rewrites
+        
+        # Story Engine für Duplicate Killer
+        from story_engine import get_story_engine
+        self.story_engine = get_story_engine(db)
     
     async def process_event(self, event: dict) -> dict:
         """
-        Verarbeitet ein Event und erstellt sofort einen Artikel.
+        Verarbeitet ein Event mit Story Engine für Duplicate Detection.
+        
+        Returns:
+            {
+                "action": "created" | "updated" | "merged" | "skipped",
+                "article_id": str | None,
+                "story_key": str | None,
+                "time_ms": int
+            }
+        """
+        start_time = datetime.now()
+        
+        headline = event.get("headline_raw", "")
+        source_name = event.get("source_name", "")
+        
+        # 1. Entitäten extrahieren
+        entities = self.instant_generator.extract_entities(headline)
+        player = entities["player"]
+        club = entities["club"]
+        
+        # Event mit extrahierten Entities anreichern
+        event["player_name"] = player
+        event["club_name"] = club
+        event["summary"] = event.get("summary_raw", "")
+        
+        # 2. Story Engine entscheidet
+        story_result = await self.story_engine.process_incoming_event(event)
+        action = story_result.get("action", "skip")
+        
+        elapsed = (datetime.now() - start_time).total_seconds() * 1000
+        
+        # 3. Basierend auf Story Engine Decision handeln
+        if action == "skip":
+            logger.debug(f"[PIPELINE] SKIP: {story_result.get('reason', 'unknown')}")
+            return {"action": "skipped", "article_id": None, "time_ms": int(elapsed)}
+        
+        if action == "merge_only":
+            # Nur Source hinzugefügt, kein neuer/aktualisierter Artikel
+            logger.info(f"[PIPELINE] MERGED: {player} → {club} [{source_name}]")
+            return {
+                "action": "merged", 
+                "article_id": story_result.get("article_id"),
+                "story_key": story_result.get("story_key"),
+                "time_ms": int(elapsed)
+            }
+        
+        if action == "update_article":
+            # Existierenden Artikel aktualisieren (Stage Upgrade oder neue Fakten)
+            article_id = story_result.get("article_id")
+            if article_id:
+                await self._update_article_from_story(article_id, story_result, event)
+            logger.info(f"[PIPELINE] UPDATED: {player} → {club} [{source_name}] "
+                       f"Stage: {story_result.get('stage')}")
+            elapsed = (datetime.now() - start_time).total_seconds() * 1000
+            return {
+                "action": "updated",
+                "article_id": article_id,
+                "story_key": story_result.get("story_key"),
+                "time_ms": int(elapsed)
+            }
+        
+        if action == "create_article":
+            # Neuen Artikel erstellen
+            story = story_result.get("story", {})
+            confidence = story_result.get("confidence", 35)
+            
+            # Nur publizieren wenn Confidence hoch genug
+            if not story_result.get("should_publish", True):
+                logger.info(f"[PIPELINE] LOW CONFIDENCE ({confidence}): {player} → {club}")
+                # Trotzdem Artikel erstellen, aber als "draft" markieren
+                article_data = await self._create_article_from_story(story_result, event, is_draft=True)
+                
+                # Story mit Article ID verknüpfen
+                if article_data:
+                    await self.db.transfer_stories.update_one(
+                        {"story_key": story_result.get("story_key")},
+                        {"$set": {"article_id": article_data.get("id")}}
+                    )
+                
+                elapsed = (datetime.now() - start_time).total_seconds() * 1000
+                return {
+                    "action": "created_draft",
+                    "article_id": article_data.get("id") if article_data else None,
+                    "story_key": story_result.get("story_key"),
+                    "confidence": confidence,
+                    "time_ms": int(elapsed)
+                }
+            
+            # Artikel mit Story-Daten erstellen
+            article_data = await self._create_article_from_story(story_result, event)
+            
+            # Story mit Article ID verknüpfen
+            if article_data:
+                await self.db.transfer_stories.update_one(
+                    {"story_key": story_result.get("story_key")},
+                    {"$set": {"article_id": article_data.get("id")}}
+                )
+            
+            logger.info(f"[PIPELINE] CREATED: {player} → {club} [{source_name}] "
+                       f"Stage: {story_result.get('stage')} Confidence: {confidence}")
+            
+            elapsed = (datetime.now() - start_time).total_seconds() * 1000
+            return {
+                "action": "created",
+                "article_id": article_data.get("id") if article_data else None,
+                "story_key": story_result.get("story_key"),
+                "confidence": confidence,
+                "time_ms": int(elapsed)
+            }
+        
+        return {"action": "unknown", "time_ms": int(elapsed)}
+    
+    async def _create_article_from_story(self, story_result: dict, event: dict, is_draft: bool = False) -> dict:
+        """Erstellt einen Artikel basierend auf Story-Daten"""
+        import uuid
+        
+        story = story_result.get("story", {})
+        
+        # Generiere Artikel mit Story-Daten
+        article_data = self.instant_generator.generate_instant_article(event)
+        
+        # ID generieren (falls nicht vorhanden)
+        if "id" not in article_data:
+            article_data["id"] = str(uuid.uuid4())
+        
+        # Timestamps
+        now = datetime.now(timezone.utc).isoformat()
+        article_data["published_at"] = now
+        article_data["created_at"] = now
+        article_data["updated_at"] = now
+        
+        # Überschreibe mit Story-Daten
+        article_data["title"] = story_result.get("headline", article_data.get("title"))
+        article_data["slug"] = story_result.get("slug", article_data.get("slug"))
+        article_data["transfer_status"] = story.get("current_stage", "rumor")
+        article_data["confidence_score"] = story_result.get("confidence", 35)
+        article_data["story_key"] = story_result.get("story_key")
+        article_data["primary_source"] = story.get("primary_source", "")
+        article_data["secondary_sources"] = story.get("secondary_sources", [])
+        article_data["transfer_fee"] = story.get("transfer_fee", "")
+        article_data["story_region"] = story.get("story_region", "global")
+        
+        # Dedupe Key basierend auf Story
+        article_data["dedupe_key"] = story_result.get("story_key")
+        
+        # Draft-Status falls niedrige Confidence
+        if is_draft:
+            article_data["status"] = "draft"
+            article_data["is_draft"] = True
+        else:
+            article_data["status"] = "published"
+            article_data["is_draft"] = False
+        
+        # Bild zuweisen
+        await self._assign_article_image(article_data)
+        
+        # In DB speichern - OHNE _id (MongoDB generiert automatisch)
+        article_doc = {k: v for k, v in article_data.items() if k != "_id"}
+        await self.db.articles.insert_one(article_doc)
+        
+        # GPT-Rewrite Queue
+        if article_data.get("needs_gpt_rewrite", True):
+            self.gpt_queue.append(article_data["id"])
+        
+        return article_data
+    
+    async def _update_article_from_story(self, article_id: str, story_result: dict, event: dict):
+        """Aktualisiert einen existierenden Artikel basierend auf Story-Update"""
+        story = story_result.get("story", {})
+        
+        update_fields = {
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+            "transfer_status": story.get("current_stage"),
+            "confidence_score": story_result.get("confidence"),
+        }
+        
+        # Headline nur bei Stage-Upgrade ändern
+        if story_result.get("headline"):
+            update_fields["title"] = story_result["headline"]
+        
+        # Transfer Fee hinzufügen falls neu
+        if story.get("transfer_fee"):
+            update_fields["transfer_fee"] = story["transfer_fee"]
+        
+        # Sources aktualisieren
+        update_fields["primary_source"] = story.get("primary_source", "")
+        update_fields["secondary_sources"] = story.get("secondary_sources", [])
+        
+        await self.db.articles.update_one(
+            {"id": article_id},
+            {"$set": update_fields}
+        )
+        
+        # GPT-Rewrite triggern für aktualisierte Artikel
+        self.gpt_queue.append(article_id)
+    
+    async def _assign_article_image(self, article_data: dict):
+        """Weist einem Artikel ein Bild zu"""
+        try:
+            from wikimedia_images import get_article_image_service
+            
+            image_service = get_article_image_service(self.db)
+            player = article_data.get("player_name", "")
+            
+            # Artikel-Daten für Bildsuche vorbereiten
+            article_for_image = {
+                "title": article_data.get("title", ""),
+                "body": article_data.get("body", ""),
+            }
+            
+            # Wikimedia-Bild suchen
+            image_result = await image_service.process_article(article_for_image)
+            
+            if image_result and image_result.url:
+                article_data["hero_image"] = image_result.url
+                article_data["hero_image_meta"] = {
+                    "author": image_result.author,
+                    "license": image_result.license_name,
+                    "source_url": image_result.source_url,
+                    "score": image_result.quality_score
+                }
+                article_data["hero_image_source"] = "wikimedia"
+        except Exception as e:
+            logger.warning(f"[PIPELINE] Image assignment failed: {e}")
+    
+    # === LEGACY METHODS (für Kompatibilität) ===
+    
+    async def process_event_legacy(self, event: dict) -> dict:
+        """
+        LEGACY: Alte Event-Verarbeitung ohne Story Engine.
         
         Returns:
             {

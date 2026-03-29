@@ -11,6 +11,7 @@ Deutschsprachige Fußball-Transfer-News-Plattform auf der Domain transfernews.de
 - **SEO: Google Discover + Google News optimiert**
 - **NEU: GOOGLE NEWS DOMINANCE SYSTEM**
 - **NEU: WIKIMEDIA IMAGE SYSTEM**
+- **NEU: STORY ENGINE (Duplicate Killer + Source Weighting)**
 
 ## Technical Architecture
 - **Frontend:** React 19 mit Tailwind CSS, Shadcn UI, Phosphor Icons, react-helmet-async
@@ -18,12 +19,46 @@ Deutschsprachige Fußball-Transfer-News-Plattform auf der Domain transfernews.de
 - **Datenbank:** MongoDB
 - **Auth:** JWT-basiertes Admin-Login
 - **LLM:** emergentintegrations (GPT-4o via Emergent LLM Key)
-- **RSS:** feedparser für 15 internationale Nachrichtenquellen (DE/EN/ES)
+- **RSS:** feedparser für 19 internationale Nachrichtenquellen (6 Regionen)
 - **Bilder:** Wikimedia Commons mit CC-BY/CC0 Lizenzen (≥1200px für Google Discover)
+- **Story Engine:** Duplicate Detection, Source Weighting, Stage Tracking
 
 ## What's Been Implemented
 
-### 29. März 2026 - MARKTWERT INFO-BOX SYSTEM (NEU!)
+### 29. März 2026 - STORY ENGINE (DUPLICATE KILLER) ✅ NEU!
+- ✅ **Story-basiertes System** (`/app/backend/story_engine.py`):
+  - Eine Transfer-Story = Eine URL (SEO-optimiert)
+  - Mehrere Quellen → Update statt neuer Artikel
+  - Story-Key: `player-slug__target-club-slug__transfer-type`
+- ✅ **Source Weighting** (19 Quellen mit Trust/Speed Scores):
+  - Sky Sports (9.5/9.0), L'Équipe (9.0/8.3), kicker (9.0/6.8)
+  - Marca (8.8/8.8), BBC Sport (8.7/6.9), Gazzetta (8.7/8.4)
+  - Country Bonus für lokale Quellen (+0.5)
+  - Tier 1 Bonus (+0.4)
+- ✅ **Stage Detection** (5 Phasen):
+  - rumor → advanced → near_done → done → official
+  - Automatische Erkennung via Keywords (EN/DE/ES/IT/FR)
+  - Stage Upgrade triggert Artikel-Update
+- ✅ **Confidence Scoring** (35-100):
+  - Basis nach Stage + Tier-Bonus + Multi-Source-Bonus
+  - Publish-Threshold: 45 | Prominent-Threshold: 80
+- ✅ **Duplicate Detection**:
+  - Gleicher Spieler + Verein + Typ = Merge
+  - Stärkere Quelle ersetzt Primary Source
+  - 96h Active Window für Stories
+- ✅ **API Endpoints**:
+  - `GET /api/pipeline/stories` - Aktive Transfer-Stories
+  - `GET /api/pipeline/status` - inkl. Story Engine Stats
+
+### 29. März 2026 - GLOBALE RSS-QUELLEN (19 Feeds)
+- ✅ 🌍 Global: CaughtOffside, 90min, FootballTransfers, Goal
+- ✅ 🇬🇧 UK: Sky Sports, BBC Sport, TEAMtalk
+- ✅ 🇪🇸 Spain: Marca, AS, Mundo Deportivo
+- ✅ 🇮🇹 Italy: Gazzetta, Corriere dello Sport, Tuttosport
+- ✅ 🇫🇷 France: L'Équipe, RMC Sport, Foot Mercato
+- ✅ 🇩🇪 Germany: BILD, kicker, Sport1
+
+### 29. März 2026 - MARKTWERT INFO-BOX SYSTEM
 - ✅ **PlayerInfoBox Komponente** (`NewsDetailPage.jsx`):
   - Dunkle Info-Box unter dem Hero-Bild
   - Zeigt Marktwert (grün hervorgehoben), Vertragslaufzeit, Alter, Position

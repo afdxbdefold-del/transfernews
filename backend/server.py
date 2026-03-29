@@ -2229,6 +2229,14 @@ async def get_pipeline_status(current_user: dict = Depends(get_current_user)):
     instant_count = await db.articles.count_documents({"is_instant": True, "needs_gpt_rewrite": True})
     rewritten_count = await db.articles.count_documents({"gpt_rewritten_at": {"$exists": True}})
     
+    # Story Engine Stats
+    try:
+        from story_engine import get_story_engine
+        story_engine = get_story_engine(db)
+        story_stats = await story_engine.get_story_stats()
+    except Exception as e:
+        story_stats = {"error": str(e)}
+    
     scheduler_status = get_scheduler_status()
     
     return {
@@ -2239,7 +2247,29 @@ async def get_pipeline_status(current_user: dict = Depends(get_current_user)):
             "instant_articles": instant_count,
             "rewritten_articles": rewritten_count,
         },
+        "story_engine": story_stats,
         "scheduler": scheduler_status
+    }
+
+
+@api_router.get("/pipeline/stories")
+async def get_active_stories(
+    limit: int = Query(default=20, le=50),
+    current_user: dict = Depends(get_current_user)
+):
+    """Get active transfer stories"""
+    from datetime import timedelta
+    
+    cutoff = (datetime.now(timezone.utc) - timedelta(hours=96)).isoformat()
+    
+    stories = await db.transfer_stories.find(
+        {"status": "active", "last_updated_at": {"$gte": cutoff}},
+        {"_id": 0}
+    ).sort("last_updated_at", -1).limit(limit).to_list(limit)
+    
+    return {
+        "total": len(stories),
+        "stories": stories
     }
 
 
