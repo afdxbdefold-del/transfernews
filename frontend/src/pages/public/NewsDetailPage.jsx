@@ -7,9 +7,119 @@ import { RelatedLinks } from "@/components/RelatedLinks";
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { getArticleBySlug, getPublishedArticles, getPlayer, getClub, getPublicNewsDetail } from "@/api";
-import { Clock, CaretLeft, ShareNetwork, User, Buildings, FacebookLogo, XLogo, WhatsappLogo, EnvelopeSimple, CurrencyEur, Calendar, MapPin, SoccerBall } from "@phosphor-icons/react";
+import { Clock, CaretLeft, ShareNetwork, User, Buildings, FacebookLogo, XLogo, WhatsappLogo, EnvelopeSimple, CurrencyEur, Calendar, MapPin, SoccerBall, ShieldCheck, Newspaper, CheckCircle, Info } from "@phosphor-icons/react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Helmet } from "react-helmet-async";
+
+// Source Trust Badge Komponente
+function SourceBadge({ article }) {
+  const source = article.primary_source || article.source_name;
+  const secondarySources = article.secondary_sources || [];
+  
+  if (!source) return null;
+  
+  // Tier-Klassifizierung
+  const tier1Sources = ["Sky Sports", "L'Équipe", "kicker", "BILD", "Marca", "Gazzetta dello Sport"];
+  const tier2Sources = ["BBC Sport", "Goal", "AS", "Corriere dello Sport", "RMC Sport", "Sport1"];
+  
+  let tier = 3;
+  let tierColor = "bg-orange-100 text-orange-700 border-orange-200";
+  let tierLabel = "Gerücht";
+  
+  if (tier1Sources.some(s => source.includes(s))) {
+    tier = 1;
+    tierColor = "bg-green-100 text-green-700 border-green-200";
+    tierLabel = "Tier 1";
+  } else if (tier2Sources.some(s => source.includes(s))) {
+    tier = 2;
+    tierColor = "bg-yellow-100 text-yellow-700 border-yellow-200";
+    tierLabel = "Tier 2";
+  }
+  
+  return (
+    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
+      <div className="flex items-center gap-2 mb-3">
+        <Newspaper size={18} className="text-gray-500" />
+        <span className="text-sm font-semibold text-gray-700">Quellen</span>
+      </div>
+      
+      <div className="flex flex-wrap items-center gap-2">
+        {/* Primary Source */}
+        <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-sm font-medium ${tierColor}`}>
+          {tier === 1 && <ShieldCheck size={14} weight="fill" />}
+          <span>{source}</span>
+          <span className="text-xs opacity-75">({tierLabel})</span>
+        </div>
+        
+        {/* Secondary Sources */}
+        {secondarySources.slice(0, 2).map((sec, i) => (
+          <div key={i} className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-600 rounded-full text-xs">
+            <span>+{sec}</span>
+          </div>
+        ))}
+        
+        {secondarySources.length > 2 && (
+          <span className="text-xs text-gray-400">+{secondarySources.length - 2} weitere</span>
+        )}
+      </div>
+      
+      {/* Confidence Score wenn vorhanden */}
+      {article.confidence_score && article.confidence_score > 0 && (
+        <div className="mt-3 pt-3 border-t border-gray-200">
+          <div className="flex items-center justify-between text-xs text-gray-500">
+            <span>Konfidenz-Score</span>
+            <span className="font-medium">{article.confidence_score}%</span>
+          </div>
+          <div className="mt-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+            <div 
+              className={`h-full rounded-full ${
+                article.confidence_score >= 80 ? 'bg-green-500' :
+                article.confidence_score >= 60 ? 'bg-yellow-500' : 'bg-orange-500'
+              }`}
+              style={{ width: `${article.confidence_score}%` }}
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Fact-Check Badge
+function FactCheckBadge({ article }) {
+  if (!article.author_name) return null;
+  
+  const updateDate = article.updated_at || article.gpt_rewritten_at || article.published_at;
+  const formattedDate = updateDate ? new Date(updateDate).toLocaleDateString('de-DE', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric'
+  }) : null;
+  
+  return (
+    <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+      <div className="flex items-start gap-3">
+        <div className="flex-shrink-0 w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+          <CheckCircle size={20} className="text-green-600" weight="fill" />
+        </div>
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="font-semibold text-green-800">Geprüfter Artikel</span>
+          </div>
+          <p className="text-sm text-green-700">
+            Dieser Artikel wurde von <strong>{article.author_name}</strong> 
+            {article.author_role && <span className="text-green-600"> ({article.author_role})</span>} verfasst und redaktionell geprüft.
+          </p>
+          {formattedDate && (
+            <p className="text-xs text-green-600 mt-1">
+              Zuletzt aktualisiert: {formattedDate}
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // Info-Box Komponente für strukturierte Spielerdaten (Marktwert, Vertrag, etc.)
 function PlayerInfoBox({ article }) {
@@ -576,6 +686,12 @@ export default function NewsDetailPage() {
                   {!article.body && (
                     <p className="text-gray-500 italic">Kein Inhalt verfügbar</p>
                   )}
+                </div>
+                
+                {/* Source Badge & Fact-Check (E-E-A-T) */}
+                <div className="mt-8 grid md:grid-cols-2 gap-4">
+                  <SourceBadge article={article} />
+                  <FactCheckBadge article={article} />
                 </div>
 
                 {/* Auto-generated Related Links from Trending System */}
