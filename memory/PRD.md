@@ -24,10 +24,12 @@ Deutschsprachige Fußball-Transfer-News-Plattform auf der Domain transfernews.de
 
 ### 29. März 2026 - ENTITY & IMAGE SYSTEM für Google Discover
 - ✅ **Entity Recognition System** (`/app/backend/entity_recognition.py`):
-  - 500+ Spieler-Datenbank mit Metadaten (Position, Nationalität, Popularität)
-  - 200+ Club-Datenbank mit Liga-Zuordnung
-  - Transfer-Typ-Erkennung (Leihe, Permanent, Ablösefrei, etc.)
+  - **392 Spieler** mit Metadaten (Position, Nationalität, Popularität, Club)
+  - **238 Clubs** mit Liga-Zuordnung und Aliassen
+  - Transfer-Typ-Erkennung (Leihe, Permanent, Ablösefrei, Swap, etc.)
   - Confidence-Score für bessere Deduplizierung
+  - Spieler aus: Bundesliga, Premier League, La Liga, Serie A, Ligue 1
+  - Trainer-Erkennung (Guardiola, Ancelotti, Klopp, Nagelsmann, etc.)
 - ✅ **Image System** (`/app/backend/image_system.py`):
   - Automatische Zuweisung von ≥1200px Bildern für Google Discover
   - Club- und Liga-spezifische Bilder
