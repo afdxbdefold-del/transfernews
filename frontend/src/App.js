@@ -1,5 +1,5 @@
 import "@/index.css";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
 import { HelmetProvider } from "react-helmet-async";
 import { useEffect } from "react";
@@ -55,7 +55,7 @@ function App() {
           <Routes>
             {/* Public Routes */}
             <Route path="/" element={<HomePage />} />
-            <Route path="/news" element={<NewsListPage />} />
+            <Route path="/news" element={<Navigate to="/" replace />} />
             <Route path="/news/:slug" element={<NewsDetailPage />} />
             <Route path="/spieler/:slug" element={<PlayerPage />} />
             <Route path="/verein/:slug" element={<ClubPage />} />

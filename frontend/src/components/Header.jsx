@@ -85,7 +85,6 @@ export default function Header() {
 
   const navItems = [
     { path: "/", label: "TRANSFERS" },
-    { path: "/news", label: "NEWS" },
     { path: "/geruechte", label: "GERÜCHTE" },
   ];
   
