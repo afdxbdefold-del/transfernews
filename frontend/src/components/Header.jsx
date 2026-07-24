@@ -283,7 +283,7 @@ export default function Header() {
         <div className="flex justify-center">
           <div 
             className="bg-gray-300 border border-gray-400 flex items-center justify-center"
-            style={{ width: '728px', height: '90px' }}
+            style={{ width: '970px', height: '250px' }}
             data-testid="billboard-ad"
           >
             <span className="text-[11px] text-gray-500 uppercase tracking-wider">Anzeige</span>
