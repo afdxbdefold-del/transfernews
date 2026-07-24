@@ -49,6 +49,9 @@ function NewsRow({ article, showImage = true }) {
   };
   const type = typeLabel[article.article_type] || typeLabel.news;
   
+  // Use hero_image or image_url as fallback
+  const imageUrl = article.hero_image || article.image_url;
+  
   return (
     <Link 
       to={`/news/${article.slug}`}
@@ -57,8 +60,14 @@ function NewsRow({ article, showImage = true }) {
     >
       {showImage && (
         <div className="w-[70px] h-[50px] flex-shrink-0 bg-gray-200 overflow-hidden rounded-sm">
-          {article.image_url ? (
-            <img src={article.image_url} alt="" className="w-full h-full object-cover" />
+          {imageUrl ? (
+            <img 
+              src={imageUrl} 
+              alt="" 
+              className="w-full h-full object-cover"
+              referrerPolicy="no-referrer"
+              loading="lazy"
+            />
           ) : (
             <div className="w-full h-full bg-gray-300" />
           )}
