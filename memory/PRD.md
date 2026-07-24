@@ -3,6 +3,9 @@
 ## Letztes Update: 24. Juli 2026
 
 ### Kürzlich abgeschlossen:
+- ✅ **Neue Vereinskader**: Liverpool (19), Arsenal (20), Chelsea (19), Barcelona (19) mit vollständigen Kadern (24.07.2026)
+- ✅ **Top-Deals Seite**: Zeigt teuerste Transfers sortiert nach Ablösesumme (Enzo 121M, Rice 116M, Caicedo 115M, etc.) (24.07.2026)
+- ✅ **Spielerbilder**: 51 neue Spieler mit Wikimedia-Bildern angereichert (24.07.2026)
 - ✅ **Volle Kader für Top-Vereine**: Real Madrid (20 Spieler/1250M €), Manchester City (18/1003M €), Bayern erweitert (24.07.2026)
 - ✅ **Transfer-Verlinkung**: Vereinsnamen im Transfer-Tab sind klickbar und navigieren zur Vereinsseite (24.07.2026)
 - ✅ **Marktwert-Daten**: 22+ Top-Spieler mit aktuellen Marktwerten (Mbappé 180M, Haaland 175M, Bellingham 150M, etc.) (24.07.2026)
@@ -10,11 +13,8 @@
 - ✅ **Transfer-Historie**: Transfer-Tab auf Spielerseiten zeigt echte Daten aus DB (24.07.2026)
 - ✅ **Spieler-Verein verknüpfen**: Aktueller Verein (z.B. Inter Miami) wird im Header angezeigt und ist klickbar (24.07.2026)
 - ✅ **Trending-Vereine klickbar**: Sidebar-Links funktionieren und navigieren zu /verein/{slug} (24.07.2026)
-- ✅ **Player-Modell erweitert**: current_club_name/slug und market_value/market_value_date Felder (24.07.2026)
-- ✅ Bugfix: Artikelbilder laden jetzt korrekt (hero_image statt image_url + referrerPolicy) (24.07.2026)
+- ✅ Bugfix: Artikelbilder laden jetzt korrekt (24.07.2026)
 - ✅ Neues Logo mit Sprechblase integriert (24.07.2026)
-- ✅ Filter-Tabs modernisiert (Pill-Style) (24.07.2026)
-- ✅ 300×250 Ad-Platzhalter unter "Trending Spieler" positioniert (24.07.2026)
 
 ### Teilweise erledigt:
 - 🟡 **Vereinslogos laden**: 10 von 31 Vereinen haben Wikipedia-Logos (Urheberrechtsbeschränkungen)
