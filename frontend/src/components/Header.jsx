@@ -96,7 +96,7 @@ export default function Header() {
   return (
     <header data-testid="main-header">
       {/* Top Banner Ad - über Header */}
-      <div className="bg-[#d9d9d9] py-2" data-testid="top-banner-container">
+      <div className="py-2" data-testid="top-banner-container">
         <div className="flex justify-center">
           <div 
             className="bg-gray-300 border border-gray-400 flex items-center justify-center"
