@@ -101,7 +101,7 @@ export default function Header() {
     <header className="sticky top-0 z-50" data-testid="main-header">
       {/* Top Bar - White with Logo */}
       <div className="bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800">
-        <div className="max-w-[1280px] mx-auto px-4">
+        <div className="max-w-[1000px] mx-auto px-4">
           <div className="flex items-center justify-between h-[50px]">
             {/* Logo Left */}
             <Link to="/" className="flex items-center" data-testid="logo-link">
@@ -172,7 +172,7 @@ export default function Header() {
 
       {/* Navigation Bar - BLACK */}
       <nav className="bg-black" data-testid="sports-nav">
-        <div className="max-w-[1280px] mx-auto px-4">
+        <div className="max-w-[1000px] mx-auto px-4">
           <div className="flex items-center justify-between h-[40px]">
             <div className="flex items-center h-full overflow-x-auto hide-scrollbar">
               {navItems.map((item) => (

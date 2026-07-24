@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 export default function Footer() {
   return (
     <footer className="bg-[#1a1a1a] text-white py-8" data-testid="main-footer">
-      <div className="max-w-[1280px] mx-auto px-4">
+      <div className="max-w-[1000px] mx-auto px-4">
         {/* Logo */}
         <div className="mb-6">
           <Link to="/">
