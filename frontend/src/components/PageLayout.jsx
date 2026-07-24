@@ -8,7 +8,7 @@
  */
 export default function PageLayout({ children }) {
   return (
-    <div className="min-h-screen bg-[#c5c5c5] dark:bg-[#1a1a1a] relative" data-testid="page-layout">
+    <div className="min-h-screen bg-[#f2f2f2] dark:bg-[#1a1a1a] relative" data-testid="page-layout">
       {/* Sticky Skyscraper Links */}
       <div className="hidden xl:block fixed left-0 top-[100px] z-40" style={{ width: '160px' }}>
         <div 
