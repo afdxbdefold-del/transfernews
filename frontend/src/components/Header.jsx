@@ -174,9 +174,17 @@ export default function Header() {
                   <CaretDown size={12} className={`transition-transform ${leagueDropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
                 
-                {/* Dropdown Menu */}
+                {/* Dropdown Menu - Rendered outside the nav flow */}
                 {leagueDropdownOpen && (
-                  <div className="absolute top-full left-0 mt-1 w-56 bg-white shadow-xl rounded-lg overflow-hidden z-50 border border-gray-100" data-testid="league-dropdown">
+                  <div 
+                    className="fixed w-56 bg-white shadow-xl rounded-lg overflow-hidden border border-gray-100"
+                    style={{ 
+                      top: '90px',
+                      left: leagueRef.current?.getBoundingClientRect().left + 'px',
+                      zIndex: 9999
+                    }}
+                    data-testid="league-dropdown"
+                  >
                     <div className="p-2">
                       <span className="text-[10px] text-gray-400 uppercase font-bold px-2">Wettbewerbe</span>
                     </div>
