@@ -423,15 +423,63 @@ async def get_trending_entities(db: AsyncIOMotorDatabase, hours: int = 24) -> di
     trending_players = sorted(player_data.items(), key=lambda x: -x[1]["trend_score"])[:10]
     trending_clubs = sorted(club_data.items(), key=lambda x: -x[1]["trend_score"])[:10]
     
+    # Lookup players in database to get their IDs
+    player_results = []
+    for p, data in trending_players:
+        slug = p.replace(" ", "-")
+        # Try to find player in database by slug or alias
+        db_player = await db.players.find_one({
+            "$or": [
+                {"slug": slug},
+                {"aliases": {"$regex": f"^{p}$", "$options": "i"}}
+            ]
+        }, {"_id": 0, "id": 1, "name": 1, "slug": 1, "image": 1})
+        
+        if db_player:
+            player_results.append({
+                "id": db_player.get("id"),
+                "name": db_player.get("name", p.title()),
+                "slug": db_player.get("slug", slug),
+                "image": db_player.get("image"),
+                **data
+            })
+        else:
+            # No DB entry - item will be non-clickable
+            player_results.append({
+                "name": p.title(),
+                "slug": slug,
+                **data
+            })
+    
+    # Lookup clubs in database
+    club_results = []
+    for c, data in trending_clubs:
+        slug = c.replace(" ", "-")
+        db_club = await db.clubs.find_one({
+            "$or": [
+                {"slug": slug},
+                {"name": {"$regex": f"^{c}$", "$options": "i"}}
+            ]
+        }, {"_id": 0, "id": 1, "name": 1, "slug": 1, "logo": 1})
+        
+        if db_club:
+            club_results.append({
+                "id": db_club.get("id"),
+                "name": db_club.get("name", c.title()),
+                "slug": db_club.get("slug", slug),
+                "logo": db_club.get("logo"),
+                **data
+            })
+        else:
+            club_results.append({
+                "name": c.title(),
+                "slug": slug,
+                **data
+            })
+    
     return {
-        "trending_players": [
-            {"name": p.title(), "slug": p.replace(" ", "-"), **data} 
-            for p, data in trending_players
-        ],
-        "trending_clubs": [
-            {"name": c.title(), "slug": c.replace(" ", "-"), **data}
-            for c, data in trending_clubs
-        ],
+        "trending_players": player_results,
+        "trending_clubs": club_results,
         "period_hours": hours,
         "event_count": len(events),
         "article_count": len(articles)
