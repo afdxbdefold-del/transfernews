@@ -128,7 +128,7 @@ export function HeroCard({ article, isLive = false }) {
   
   return (
     <Link to={"/news/" + article.slug} className="block relative" data-testid={"hero-" + article.id}>
-      <div className="relative aspect-[16/8] bg-gray-900">
+      <div className="relative aspect-[16/10] bg-gray-900">
         <ArticleImage
           src={article.hero_image || article.feature_image}
           alt={article.title}

@@ -49,26 +49,24 @@ export default function HomePage() {
       <TrendingBar />
       
       <main className="flex-1">
-        {/* Hero Section */}
-        {heroArticle && (
-          <div className="max-w-[1000px] mx-auto">
-            <HeroCard article={heroArticle} isLive={heroArticle.is_breaking} />
-          </div>
-        )}
-        
-        {/* Main Content */}
-        <div className="max-w-[1000px] mx-auto">
-          {/* Desktop: 2 columns (Feed + Ticker) */}
-          <div className="lg:flex">
-            {/* News Feed */}
-            <div className="flex-1">
+        {/* Main Content - Desktop: Hero + Sidebar nebeneinander */}
+        <div className="max-w-[1000px] mx-auto px-3">
+          <div className="lg:grid lg:grid-cols-[1fr_280px] lg:gap-4">
+            {/* Left Column: Hero + News Feed */}
+            <div>
+              {/* Hero Section */}
+              {heroArticle && (
+                <HeroCard article={heroArticle} isLive={heroArticle.is_breaking} />
+              )}
+              
+              {/* News Feed */}
               {feedArticles.map((article, idx) => (
                 <NewsCardHorizontal key={article.id} article={article} showVideo={idx === 1} />
               ))}
             </div>
             
             {/* Sidebar Ticker + Trending - Desktop only */}
-            <div className="hidden lg:block w-[340px] border-l border-gray-100">
+            <div className="hidden lg:block border-l border-gray-100">
               {/* Trending Widget */}
               <TrendingWidget className="m-4" />
               
