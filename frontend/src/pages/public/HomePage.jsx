@@ -172,7 +172,7 @@ function TrendingItem({ item, rank, type = 'player' }) {
   // If no valid database entry, render as non-clickable
   if (!hasValidLink) {
     return (
-      <div className="flex items-center gap-2 px-3 py-1.5 border-b border-gray-100 last:border-0">
+      <div className="flex items-center gap-2 px-3 py-1.5 border-b border-gray-100 last:border-0 cursor-default">
         {content}
       </div>
     );
