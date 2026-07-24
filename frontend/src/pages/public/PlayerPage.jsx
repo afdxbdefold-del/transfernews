@@ -80,6 +80,11 @@ function TransferRow({ transfer }) {
   const typeDisplay = transfer.transfer_type || 'Fest';
   const showType = typeDisplay.toLowerCase() !== feeDisplay.toLowerCase();
   
+  const fromClub = transfer.from_club || 'Unbekannt';
+  const toClub = transfer.to_club || 'Unbekannt';
+  const fromSlug = transfer.from_club_slug;
+  const toSlug = transfer.to_club_slug;
+  
   return (
     <div className="flex items-center gap-3 px-3 py-2.5 border-b border-gray-200 last:border-0 text-[12px]">
       <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
@@ -87,9 +92,21 @@ function TransferRow({ transfer }) {
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 text-gray-700">
-          <span className="font-medium truncate">{transfer.from_club || 'Unbekannt'}</span>
+          {fromSlug ? (
+            <Link to={`/verein/${fromSlug}`} className="font-medium truncate hover:text-[#79B92A] hover:underline transition-colors">
+              {fromClub}
+            </Link>
+          ) : (
+            <span className="font-medium truncate">{fromClub}</span>
+          )}
           <ArrowRight size={12} className="text-[#79B92A] flex-shrink-0" />
-          <span className="font-medium truncate">{transfer.to_club || 'Unbekannt'}</span>
+          {toSlug ? (
+            <Link to={`/verein/${toSlug}`} className="font-medium truncate hover:text-[#79B92A] hover:underline transition-colors">
+              {toClub}
+            </Link>
+          ) : (
+            <span className="font-medium truncate">{toClub}</span>
+          )}
         </div>
         <div className="text-[10px] text-gray-500 mt-0.5">{transfer.year || transfer.season || '-'}</div>
       </div>
