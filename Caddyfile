@@ -1,4 +1,3 @@
-# WICHTIG: Ersetze "transfernews.de" mit deiner Domain!
 transfernews.de, www.transfernews.de {
     # API Requests zum Backend
     handle /api/* {
