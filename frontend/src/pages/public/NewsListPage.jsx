@@ -1,36 +1,62 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import { NewsCard, NewsTickerEntry } from "@/components/NewsCard";
-import { AdSlot, SidebarAd } from "@/components/AdSlot";
+import { NewsCardHorizontal } from "@/components/NewsCard";
+import { TrendingWidget } from "@/components/TrendingWidget";
 import { useEffect, useState } from "react";
 import { getPublishedArticles } from "@/api";
-import { CaretRight } from "@phosphor-icons/react";
+import { CaretRight, Newspaper, Fire, Trophy, Funnel } from "@phosphor-icons/react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
+
+const FILTERS = [
+  { id: 'all', label: 'Alle', icon: Newspaper },
+  { id: 'rumour', label: 'Gerüchte', icon: Fire },
+  { id: 'transfer', label: 'Transfers', icon: Trophy },
+  { id: 'news', label: 'News', icon: Newspaper },
+];
+
+const LEAGUES = [
+  { slug: 'bundesliga', name: 'Bundesliga', flag: '🇩🇪' },
+  { slug: 'premier-league', name: 'Premier League', flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
+  { slug: 'la-liga', name: 'La Liga', flag: '🇪🇸' },
+  { slug: 'serie-a', name: 'Serie A', flag: '🇮🇹' },
+  { slug: 'ligue-1', name: 'Ligue 1', flag: '🇫🇷' },
+];
 
 export default function NewsListPage() {
   const [articles, setArticles] = useState([]);
+  const [filteredArticles, setFilteredArticles] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(0);
+  const [activeFilter, setActiveFilter] = useState('all');
   const [hasMore, setHasMore] = useState(true);
-  const limit = 20;
+  const limit = 30;
 
   useEffect(() => {
     fetchArticles();
   }, []);
+
+  useEffect(() => {
+    if (activeFilter === 'all') {
+      setFilteredArticles(articles);
+    } else {
+      setFilteredArticles(articles.filter(a => a.article_type === activeFilter));
+    }
+  }, [activeFilter, articles]);
 
   const fetchArticles = async (loadMore = false) => {
     try {
       setLoading(true);
       const skip = loadMore ? articles.length : 0;
       const res = await getPublishedArticles({ skip, limit });
+      const data = Array.isArray(res.data) ? res.data : [];
       
       if (loadMore) {
-        setArticles([...articles, ...res.data]);
+        setArticles([...articles, ...data]);
       } else {
-        setArticles(res.data);
+        setArticles(data);
       }
-      setHasMore(res.data.length === limit);
+      setHasMore(data.length === limit);
     } catch (e) {
       console.error("News list error:", e);
     } finally {
@@ -39,76 +65,105 @@ export default function NewsListPage() {
   };
 
   const loadMore = () => {
-    setPage(page + 1);
     fetchArticles(true);
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#f5f5f5]" data-testid="news-list-page">
-      <Header />
+    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-950" data-testid="news-list-page">
+      <Helmet>
+        <title>Transfer-News & Fußball-Meldungen - TransferNews</title>
+        <meta name="description" content="Alle aktuellen Transfer-News, Gerüchte und Fußball-Meldungen. Bundesliga, Premier League, La Liga und mehr." />
+      </Helmet>
       
-      {/* Top Ad */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-[1000px] mx-auto px-3 py-2">
-          <AdSlot slotKey="below_header" minHeight="90px" />
-        </div>
-      </div>
+      <Header />
 
       <main className="flex-1">
-        <div className="max-w-[1000px] mx-auto px-3 py-6">
-          {/* Page Header */}
-          <div className="bg-white p-4 mb-6">
-            <div className="flex items-center gap-2">
-              <h1 
-                className="text-2xl md:text-3xl font-black uppercase"
-                style={{ fontFamily: "'Oswald', sans-serif" }}
-                data-testid="page-title"
-              >
-                Newsticker
-              </h1>
-              <CaretRight size={24} weight="bold" className="text-[#79B92A]" />
+        <div className="max-w-[1000px] mx-auto px-3 py-4">
+          {/* Page Header with Filter Tabs */}
+          <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm mb-4">
+            <div className="p-4 border-b border-gray-100 dark:border-gray-800">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Newspaper size={28} weight="fill" className="text-[#79B92A]" />
+                  <h1 
+                    className="text-2xl md:text-3xl font-black uppercase text-gray-900 dark:text-white"
+                    style={{ fontFamily: "'Oswald', sans-serif" }}
+                    data-testid="page-title"
+                  >
+                    Transfer-News
+                  </h1>
+                </div>
+                <span className="text-sm text-gray-500 dark:text-gray-400">
+                  {filteredArticles.length} Artikel
+                </span>
+              </div>
             </div>
-            <p className="text-gray-500 text-sm mt-1">
-              Alle aktuellen Transfer-News und Fußball-Meldungen
-            </p>
+            
+            {/* Filter Tabs */}
+            <div className="flex items-center gap-1 p-2 overflow-x-auto hide-scrollbar">
+              {FILTERS.map((filter) => {
+                const Icon = filter.icon;
+                const isActive = activeFilter === filter.id;
+                const count = filter.id === 'all' 
+                  ? articles.length 
+                  : articles.filter(a => a.article_type === filter.id).length;
+                
+                return (
+                  <button
+                    key={filter.id}
+                    onClick={() => setActiveFilter(filter.id)}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-all whitespace-nowrap ${
+                      isActive 
+                        ? 'bg-[#79B92A] text-white' 
+                        : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                    }`}
+                    data-testid={`filter-${filter.id}`}
+                  >
+                    <Icon size={16} weight={isActive ? "fill" : "regular"} />
+                    {filter.label}
+                    <span className={`text-xs px-1.5 py-0.5 rounded-full ${
+                      isActive ? 'bg-white/20' : 'bg-gray-200 dark:bg-gray-700'
+                    }`}>
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-4">
             {/* Main Content */}
-            <div className="lg:col-span-2">
-              <div className="bg-white">
+            <div>
+              <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm overflow-hidden">
                 {loading && articles.length === 0 ? (
-                  <div className="divide-y divide-gray-100">
+                  <div className="divide-y divide-gray-100 dark:divide-gray-800">
                     {[...Array(8)].map((_, i) => (
-                      <div key={i} className="p-4">
-                        <Skeleton className="h-5 w-3/4 mb-2" />
-                        <Skeleton className="h-4 w-1/2" />
+                      <div key={i} className="flex gap-3 p-3">
+                        <Skeleton className="w-[110px] h-[75px] rounded-lg" />
+                        <div className="flex-1">
+                          <Skeleton className="h-4 w-20 mb-2" />
+                          <Skeleton className="h-5 w-full mb-1" />
+                          <Skeleton className="h-5 w-3/4" />
+                        </div>
                       </div>
                     ))}
                   </div>
                 ) : (
                   <>
-                    {/* Newsticker Style List */}
-                    <div className="divide-y divide-gray-100">
-                      {articles.map((article, idx) => (
-                        <div key={article.id}>
-                          <NewsTickerEntry article={article} />
-                          {/* Insert ad after every 6th article */}
-                          {(idx + 1) % 6 === 0 && idx < articles.length - 1 && (
-                            <div className="p-4 border-t border-gray-100">
-                              <AdSlot slotKey={`listing_after_card_${idx + 1}`} minHeight="90px" />
-                            </div>
-                          )}
-                        </div>
+                    {/* News Cards with Images */}
+                    <div>
+                      {filteredArticles.map((article) => (
+                        <NewsCardHorizontal key={article.id} article={article} />
                       ))}
                     </div>
                     
-                    {hasMore && (
-                      <div className="p-4 border-t border-gray-100">
+                    {hasMore && filteredArticles.length > 0 && (
+                      <div className="p-4 border-t border-gray-100 dark:border-gray-800">
                         <button
                           onClick={loadMore}
                           disabled={loading}
-                          className="w-full bg-[#79B92A] text-white py-3 font-black uppercase hover:bg-[#6aa325] transition-colors disabled:opacity-50"
+                          className="w-full bg-[#79B92A] text-white py-3 font-black uppercase hover:bg-[#6aa325] transition-colors disabled:opacity-50 rounded-lg"
                           style={{ fontFamily: "'Oswald', sans-serif" }}
                           data-testid="load-more-btn"
                         >
@@ -117,9 +172,16 @@ export default function NewsListPage() {
                       </div>
                     )}
 
-                    {articles.length === 0 && !loading && (
+                    {filteredArticles.length === 0 && !loading && (
                       <div className="text-center py-12">
-                        <p className="text-gray-500">Noch keine News vorhanden</p>
+                        <Funnel size={48} className="mx-auto text-gray-300 dark:text-gray-600 mb-4" />
+                        <p className="text-gray-500 dark:text-gray-400">Keine Artikel in dieser Kategorie</p>
+                        <button 
+                          onClick={() => setActiveFilter('all')}
+                          className="mt-3 text-[#79B92A] font-bold hover:underline"
+                        >
+                          Alle anzeigen
+                        </button>
                       </div>
                     )}
                   </>
@@ -128,42 +190,74 @@ export default function NewsListPage() {
             </div>
 
             {/* Sidebar */}
-            <aside className="space-y-6">
-              <SidebarAd slotKey="sidebar_top" />
+            <aside className="space-y-4">
+              {/* Trending Widget */}
+              <TrendingWidget />
               
-              {/* Quick Links */}
-              <div className="bg-white">
-                <div className="p-4 border-b border-gray-100">
+              {/* Liga Quick Links */}
+              <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm overflow-hidden">
+                <div className="p-3 border-b border-gray-100 dark:border-gray-800">
                   <h3 
-                    className="text-lg font-black uppercase"
+                    className="text-sm font-black uppercase text-gray-900 dark:text-white flex items-center gap-2"
                     style={{ fontFamily: "'Oswald', sans-serif" }}
                   >
-                    Kategorien
+                    <Trophy size={16} weight="fill" className="text-[#79B92A]" />
+                    Ligen
                   </h3>
                 </div>
-                <nav className="divide-y divide-gray-100">
-                  {[
-                    { label: "Transfers", path: "/transfers" },
-                    { label: "Gerüchte", path: "/geruechte" },
-                    { label: "Bundesliga", path: "/wettbewerb/bundesliga" },
-                    { label: "Premier League", path: "/wettbewerb/premier-league" },
-                  ].map((item) => (
+                <nav>
+                  {LEAGUES.map((league) => (
                     <Link
-                      key={item.path}
-                      to={item.path}
-                      className="flex items-center justify-between p-3 hover:bg-gray-50 transition-colors group"
+                      key={league.slug}
+                      to={`/wettbewerb/${league.slug}`}
+                      className="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group border-b border-gray-50 dark:border-gray-800 last:border-0"
                     >
-                      <span className="font-medium text-sm group-hover:text-[#79B92A] transition-colors">
-                        {item.label}
-                      </span>
-                      <CaretRight size={16} className="text-gray-400 group-hover:text-[#79B92A]" />
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">{league.flag}</span>
+                        <span className="font-medium text-sm text-gray-700 dark:text-gray-300 group-hover:text-[#79B92A] transition-colors">
+                          {league.name}
+                        </span>
+                      </div>
+                      <CaretRight size={14} className="text-gray-400 group-hover:text-[#79B92A]" />
                     </Link>
                   ))}
                 </nav>
               </div>
               
-              <SidebarAd slotKey="sidebar_middle" />
-              <SidebarAd slotKey="sidebar_bottom" />
+              {/* Categories */}
+              <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm overflow-hidden">
+                <div className="p-3 border-b border-gray-100 dark:border-gray-800">
+                  <h3 
+                    className="text-sm font-black uppercase text-gray-900 dark:text-white"
+                    style={{ fontFamily: "'Oswald', sans-serif" }}
+                  >
+                    Kategorien
+                  </h3>
+                </div>
+                <nav>
+                  {[
+                    { label: "Alle Transfers", path: "/", count: articles.length },
+                    { label: "Gerüchte", path: "/geruechte", count: articles.filter(a => a.article_type === 'rumour').length },
+                    { label: "Redaktion", path: "/redaktion", count: 12 },
+                  ].map((item) => (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      className="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group border-b border-gray-50 dark:border-gray-800 last:border-0"
+                    >
+                      <span className="font-medium text-sm text-gray-700 dark:text-gray-300 group-hover:text-[#79B92A] transition-colors">
+                        {item.label}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full">
+                          {item.count}
+                        </span>
+                        <CaretRight size={14} className="text-gray-400 group-hover:text-[#79B92A]" />
+                      </div>
+                    </Link>
+                  ))}
+                </nav>
+              </div>
             </aside>
           </div>
         </div>
