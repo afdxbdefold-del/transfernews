@@ -79,7 +79,7 @@ function NewsRow({ article, showImage = true }) {
   return (
     <Link 
       to={`/news/${article.slug}`}
-      className="flex items-start gap-3 p-2 hover:bg-blue-50 border-b border-gray-200 last:border-0 group"
+      className="flex items-start gap-3 p-2 hover:bg-[#e8f4e8] border-b border-gray-200 last:border-0 group"
       data-testid={`news-row-${article.id}`}
     >
       {showImage && (
@@ -118,7 +118,7 @@ function NewsRow({ article, showImage = true }) {
           </span>
         </div>
         
-        <h3 className="text-[13px] font-semibold text-gray-900 group-hover:text-[#1d4370] line-clamp-2 leading-tight">
+        <h3 className="text-[13px] font-semibold text-gray-900 group-hover:text-[#00a83f] line-clamp-2 leading-tight">
           {article.title}
         </h3>
         
@@ -126,11 +126,11 @@ function NewsRow({ article, showImage = true }) {
           <div className="flex items-center gap-1 mt-1">
             <div className="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden">
               <div 
-                className="h-full bg-[#1d4370] rounded-full"
+                className="h-full bg-[#00a83f] rounded-full"
                 style={{ width: `${article.transfer_probability}%` }}
               />
             </div>
-            <span className="text-[10px] font-bold text-[#1d4370]">{article.transfer_probability}%</span>
+            <span className="text-[10px] font-bold text-[#00a83f]">{article.transfer_probability}%</span>
           </div>
         )}
       </div>
@@ -142,7 +142,7 @@ function NewsRow({ article, showImage = true }) {
 
 function BoxHeader({ title, link, linkText = "mehr" }) {
   return (
-    <div className="bg-[#1d4370] px-3 py-2 flex items-center justify-between">
+    <div className="bg-[#79B92A] px-3 py-2 flex items-center justify-between">
       <h2 className="text-white text-[11px] font-bold uppercase">{title}</h2>
       {link && (
         <Link to={link} className="text-white/70 hover:text-white text-[10px] flex items-center gap-1">
@@ -157,7 +157,7 @@ function TrendingItem({ item, rank }) {
   return (
     <Link 
       to={item.slug ? `/spieler/${item.slug}` : '#'}
-      className="flex items-center gap-2 px-3 py-1.5 hover:bg-blue-50 border-b border-gray-100 last:border-0"
+      className="flex items-center gap-2 px-3 py-1.5 hover:bg-[#e8f4e8] border-b border-gray-100 last:border-0"
     >
       <span className="w-5 h-5 bg-gray-200 rounded-full flex items-center justify-center text-[10px] font-bold text-gray-600">
         {rank}
@@ -249,7 +249,7 @@ export default function HomePage() {
                     onClick={() => setActiveFilter(filter.id)}
                     className={`px-4 py-1.5 text-[11px] font-medium rounded-full transition-all duration-200 ${
                       activeFilter === filter.id 
-                        ? 'bg-[#1d4370] text-white shadow-sm' 
+                        ? 'bg-[#79B92A] text-white shadow-sm' 
                         : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
                     }`}
                     data-testid={`filter-${filter.id}`}
@@ -287,7 +287,7 @@ export default function HomePage() {
                 <div className="p-3 border-t border-gray-100 bg-gradient-to-r from-gray-50 to-white">
                   <button
                     onClick={loadMore}
-                    className="w-full py-2.5 text-[12px] font-semibold text-white bg-[#1d4370] hover:bg-[#15325a] rounded-full transition-all duration-200 shadow-sm"
+                    className="w-full py-2.5 text-[12px] font-semibold text-white bg-[#79B92A] hover:bg-[#6aa825] rounded-full transition-all duration-200 shadow-sm"
                     data-testid="load-more-btn"
                   >
                     Mehr News laden
@@ -375,9 +375,9 @@ export default function HomePage() {
                   <Link
                     key={item.path}
                     to={item.path}
-                    className="flex items-center justify-between px-3 py-2 hover:bg-blue-50 border-b border-gray-100 last:border-0 group"
+                    className="flex items-center justify-between px-3 py-2 hover:bg-[#e8f4e8] border-b border-gray-100 last:border-0 group"
                   >
-                    <span className="text-[12px] text-gray-900 group-hover:text-[#1d4370] flex items-center gap-2">
+                    <span className="text-[12px] text-gray-900 group-hover:text-[#00a83f] flex items-center gap-2">
                       {item.icon && <item.icon size={14} className="text-gray-500" />}
                       {item.label}
                     </span>

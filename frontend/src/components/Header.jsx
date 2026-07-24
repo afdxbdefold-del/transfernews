@@ -153,7 +153,7 @@ export default function Header() {
       </div>
 
       {/* Navigation Bar */}
-      <nav className="bg-[#1d4370]" data-testid="sports-nav">
+      <nav className="bg-[#79B92A]" data-testid="sports-nav">
         <div className="flex items-center h-[44px] px-3 overflow-x-auto hide-scrollbar">
           {navItems.map((item) => (
             <Link
@@ -162,7 +162,7 @@ export default function Header() {
               className={`flex-shrink-0 h-full flex items-center px-3 text-[11px] font-semibold transition-colors border-b-2 ${
                 isActive(item.path) 
                   ? "text-white border-white" 
-                  : "text-white/90 border-transparent hover:bg-white/10"
+                  : "text-white/90 border-transparent hover:bg-[#5a8a1f]/50"
               }`}
             >
               {item.label}
@@ -176,7 +176,7 @@ export default function Header() {
               className={`flex-shrink-0 h-full flex items-center gap-1 px-3 text-[11px] font-semibold transition-colors border-b-2 ${
                 location.pathname.includes('/wettbewerb/') 
                   ? "text-white border-white" 
-                  : "text-white/90 border-transparent hover:bg-white/10"
+                  : "text-white/90 border-transparent hover:bg-[#5a8a1f]/50"
               }`}
               data-testid="league-dropdown-btn"
             >
