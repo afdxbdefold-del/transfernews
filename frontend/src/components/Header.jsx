@@ -175,7 +175,7 @@ export default function Header() {
       </div>
 
       {/* Navigation Bar */}
-      <nav className="bg-[#5a8a1f] border-b border-[#4a7a15]" data-testid="sports-nav">
+      <nav className="bg-[#79B92A] border-b border-[#5a8a1f]" data-testid="sports-nav">
         <div className="flex items-center h-[32px] px-3 overflow-x-auto hide-scrollbar">
           {navItems.map((item) => (
             <Link
@@ -183,8 +183,8 @@ export default function Header() {
               to={item.path}
               className={`flex-shrink-0 h-full flex items-center px-3 text-[11px] font-semibold transition-colors border-b-2 ${
                 isActive(item.path) 
-                  ? "text-white border-white bg-[#4a7a15]" 
-                  : "text-white/90 border-transparent hover:bg-[#4a7a15]/50"
+                  ? "text-white border-white bg-[#5a8a1f]" 
+                  : "text-white/90 border-transparent hover:bg-[#5a8a1f]/50"
               }`}
             >
               {item.label}
@@ -197,8 +197,8 @@ export default function Header() {
               onClick={() => setLeagueDropdownOpen(!leagueDropdownOpen)}
               className={`flex-shrink-0 h-full flex items-center gap-1 px-3 text-[11px] font-semibold transition-colors border-b-2 ${
                 location.pathname.includes('/wettbewerb/') 
-                  ? "text-white border-white bg-[#4a7a15]" 
-                  : "text-white/90 border-transparent hover:bg-[#4a7a15]/50"
+                  ? "text-white border-white bg-[#5a8a1f]" 
+                  : "text-white/90 border-transparent hover:bg-[#5a8a1f]/50"
               }`}
               data-testid="league-dropdown-btn"
             >
@@ -225,7 +225,7 @@ export default function Header() {
           
           <Link
             to="/redaktion"
-            className="flex-shrink-0 h-full flex items-center px-3 text-[11px] font-semibold text-white/90 border-b-2 border-transparent hover:bg-[#4a7a15]/50"
+            className="flex-shrink-0 h-full flex items-center px-3 text-[11px] font-semibold text-white/90 border-b-2 border-transparent hover:bg-[#5a8a1f]/50"
           >
             Redaktion
           </Link>
