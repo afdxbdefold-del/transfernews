@@ -1,5 +1,3 @@
-import { useState, useEffect } from "react";
-
 /**
  * PageLayout - Globales Layout für alle Seiten
  * 
@@ -9,48 +7,41 @@ import { useState, useEffect } from "react";
  * - Header, Nav, Content, Footer alle innerhalb der Box
  */
 export default function PageLayout({ children }) {
-  const [leftAdVisible, setLeftAdVisible] = useState(true);
-  const [rightAdVisible, setRightAdVisible] = useState(true);
-
   return (
     <div className="min-h-screen bg-[#c5c5c5] dark:bg-[#1a1a1a]" data-testid="page-layout">
-      {/* Sticky Ad Container - Links */}
+      {/* Sticky Ad - Links (ganz außen) */}
       <div 
-        className="fixed left-0 top-0 bottom-0 w-[calc((100vw-1000px)/2-10px)] hidden xl:block z-40"
-        style={{ maxWidth: '160px', marginLeft: 'max(0px, calc((100vw - 1320px) / 2))' }}
+        className="fixed left-0 top-0 bottom-0 hidden xl:block z-40"
+        style={{ width: '160px' }}
       >
         <div className="sticky top-[100px] p-2">
-          {leftAdVisible && (
-            <div 
-              className="ad-slot-sticky bg-gray-200 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded"
-              style={{ width: '160px', height: '600px' }}
-              data-testid="left-sticky-ad"
-            >
-              <div className="flex items-center justify-center h-full text-[10px] text-gray-400 uppercase">
-                Anzeige
-              </div>
+          <div 
+            className="ad-slot-sticky bg-gray-200 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded"
+            style={{ width: '160px', height: '600px' }}
+            data-testid="left-sticky-ad"
+          >
+            <div className="flex items-center justify-center h-full text-[10px] text-gray-400 uppercase">
+              Anzeige
             </div>
-          )}
+          </div>
         </div>
       </div>
 
-      {/* Sticky Ad Container - Rechts */}
+      {/* Sticky Ad - Rechts (ganz außen) */}
       <div 
-        className="fixed right-0 top-0 bottom-0 w-[calc((100vw-1000px)/2-10px)] hidden xl:block z-40"
-        style={{ maxWidth: '160px', marginRight: 'max(0px, calc((100vw - 1320px) / 2))' }}
+        className="fixed right-0 top-0 bottom-0 hidden xl:block z-40"
+        style={{ width: '160px' }}
       >
         <div className="sticky top-[100px] p-2">
-          {rightAdVisible && (
-            <div 
-              className="ad-slot-sticky bg-gray-200 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded"
-              style={{ width: '160px', height: '600px' }}
-              data-testid="right-sticky-ad"
-            >
-              <div className="flex items-center justify-center h-full text-[10px] text-gray-400 uppercase">
-                Anzeige
-              </div>
+          <div 
+            className="ad-slot-sticky bg-gray-200 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded"
+            style={{ width: '160px', height: '600px' }}
+            data-testid="right-sticky-ad"
+          >
+            <div className="flex items-center justify-center h-full text-[10px] text-gray-400 uppercase">
+              Anzeige
             </div>
-          )}
+          </div>
         </div>
       </div>
 
