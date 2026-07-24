@@ -2,22 +2,31 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import PageLayout from "@/components/PageLayout";
 import { useEffect, useState } from "react";
-import { getTopTransfers } from "@/api";
-import { CaretRight, TrendUp } from "@phosphor-icons/react";
+import { getTopDeals } from "@/api";
+import { CaretRight, TrendUp, ArrowRight, Trophy } from "@phosphor-icons/react";
 import { Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 
-function TopDealRow({ article, rank }) {
-  const probability = article.transfer_probability || 0;
+function formatFee(amount) {
+  if (!amount || amount === 0) return 'ablösefrei';
+  if (amount >= 1000000) {
+    return `${(amount / 1000000).toFixed(1).replace('.0', '')} Mio. €`;
+  }
+  return `${(amount / 1000).toFixed(0)} Tsd. €`;
+}
+
+function TopDealRow({ transfer, rank }) {
+  const hasFromSlug = transfer.from_club_slug;
+  const hasToSlug = transfer.to_club_slug;
+  const hasPlayerSlug = transfer.player_slug;
   
   return (
-    <Link 
-      to={`/news/${article.slug}`}
-      className="flex items-center gap-3 p-2 hover:bg-[#e8f4e8] border-b border-gray-200 last:border-0 group"
+    <div 
+      className="flex items-center gap-3 p-3 hover:bg-[#f8fdf8] border-b border-gray-200 last:border-0 group"
       data-testid={`top-deal-${rank}`}
     >
       {/* Rank */}
-      <div className={`w-7 h-7 flex-shrink-0 rounded flex items-center justify-center text-[12px] font-bold ${
+      <div className={`w-8 h-8 flex-shrink-0 rounded-full flex items-center justify-center text-[13px] font-bold ${
         rank === 1 ? 'bg-yellow-400 text-yellow-900' :
         rank === 2 ? 'bg-gray-300 text-gray-700' :
         rank === 3 ? 'bg-amber-600 text-white' :
@@ -26,54 +35,72 @@ function TopDealRow({ article, rank }) {
         {rank}
       </div>
       
-      {/* Image */}
-      <div className="w-[50px] h-[36px] flex-shrink-0 bg-gray-200 overflow-hidden rounded-sm">
-        {article.image_url && (
-          <img src={article.image_url} alt="" className="w-full h-full object-cover" />
-        )}
-      </div>
-      
-      {/* Content */}
+      {/* Player Info */}
       <div className="flex-1 min-w-0">
-        <h3 className="text-[12px] font-semibold text-gray-900 group-hover:text-[#00a83f] line-clamp-1">
-          {article.title}
-        </h3>
-        <div className="flex items-center gap-2 mt-0.5">
-          <span className={`text-[9px] font-bold text-white px-1.5 py-0.5 rounded-sm ${
-            article.article_type === 'transfer' ? 'bg-[#00a83f]' : 'bg-amber-500'
-          }`}>
-            {article.article_type === 'transfer' ? 'Bestätigt' : 'Gerücht'}
-          </span>
+        {hasPlayerSlug ? (
+          <Link 
+            to={`/spieler/${transfer.player_slug}`}
+            className="text-[14px] font-bold text-gray-900 hover:text-[#79B92A] transition-colors"
+          >
+            {transfer.player_name}
+          </Link>
+        ) : (
+          <span className="text-[14px] font-bold text-gray-900">{transfer.player_name}</span>
+        )}
+        
+        {/* Transfer Flow */}
+        <div className="flex items-center gap-2 mt-1 text-[12px] text-gray-600">
+          {hasFromSlug ? (
+            <Link 
+              to={`/verein/${transfer.from_club_slug}`}
+              className="hover:text-[#79B92A] hover:underline transition-colors"
+            >
+              {transfer.from_club}
+            </Link>
+          ) : (
+            <span>{transfer.from_club}</span>
+          )}
+          <ArrowRight size={12} className="text-[#79B92A] flex-shrink-0" />
+          {hasToSlug ? (
+            <Link 
+              to={`/verein/${transfer.to_club_slug}`}
+              className="hover:text-[#79B92A] hover:underline transition-colors"
+            >
+              {transfer.to_club}
+            </Link>
+          ) : (
+            <span>{transfer.to_club}</span>
+          )}
         </div>
       </div>
       
-      {/* Probability */}
-      <div className="w-[80px] flex-shrink-0">
-        <div className="flex items-center gap-1">
-          <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
-            <div 
-              className={`h-full rounded-full ${probability >= 70 ? 'bg-[#00a83f]' : probability >= 40 ? 'bg-amber-500' : 'bg-red-500'}`}
-              style={{ width: `${probability}%` }}
-            />
-          </div>
-          <span className="text-[11px] font-bold text-gray-700 w-8 text-right">{probability}%</span>
+      {/* Season */}
+      <div className="text-[11px] text-gray-500 flex-shrink-0 w-16 text-center">
+        {transfer.season || transfer.year}
+      </div>
+      
+      {/* Fee */}
+      <div className="text-right flex-shrink-0 w-24">
+        <div className={`text-[15px] font-bold ${transfer.fee_amount > 100000000 ? 'text-[#79B92A]' : 'text-gray-900'}`}>
+          {formatFee(transfer.fee_amount)}
         </div>
+        <div className="text-[9px] text-gray-500 uppercase">{transfer.transfer_type || 'Fest'}</div>
       </div>
       
       <CaretRight size={14} className="text-gray-400 flex-shrink-0" />
-    </Link>
+    </div>
   );
 }
 
 export default function TopDealsPage() {
-  const [articles, setArticles] = useState([]);
+  const [transfers, setTransfers] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetch = async () => {
       try {
-        const res = await getTopTransfers(30);
-        setArticles(res.data?.articles || []);
+        const res = await getTopDeals({ limit: 30 });
+        setTransfers(res.data || []);
       } catch (e) {
         console.error("Error:", e);
       } finally {
@@ -83,11 +110,15 @@ export default function TopDealsPage() {
     fetch();
   }, []);
 
+  // Calculate totals
+  const totalFees = transfers.reduce((sum, t) => sum + (t.fee_amount || 0), 0);
+  const avgFee = transfers.length > 0 ? totalFees / transfers.length : 0;
+
   return (
     <PageLayout>
       <Helmet>
-        <title>Top-Transfers | TransferNews.de</title>
-        <meta name="description" content="Die Transfer-Gerüchte mit der höchsten Wahrscheinlichkeit." />
+        <title>Top-Transfers | Die teuersten Transfers | TransferNews.de</title>
+        <meta name="description" content="Die teuersten Fußball-Transfers aller Zeiten - sortiert nach Ablösesumme." />
         <link rel="canonical" href="https://transfernews.de/top-deals" />
       </Helmet>
       
@@ -95,51 +126,69 @@ export default function TopDealsPage() {
       
       <main className="flex-1 py-3 px-3" data-testid="top-deals-page">
         <div className="bg-white border border-gray-300 rounded-sm overflow-hidden">
-            <div className="bg-[#79B92A] px-3 py-2 flex items-center gap-2">
-              <TrendUp size={16} className="text-white" />
-              <h1 className="text-white text-[12px] font-bold uppercase">Top-Transfers nach Wahrscheinlichkeit</h1>
-            </div>
-            
-            {/* Legend */}
-            <div className="bg-gray-50 px-3 py-2 border-b border-gray-200 flex items-center gap-4 text-[10px]">
-              <span className="text-gray-500">Legende:</span>
-              <span className="flex items-center gap-1"><span className="w-3 h-2 bg-[#00a83f] rounded-sm"></span> Hoch (&gt;70%)</span>
-              <span className="flex items-center gap-1"><span className="w-3 h-2 bg-amber-500 rounded-sm"></span> Mittel (40-70%)</span>
-              <span className="flex items-center gap-1"><span className="w-3 h-2 bg-red-500 rounded-sm"></span> Niedrig (&lt;40%)</span>
-            </div>
-            
-            {loading ? (
-              <div className="divide-y divide-gray-200">
-                {[...Array(10)].map((_, i) => (
-                  <div key={i} className="flex items-center gap-3 p-2 animate-pulse">
-                    <div className="w-7 h-7 bg-gray-200 rounded" />
-                    <div className="w-[50px] h-[36px] bg-gray-200 rounded-sm" />
-                    <div className="flex-1">
-                      <div className="h-4 bg-gray-200 rounded w-3/4 mb-1" />
-                      <div className="h-3 bg-gray-200 rounded w-16" />
-                    </div>
-                    <div className="w-[80px] h-2 bg-gray-200 rounded-full" />
-                  </div>
-                ))}
-              </div>
-            ) : articles.length > 0 ? (
-              <div>
-                {articles.map((article, idx) => (
-                  <TopDealRow key={article.id} article={article} rank={idx + 1} />
-                ))}
-              </div>
-            ) : (
-              <div className="p-8 text-center text-gray-500 text-[13px]">
-                Keine Top-Transfers mit Wahrscheinlichkeitsangabe vorhanden.
-                <Link to="/" className="block mt-2 text-[#00a83f] hover:underline">
-                  Alle News ansehen
-                </Link>
-              </div>
-            )}
+          <div className="bg-[#79B92A] px-3 py-2.5 flex items-center gap-2">
+            <Trophy size={18} className="text-white" weight="fill" />
+            <h1 className="text-white text-[13px] font-bold uppercase">Top-Transfers nach Ablösesumme</h1>
           </div>
-        </main>
+          
+          {/* Stats Bar */}
+          <div className="bg-gray-50 px-3 py-2.5 border-b border-gray-200 flex items-center justify-between text-[11px]">
+            <div className="flex items-center gap-6">
+              <span className="text-gray-500">
+                <strong className="text-gray-700">{transfers.length}</strong> Transfers
+              </span>
+              <span className="text-gray-500">
+                Gesamtvolumen: <strong className="text-[#79B92A]">{formatFee(totalFees)}</strong>
+              </span>
+              <span className="text-gray-500">
+                Durchschnitt: <strong className="text-gray-700">{formatFee(avgFee)}</strong>
+              </span>
+            </div>
+            <div className="flex items-center gap-3 text-[10px]">
+              <span className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-yellow-400"></span> 1. Platz
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-gray-300"></span> 2. Platz
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-amber-600"></span> 3. Platz
+              </span>
+            </div>
+          </div>
+          
+          {loading ? (
+            <div className="divide-y divide-gray-200">
+              {[...Array(10)].map((_, i) => (
+                <div key={i} className="flex items-center gap-3 p-3 animate-pulse">
+                  <div className="w-8 h-8 bg-gray-200 rounded-full" />
+                  <div className="flex-1">
+                    <div className="h-4 bg-gray-200 rounded w-1/3 mb-2" />
+                    <div className="h-3 bg-gray-200 rounded w-1/2" />
+                  </div>
+                  <div className="w-16 h-4 bg-gray-200 rounded" />
+                  <div className="w-24 h-5 bg-gray-200 rounded" />
+                </div>
+              ))}
+            </div>
+          ) : transfers.length > 0 ? (
+            <div>
+              {transfers.map((transfer, idx) => (
+                <TopDealRow key={transfer.id} transfer={transfer} rank={idx + 1} />
+              ))}
+            </div>
+          ) : (
+            <div className="p-8 text-center text-gray-500 text-[13px]">
+              Keine Transfers mit Ablösesumme vorhanden.
+              <Link to="/" className="block mt-2 text-[#79B92A] hover:underline">
+                Alle News ansehen
+              </Link>
+            </div>
+          )}
+        </div>
+      </main>
       
-        <Footer />
-      </PageLayout>
+      <Footer />
+    </PageLayout>
   );
 }

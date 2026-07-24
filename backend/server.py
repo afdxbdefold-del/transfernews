@@ -340,6 +340,18 @@ async def get_player_transfers_by_slug(slug: str):
     return transfers
 
 
+
+@api_router.get("/transfers/top-deals")
+async def get_top_deals(
+    limit: int = Query(20, ge=1, le=50),
+    min_fee: int = Query(0, ge=0, description="Minimum transfer fee in Euro")
+):
+    """Get top transfers sorted by fee amount"""
+    query = {"fee_amount": {"$gt": min_fee}}
+    transfers = await db.transfers.find(query, {"_id": 0}).sort("fee_amount", -1).limit(limit).to_list(limit)
+    return transfers
+
+
 @api_router.post("/players/enrich-images")
 async def enrich_player_images(
     limit: int = Query(50, ge=1, le=200),

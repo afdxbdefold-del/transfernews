@@ -46,6 +46,9 @@ export const createPlayer = (data) => api.post('/players', data);
 export const updatePlayer = (id, data) => api.put(`/players/${id}`, data);
 export const deletePlayer = (id) => api.delete(`/players/${id}`);
 
+// Transfers
+export const getTopDeals = (params) => api.get('/transfers/top-deals', { params });
+
 // Clubs
 export const getClubs = (params) => api.get('/clubs', { params });
 export const getClub = (id) => api.get(`/clubs/${id}`);
