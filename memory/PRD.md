@@ -3,10 +3,17 @@
 ## Letztes Update: 24. Juli 2026
 
 ### Kürzlich abgeschlossen:
+- ✅ **Transfer-Historie**: Transfer-Tab auf Spielerseiten zeigt echte Daten aus DB (24.07.2026)
+- ✅ **Spieler-Verein verknüpfen**: Aktueller Verein (z.B. Inter Miami) wird im Header angezeigt und ist klickbar (24.07.2026)
+- ✅ **Trending-Vereine klickbar**: Sidebar-Links funktionieren und navigieren zu /verein/{slug} (24.07.2026)
+- ✅ **Player-Modell erweitert**: current_club_name und current_club_slug Felder hinzugefügt (24.07.2026)
 - ✅ Bugfix: Artikelbilder laden jetzt korrekt (hero_image statt image_url + referrerPolicy) (24.07.2026)
 - ✅ Neues Logo mit Sprechblase integriert (24.07.2026)
 - ✅ Filter-Tabs modernisiert (Pill-Style) (24.07.2026)
 - ✅ 300×250 Ad-Platzhalter unter "Trending Spieler" positioniert (24.07.2026)
+
+### Teilweise erledigt:
+- 🟡 **Vereinslogos laden**: 10 von 31 Vereinen haben Wikipedia-Logos (Urheberrechtsbeschränkungen)
 
 ## Latest Update: 24.07.2026
 

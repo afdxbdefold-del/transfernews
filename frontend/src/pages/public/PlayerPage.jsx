@@ -75,6 +75,11 @@ function NewsRow({ article }) {
 }
 
 function TransferRow({ transfer }) {
+  // Avoid showing fee and type if they're the same (e.g., both "ablösefrei")
+  const feeDisplay = transfer.fee || (transfer.fee_amount ? formatMarketValue(transfer.fee_amount) : 'ablösefrei');
+  const typeDisplay = transfer.transfer_type || 'Fest';
+  const showType = typeDisplay.toLowerCase() !== feeDisplay.toLowerCase();
+  
   return (
     <div className="flex items-center gap-3 px-3 py-2.5 border-b border-gray-200 last:border-0 text-[12px]">
       <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
@@ -89,10 +94,8 @@ function TransferRow({ transfer }) {
         <div className="text-[10px] text-gray-500 mt-0.5">{transfer.year || transfer.season || '-'}</div>
       </div>
       <div className="text-right flex-shrink-0">
-        <div className="font-bold text-gray-900">
-          {transfer.fee || (transfer.fee_amount ? formatMarketValue(transfer.fee_amount) : 'ablösefrei')}
-        </div>
-        <div className="text-[9px] text-gray-500">{transfer.transfer_type || 'Fest'}</div>
+        <div className="font-bold text-gray-900">{feeDisplay}</div>
+        {showType && <div className="text-[9px] text-gray-500">{typeDisplay}</div>}
       </div>
     </div>
   );
