@@ -3,6 +3,9 @@
 ## Letztes Update: 24. Juli 2026
 
 ### Kürzlich abgeschlossen:
+- ✅ Bugfix: Artikelbilder laden jetzt korrekt (hero_image statt image_url + referrerPolicy) (24.07.2026)
+- ✅ Neues Logo mit Sprechblase integriert (24.07.2026)
+- ✅ Filter-Tabs modernisiert (Pill-Style) (24.07.2026)
 - ✅ 300×250 Ad-Platzhalter unter "Trending Spieler" positioniert (24.07.2026)
 
 ## Latest Update: 24.07.2026
