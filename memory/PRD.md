@@ -3,6 +3,8 @@
 ## Letztes Update: 24. Juli 2026
 
 ### Kürzlich abgeschlossen:
+- ✅ **Volle Kader für Top-Vereine**: Real Madrid (20 Spieler/1250M €), Manchester City (18/1003M €), Bayern erweitert (24.07.2026)
+- ✅ **Transfer-Verlinkung**: Vereinsnamen im Transfer-Tab sind klickbar und navigieren zur Vereinsseite (24.07.2026)
 - ✅ **Marktwert-Daten**: 22+ Top-Spieler mit aktuellen Marktwerten (Mbappé 180M, Haaland 175M, Bellingham 150M, etc.) (24.07.2026)
 - ✅ **Kader-Anzeige**: Vereinsseiten zeigen echte Spieler mit Kadergröße, Kaderwert und "Wertvollste Spieler" (24.07.2026)
 - ✅ **Transfer-Historie**: Transfer-Tab auf Spielerseiten zeigt echte Daten aus DB (24.07.2026)
