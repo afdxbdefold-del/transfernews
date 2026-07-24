@@ -267,6 +267,11 @@ export default function HomePage() {
 
           {/* Sidebar */}
           <aside className="space-y-3">
+            {/* Megasky Ad 300x600 */}
+            <div className="bg-gray-200 border border-gray-300 rounded-sm flex items-center justify-center" style={{ width: '280px', height: '600px' }}>
+              <span className="text-[10px] text-gray-400 uppercase">Anzeige</span>
+            </div>
+            
             {/* Trending Players */}
             <div className="bg-white border border-gray-300 rounded-sm overflow-hidden">
               <BoxHeader title="Trending Spieler" />
