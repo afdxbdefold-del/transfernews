@@ -1,5 +1,12 @@
 # TransferNews.de - Product Requirements Document
 
+## Latest Update: 24.07.2026
+
+### Recent Changes
+- Added 3 new menu items: Ticker, Top-Deals, Ablösefrei
+- Removed "30 Artikel" counter from filters and sidebar
+- All new pages fully functional with proper SEO meta tags
+
 ## Original Problem Statement
 Deutschsprachige Fußball-Transfer-News-Plattform auf der Domain transfernews.de mit:
 - Transfer-News, Gerüchte, bestätigte Transfers, offizielle Wechsel

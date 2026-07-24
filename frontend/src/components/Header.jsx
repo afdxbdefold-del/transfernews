@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { MagnifyingGlass, List, X, CaretDown, Trophy, Moon, Sun } from "@phosphor-icons/react";
+import { MagnifyingGlass, List, X, CaretDown, Trophy, Moon, Sun, Lightning, Ranking, UserCircle } from "@phosphor-icons/react";
 import { useState, useEffect, useRef } from "react";
 import { autosuggest } from "@/api";
 
@@ -85,6 +85,9 @@ export default function Header() {
 
   const navItems = [
     { path: "/", label: "TRANSFERS" },
+    { path: "/ticker", label: "TICKER", icon: Lightning },
+    { path: "/top-deals", label: "TOP-DEALS", icon: Ranking },
+    { path: "/abloesefrei", label: "ABLÖSEFREI", icon: UserCircle },
     { path: "/geruechte", label: "GERÜCHTE" },
   ];
   
@@ -175,16 +178,20 @@ export default function Header() {
         <div className="max-w-[1000px] mx-auto px-4">
           <div className="flex items-center justify-between h-[40px]">
             <div className="flex items-center h-full overflow-x-auto hide-scrollbar">
-              {navItems.map((item) => (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className={"flex-shrink-0 h-full flex items-center px-3 text-[12px] font-bold uppercase tracking-wide transition-colors " + (isActive(item.path) ? "text-[#79B92A]" : "text-white")}
-                  style={{ fontFamily: "'Oswald', sans-serif" }}
-                >
-                  {item.label}
-                </Link>
-              ))}
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    className={"flex-shrink-0 h-full flex items-center gap-1 px-3 text-[12px] font-bold uppercase tracking-wide transition-colors " + (isActive(item.path) ? "text-[#79B92A]" : "text-white")}
+                    style={{ fontFamily: "'Oswald', sans-serif" }}
+                  >
+                    {Icon && <Icon size={14} weight="fill" />}
+                    {item.label}
+                  </Link>
+                );
+              })}
               
               {/* Liga-Dropdown */}
               <div className="relative h-full" ref={leagueRef}>
@@ -253,17 +260,21 @@ export default function Header() {
               </button>
             </div>
             <nav className="py-2">
-              {navItems.map((item) => (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  onClick={() => setMenuOpen(false)}
-                  className={"flex items-center h-12 px-4 text-[14px] font-bold uppercase " + (isActive(item.path) ? "text-[#79B92A]" : "text-gray-900")}
-                  style={{ fontFamily: "'Oswald', sans-serif" }}
-                >
-                  {item.label}
-                </Link>
-              ))}
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    onClick={() => setMenuOpen(false)}
+                    className={"flex items-center gap-2 h-12 px-4 text-[14px] font-bold uppercase " + (isActive(item.path) ? "text-[#79B92A]" : "text-gray-900")}
+                    style={{ fontFamily: "'Oswald', sans-serif" }}
+                  >
+                    {Icon && <Icon size={18} weight="fill" />}
+                    {item.label}
+                  </Link>
+                );
+              })}
             </nav>
           </div>
         </>

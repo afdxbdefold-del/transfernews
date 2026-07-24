@@ -31,6 +31,9 @@ import AuthorsPage from "@/pages/public/AuthorsPage";
 import ImpressumPage from "@/pages/public/ImpressumPage";
 import AboutPage from "@/pages/public/AboutPage";
 import DatenschutzPage from "@/pages/public/DatenschutzPage";
+import TickerPage from "@/pages/public/TickerPage";
+import TopDealsPage from "@/pages/public/TopDealsPage";
+import FreeAgentsPage from "@/pages/public/FreeAgentsPage";
 
 // Admin Pages
 import AdminLogin from "@/pages/admin/AdminLogin";
@@ -57,6 +60,9 @@ function App() {
             <Route path="/" element={<HomePage />} />
             <Route path="/news" element={<Navigate to="/" replace />} />
             <Route path="/news/:slug" element={<NewsDetailPage />} />
+            <Route path="/ticker" element={<TickerPage />} />
+            <Route path="/top-deals" element={<TopDealsPage />} />
+            <Route path="/abloesefrei" element={<FreeAgentsPage />} />
             <Route path="/spieler/:slug" element={<PlayerPage />} />
             <Route path="/verein/:slug" element={<ClubPage />} />
             <Route path="/wettbewerb/:slug" element={<CompetitionPage />} />
