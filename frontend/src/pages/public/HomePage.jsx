@@ -371,7 +371,6 @@ export default function HomePage() {
                   { label: "Deadline Day", path: "/deadline-day", icon: Fire },
                   { label: "Top-Transfers", path: "/top-deals", icon: TrendUp },
                   { label: "Ablösefreie Spieler", path: "/abloesefrei" },
-                  { label: "Redaktion", path: "/redaktion" },
                 ].map((item) => (
                   <Link
                     key={item.path}

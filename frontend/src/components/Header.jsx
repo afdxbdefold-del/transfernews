@@ -203,7 +203,7 @@ export default function Header() {
           
           <Link
             to="/redaktion"
-            className="flex-shrink-0 h-full flex items-center px-3 text-[11px] font-semibold text-white/90 border-b-2 border-transparent hover:bg-[#5a8a1f]/50"
+            className="hidden flex-shrink-0 h-full flex items-center px-3 text-[11px] font-semibold text-white/90 border-b-2 border-transparent hover:bg-[#5a8a1f]/50"
           >
             Redaktion
           </Link>

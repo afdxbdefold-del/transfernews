@@ -35,7 +35,6 @@ export default function Footer() {
             <h4 className="text-[11px] font-bold uppercase text-white/60 mb-2">Über Uns</h4>
             <ul className="space-y-1">
               <li><Link to="/ueber-uns" className="text-[12px] text-white/80 hover:text-white">Über TransferNews</Link></li>
-              <li><Link to="/redaktion" className="text-[12px] text-white/80 hover:text-white">Redaktion</Link></li>
               <li><Link to="/impressum" className="text-[12px] text-white/80 hover:text-white">Impressum</Link></li>
               <li><Link to="/datenschutz" className="text-[12px] text-white/80 hover:text-white">Datenschutz</Link></li>
             </ul>
