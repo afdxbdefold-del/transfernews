@@ -307,6 +307,11 @@ export default function HomePage() {
                   </button>
                 </div>
               )}
+              
+              {/* Image Attribution */}
+              <div className="px-3 py-2 bg-gray-50 border-t border-gray-100 text-[9px] text-gray-400">
+                Bilder: Unsplash, Pexels (lizenzfrei)
+              </div>
             </div>
           </div>
 

@@ -212,23 +212,30 @@ export default function PlayerPage() {
                 <div className="bg-[#79B92A] p-4">
                   <div className="flex items-start gap-4">
                     {/* Player Image */}
-                    <div className="w-[100px] h-[130px] bg-white rounded overflow-hidden flex-shrink-0">
-                      {player.image ? (
-                        <img 
-                          src={player.image} 
-                          alt={player.name} 
-                          className="w-full h-full object-cover"
-                          referrerPolicy="no-referrer"
-                          crossOrigin="anonymous"
-                          onError={(e) => {
-                            e.target.style.display = 'none';
-                            e.target.nextSibling.style.display = 'flex';
-                          }}
-                        />
-                      ) : null}
-                      <div className={`w-full h-full items-center justify-center bg-gray-100 ${player.image ? 'hidden' : 'flex'}`}>
-                        <User size={48} className="text-gray-400" />
+                    <div className="flex flex-col flex-shrink-0">
+                      <div className="w-[100px] h-[130px] bg-white rounded overflow-hidden">
+                        {player.image ? (
+                          <img 
+                            src={player.image} 
+                            alt={player.name} 
+                            className="w-full h-full object-cover"
+                            referrerPolicy="no-referrer"
+                            crossOrigin="anonymous"
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                              e.target.nextSibling.style.display = 'flex';
+                            }}
+                          />
+                        ) : null}
+                        <div className={`w-full h-full items-center justify-center bg-gray-100 ${player.image ? 'hidden' : 'flex'}`}>
+                          <User size={48} className="text-gray-400" />
+                        </div>
                       </div>
+                      {player.image_source && (
+                        <div className="text-[8px] text-white/70 mt-1 text-center">
+                          Bild: {player.image_source}
+                        </div>
+                      )}
                     </div>
                     
                     {/* Player Info */}

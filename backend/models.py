@@ -151,6 +151,8 @@ class PlayerBase(BaseModel):
     market_value: Optional[int] = None
     market_value_date: Optional[str] = None
     image: Optional[str] = None
+    image_source: Optional[str] = None
+    image_license: Optional[str] = None
     meta_title: Optional[str] = None
     meta_description: Optional[str] = None
 
@@ -172,6 +174,8 @@ class PlayerUpdate(BaseModel):
     market_value: Optional[int] = None
     market_value_date: Optional[str] = None
     image: Optional[str] = None
+    image_source: Optional[str] = None
+    image_license: Optional[str] = None
     meta_title: Optional[str] = None
     meta_description: Optional[str] = None
 

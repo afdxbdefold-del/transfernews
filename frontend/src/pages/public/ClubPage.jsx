@@ -353,6 +353,9 @@ export default function ClubPage() {
                           {players.map((player, idx) => (
                             <PlayerRow key={player.id} player={player} position={idx + 1} />
                           ))}
+                          <div className="px-3 py-2 bg-gray-50 border-t border-gray-200 text-[9px] text-gray-400">
+                            Spielerbilder: Wikimedia Commons (CC BY-SA)
+                          </div>
                         </>
                       ) : (
                         <div className="p-8 text-center text-gray-500 text-[13px]">
