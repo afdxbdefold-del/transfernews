@@ -108,14 +108,14 @@ export default function Header() {
         </div>
       </div>
       
-      {/* Top Bar - Green */}
-      <div className="bg-[#79B92A]">
+      {/* Top Bar - White */}
+      <div className="bg-white border-b border-gray-200">
         <div className="flex items-center justify-between h-[44px] px-3">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2" data-testid="logo-link">
-            <div className="bg-white rounded px-2 py-1">
-              <span className="text-[#79B92A] font-bold text-sm">transfer</span>
-              <span className="text-gray-800 font-bold text-sm">news</span>
+            <div className="bg-[#79B92A] rounded px-2 py-1">
+              <span className="text-white font-bold text-sm">transfer</span>
+              <span className="text-white/80 font-bold text-sm">news</span>
             </div>
           </Link>
           
@@ -127,10 +127,10 @@ export default function Header() {
                 placeholder="Spieler, Verein, Wettbewerb..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full h-[30px] px-3 pr-8 text-[12px] border-0 rounded-sm focus:outline-none focus:ring-2 focus:ring-[#00a83f]"
+                className="w-full h-[30px] px-3 pr-8 text-[12px] border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-[#79B92A] focus:border-transparent"
                 data-testid="search-input"
               />
-              <button type="submit" className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#1d4370]">
+              <button type="submit" className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#79B92A]">
                 <MagnifyingGlass size={16} />
               </button>
               
@@ -158,14 +158,14 @@ export default function Header() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setDarkMode(!darkMode)}
-              className="w-8 h-8 flex items-center justify-center text-white/80 hover:text-white transition-colors"
+              className="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-[#79B92A] transition-colors"
               data-testid="dark-mode-toggle"
             >
-              {darkMode ? <Sun size={18} weight="fill" className="text-yellow-300" /> : <Moon size={18} />}
+              {darkMode ? <Sun size={18} weight="fill" className="text-yellow-500" /> : <Moon size={18} />}
             </button>
             <button
               onClick={() => setMenuOpen(!menuOpen)}
-              className="md:hidden w-8 h-8 flex items-center justify-center text-white"
+              className="md:hidden w-8 h-8 flex items-center justify-center text-gray-700"
               data-testid="burger-menu-button"
             >
               <List size={22} />
