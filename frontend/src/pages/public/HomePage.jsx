@@ -206,17 +206,17 @@ export default function HomePage() {
           {/* Main Content */}
           <div className="space-y-3">
             {/* News Box */}
-            <div className="bg-white border border-gray-300 rounded-sm overflow-hidden">
-              {/* Filter Tabs */}
-              <div className="flex border-b border-gray-200 bg-gray-50">
+            <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+              {/* Filter Tabs - Modern Pill Style */}
+              <div className="flex items-center gap-2 p-3 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
                 {FILTERS.map((filter) => (
                   <button
                     key={filter.id}
                     onClick={() => setActiveFilter(filter.id)}
-                    className={`px-3 py-2 text-[11px] font-semibold transition-colors ${
+                    className={`px-4 py-1.5 text-[11px] font-medium rounded-full transition-all duration-200 ${
                       activeFilter === filter.id 
-                        ? 'text-[#00a83f] border-b-2 border-[#00a83f] bg-white -mb-[1px]' 
-                        : 'text-gray-600 hover:text-gray-900'
+                        ? 'bg-[#79B92A] text-white shadow-sm' 
+                        : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
                     }`}
                     data-testid={`filter-${filter.id}`}
                   >
@@ -250,10 +250,10 @@ export default function HomePage() {
               </div>
               
               {hasMore && !loading && filteredArticles.length > 0 && (
-                <div className="p-2 border-t border-gray-200 bg-gray-50">
+                <div className="p-3 border-t border-gray-100 bg-gradient-to-r from-gray-50 to-white">
                   <button
                     onClick={loadMore}
-                    className="w-full py-2 text-[12px] font-semibold text-[#1d4370] hover:text-[#00a83f] transition-colors"
+                    className="w-full py-2.5 text-[12px] font-semibold text-white bg-[#79B92A] hover:bg-[#6aa825] rounded-full transition-all duration-200 shadow-sm"
                     data-testid="load-more-btn"
                   >
                     Mehr News laden
