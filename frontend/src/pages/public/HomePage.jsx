@@ -153,17 +153,37 @@ function BoxHeader({ title, link, linkText = "mehr" }) {
   );
 }
 
-function TrendingItem({ item, rank }) {
-  return (
-    <Link 
-      to={item.slug ? `/spieler/${item.slug}` : '#'}
-      className="flex items-center gap-2 px-3 py-1.5 hover:bg-[#e8f4e8] border-b border-gray-100 last:border-0"
-    >
+function TrendingItem({ item, rank, type = 'player' }) {
+  // Trending items from articles may not have corresponding database entries
+  // So we make the link conditional
+  const hasValidLink = item.id && item.slug;
+  const linkPath = type === 'player' ? `/spieler/${item.slug}` : `/verein/${item.slug}`;
+  
+  const content = (
+    <>
       <span className="w-5 h-5 bg-gray-200 rounded-full flex items-center justify-center text-[10px] font-bold text-gray-600">
         {rank}
       </span>
       <span className="flex-1 text-[12px] text-gray-900 truncate">{item.name}</span>
-      <span className="text-[10px] text-gray-500">{item.score || item.count}</span>
+      <span className="text-[10px] text-gray-500">{item.score || item.trend_score || item.count}</span>
+    </>
+  );
+  
+  // If no valid database entry, render as non-clickable
+  if (!hasValidLink) {
+    return (
+      <div className="flex items-center gap-2 px-3 py-1.5 border-b border-gray-100 last:border-0">
+        {content}
+      </div>
+    );
+  }
+  
+  return (
+    <Link 
+      to={linkPath}
+      className="flex items-center gap-2 px-3 py-1.5 hover:bg-[#e8f4e8] border-b border-gray-100 last:border-0"
+    >
+      {content}
     </Link>
   );
 }
@@ -310,7 +330,7 @@ export default function HomePage() {
               <div>
                 {trending.players.length > 0 ? (
                   trending.players.slice(0, 5).map((player, idx) => (
-                    <TrendingItem key={player.id || idx} item={player} rank={idx + 1} />
+                    <TrendingItem key={player.id || idx} item={player} rank={idx + 1} type="player" />
                   ))
                 ) : (
                   <div className="p-3 text-center text-gray-500 text-[12px]">
@@ -331,7 +351,7 @@ export default function HomePage() {
               <div>
                 {trending.clubs.length > 0 ? (
                   trending.clubs.slice(0, 5).map((club, idx) => (
-                    <TrendingItem key={club.id || idx} item={club} rank={idx + 1} />
+                    <TrendingItem key={club.id || idx} item={club} rank={idx + 1} type="club" />
                   ))
                 ) : (
                   <div className="p-3 text-center text-gray-500 text-[12px]">
