@@ -277,6 +277,19 @@ export default function Header() {
           </div>
         </>
       )}
+      
+      {/* Billboard Ad - unter dem Menü */}
+      <div className="bg-[#d9d9d9] py-2" data-testid="billboard-container">
+        <div className="flex justify-center">
+          <div 
+            className="bg-gray-300 border border-gray-400 flex items-center justify-center"
+            style={{ width: '728px', height: '90px' }}
+            data-testid="billboard-ad"
+          >
+            <span className="text-[11px] text-gray-500 uppercase tracking-wider">Anzeige</span>
+          </div>
+        </div>
+      </div>
     </header>
   );
 }
