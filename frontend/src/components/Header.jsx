@@ -175,7 +175,7 @@ export default function Header() {
       </div>
 
       {/* Navigation Bar */}
-      <nav className="bg-[#79B92A] border-b border-[#5a8a1f]" data-testid="sports-nav">
+      <nav className="bg-[#79B92A]" data-testid="sports-nav">
         <div className="flex items-center h-[44px] px-3 overflow-x-auto hide-scrollbar">
           {navItems.map((item) => (
             <Link
