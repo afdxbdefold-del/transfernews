@@ -95,8 +95,8 @@ export default function Header() {
 
   return (
     <header data-testid="main-header">
-      {/* Top Banner Ad - über Header */}
-      <div className="py-2 bg-[#f2f2f2]" data-testid="top-banner-container">
+      {/* Top Banner Ad - über Header (nur Desktop) */}
+      <div className="hidden lg:block py-2 bg-[#f2f2f2]" data-testid="top-banner-container">
         <div className="flex justify-center">
           <div 
             className="bg-gray-300 border border-gray-400 flex items-center justify-center"
@@ -291,8 +291,8 @@ export default function Header() {
         </>
       )}
       
-      {/* Billboard Ad - unter dem Menü */}
-      <div className="bg-[#d9d9d9] py-2" data-testid="billboard-container">
+      {/* Billboard Ad - unter dem Menü (nur Desktop) */}
+      <div className="hidden lg:block bg-[#d9d9d9] py-2" data-testid="billboard-container">
         <div className="flex justify-center">
           <div 
             className="bg-gray-300 border border-gray-400 flex items-center justify-center"

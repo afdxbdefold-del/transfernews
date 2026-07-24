@@ -267,8 +267,8 @@ export default function HomePage() {
 
           {/* Sidebar */}
           <aside className="space-y-3">
-            {/* Megasky Ad 300x600 */}
-            <div className="bg-gray-200 border border-gray-300 rounded-sm flex items-center justify-center" style={{ width: '280px', height: '600px' }}>
+            {/* Megasky Ad 300x600 (nur Desktop) */}
+            <div className="hidden lg:flex bg-gray-200 border border-gray-300 rounded-sm items-center justify-center" style={{ width: '280px', height: '600px' }}>
               <span className="text-[10px] text-gray-400 uppercase">Anzeige</span>
             </div>
             
@@ -351,11 +351,9 @@ export default function HomePage() {
               </nav>
             </div>
             
-            {/* Ad Slot */}
-            <div className="bg-gray-200 border border-gray-300 rounded-sm" style={{ height: '250px' }}>
-              <div className="flex items-center justify-center h-full text-[10px] text-gray-400 uppercase">
-                Anzeige
-              </div>
+            {/* Ad Slot (nur Desktop) */}
+            <div className="hidden lg:flex bg-gray-200 border border-gray-300 rounded-sm items-center justify-center" style={{ height: '250px' }}>
+              <span className="text-[10px] text-gray-400 uppercase">Anzeige</span>
             </div>
           </aside>
         </div>
