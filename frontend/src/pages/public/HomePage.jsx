@@ -5,7 +5,21 @@ import { useEffect, useState } from "react";
 import { getPublishedArticles, getAllTrending } from "@/api";
 import { Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
-import { CaretRight, TrendUp, Clock, Fire } from "@phosphor-icons/react";
+import { CaretRight, TrendUp, Clock, Fire, Image } from "@phosphor-icons/react";
+
+// Optimize Wikimedia URLs to load smaller thumbnails
+function optimizeImageUrl(url, width = 500) {
+  if (!url) return null;
+  // Wikimedia thumb URLs: replace width in path (min 500px for Wikimedia)
+  if (url.includes('upload.wikimedia.org') && url.includes('/thumb/')) {
+    return url.replace(/\/\d+px-/, `/${width}px-`);
+  }
+  // Unsplash: add width parameter
+  if (url.includes('unsplash.com')) {
+    return url.includes('?') ? `${url}&w=${width}` : `${url}?w=${width}`;
+  }
+  return url;
+}
 
 const FILTERS = [
   { id: 'all', label: 'Alle News' },
@@ -36,6 +50,8 @@ function formatDate(dateString) {
 }
 
 function NewsRow({ article, showImage = true }) {
+  const [imgError, setImgError] = useState(false);
+  
   const isNew = () => {
     if (!article.published_at) return false;
     const diffHours = (new Date() - new Date(article.published_at)) / 3600000;
@@ -49,8 +65,16 @@ function NewsRow({ article, showImage = true }) {
   };
   const type = typeLabel[article.article_type] || typeLabel.news;
   
-  // Use hero_image or image_url as fallback
-  const imageUrl = article.hero_image || article.image_url;
+  // Use hero_image or image_url as fallback, optimized for thumbnail size
+  const rawImageUrl = article.hero_image || article.image_url;
+  const imageUrl = optimizeImageUrl(rawImageUrl, 500);
+  
+  // Fallback placeholder component
+  const ImagePlaceholder = () => (
+    <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
+      <Image size={20} className="text-gray-400" />
+    </div>
+  );
   
   return (
     <Link 
@@ -60,16 +84,17 @@ function NewsRow({ article, showImage = true }) {
     >
       {showImage && (
         <div className="w-[70px] h-[50px] flex-shrink-0 bg-gray-200 overflow-hidden rounded-sm">
-          {imageUrl ? (
+          {imageUrl && !imgError ? (
             <img 
               src={imageUrl} 
               alt="" 
               className="w-full h-full object-cover"
               referrerPolicy="no-referrer"
               loading="lazy"
+              onError={() => setImgError(true)}
             />
           ) : (
-            <div className="w-full h-full bg-gray-300" />
+            <ImagePlaceholder />
           )}
         </div>
       )}
