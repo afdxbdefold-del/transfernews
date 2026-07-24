@@ -113,9 +113,9 @@ export default function Header() {
         <div className="flex items-center justify-between h-[44px] px-3">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2" data-testid="logo-link">
-            <div className="bg-[#79B92A] rounded px-2 py-1">
-              <span className="text-white font-bold text-sm">transfer</span>
-              <span className="text-white/80 font-bold text-sm">news</span>
+            <div className="bg-white rounded px-2 py-1">
+              <span className="text-[#79B92A] font-bold text-sm">transfer</span>
+              <span className="text-gray-800 font-bold text-sm">news</span>
             </div>
           </Link>
           
