@@ -32,7 +32,7 @@ export default function PageLayout({ children }) {
       </div>
 
       {/* Main Content Box - 1000px zentriert */}
-      <div className="w-full max-w-[1000px] mx-auto min-h-screen bg-[#e8e8e8] dark:bg-gray-950 shadow-lg">
+      <div className="w-full max-w-[1000px] mx-auto min-h-screen bg-[#e8e8e8] dark:bg-gray-950">
         {children}
       </div>
     </div>
