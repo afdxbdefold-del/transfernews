@@ -192,12 +192,21 @@ export default function PlayerPage() {
                     {/* Player Image */}
                     <div className="w-[100px] h-[130px] bg-white rounded overflow-hidden flex-shrink-0">
                       {player.image ? (
-                        <img src={player.image} alt={player.name} className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-gray-100">
-                          <User size={48} className="text-gray-400" />
-                        </div>
-                      )}
+                        <img 
+                          src={player.image} 
+                          alt={player.name} 
+                          className="w-full h-full object-cover"
+                          referrerPolicy="no-referrer"
+                          crossOrigin="anonymous"
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                            e.target.nextSibling.style.display = 'flex';
+                          }}
+                        />
+                      ) : null}
+                      <div className={`w-full h-full items-center justify-center bg-gray-100 ${player.image ? 'hidden' : 'flex'}`}>
+                        <User size={48} className="text-gray-400" />
+                      </div>
                     </div>
                     
                     {/* Player Info */}
