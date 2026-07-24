@@ -25,7 +25,16 @@ Deutschsprachige Fußball-Transfer-News-Plattform auf der Domain transfernews.de
 
 ## What's Been Implemented
 
-### 29. März 2026 - E-E-A-T TRUSTWORTHINESS SYSTEM ✅ NEU!
+### 29. März 2026 - GOLDSTANDARD UI/UX UPGRADE ✅ NEU!
+- ✅ **Trending Widget** - Zeigt Top 5 Spieler + Vereine basierend auf Artikel-Häufigkeit
+- ✅ **Trending Bar** - Horizontale Leiste mit Trending-Namen oberhalb des Contents
+- ✅ **Vereinslogos** - Club-Badges (From → To) bei allen Transfer-Artikeln
+- ✅ **Farbige Status-Badges** - OFFIZIELL (grün), GERÜCHT (orange), HEISS (rot), NEWS (grün)
+- ✅ **Liga-Dropdown** - Bundesliga, Premier League, La Liga, Serie A, Ligue 1 mit Länderflaggen
+- ✅ **Hot Transfers Sektion** - Top 3 Transfer-Gerüchte mit Wahrscheinlichkeits-Meter
+- ✅ **Transfer-Probability** - Prozentuale Wahrscheinlichkeitsanzeige bei Gerüchten
+
+### 29. März 2026 - E-E-A-T TRUSTWORTHINESS SYSTEM ✅
 - ✅ **Datenschutz-Seite** (`/datenschutz`):
   - DSGVO-konforme Datenschutzerklärung
   - 9 Abschnitte: Verantwortlicher, erhobene Daten, Cookies, Rechtsgrundlage, Ihre Rechte, Drittanbieter, Datensicherheit, Kontakt, Beschwerderecht

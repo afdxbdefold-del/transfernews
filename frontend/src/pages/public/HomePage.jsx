@@ -2,6 +2,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { HeroCard, NewsCardHorizontal, NewsTickerEntry } from "@/components/NewsCard";
 import { TrendingWidget, TrendingBar } from "@/components/TrendingWidget";
+import { HotTransfers } from "@/components/HotTransfers";
 import { WebsiteSchema } from "@/components/SchemaMarkup";
 import { useEffect, useState } from "react";
 import { getPublishedArticles } from "@/api";
@@ -44,6 +45,9 @@ export default function HomePage() {
       <WebsiteSchema />
       
       <Header />
+      
+      {/* Hot Transfers Section */}
+      <HotTransfers />
       
       {/* Trending Bar */}
       <TrendingBar />

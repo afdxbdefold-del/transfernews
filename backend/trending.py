@@ -348,6 +348,7 @@ async def get_trend_windows(db: AsyncIOMotorDatabase) -> dict:
 async def get_trending_entities(db: AsyncIOMotorDatabase, hours: int = 24) -> dict:
     """
     Enhanced trending entities with trend scores
+    Falls back to article-based trending if no events found
     """
     cutoff = datetime.now(timezone.utc) - timedelta(hours=hours)
     
@@ -356,11 +357,10 @@ async def get_trending_entities(db: AsyncIOMotorDatabase, hours: int = 24) -> di
         "created_at": {"$gte": cutoff.isoformat()}
     }).to_list(500)
     
-    # Also check articles for mentions
+    # Also check articles for mentions - use longer window for articles
     articles = await db.articles.find({
-        "published_at": {"$gte": cutoff.isoformat()},
         "status": "published"
-    }, {"_id": 0, "title": 1, "body": 1}).to_list(200)
+    }, {"_id": 0, "title": 1, "body": 1, "player_name": 1, "from_club": 1, "to_club": 1, "published_at": 1}).sort("published_at", -1).limit(100).to_list(100)
     
     player_data = {}
     club_data = {}
@@ -384,21 +384,34 @@ async def get_trending_entities(db: AsyncIOMotorDatabase, hours: int = 24) -> di
                 club_data[club]["count"] += 1
                 club_data[club]["event_score"] += score_data["score"]
     
-    # Process articles
+    # Process articles - primary source if no events
     for article in articles:
         text = (article.get("title", "") + " " + article.get("body", "")).lower()
+        player_name = article.get("player_name", "").lower() if article.get("player_name") else ""
+        from_club = article.get("from_club", "").lower() if article.get("from_club") else ""
+        to_club = article.get("to_club", "").lower() if article.get("to_club") else ""
         
-        for player in TOP_PLAYERS:
-            if player in text and player in player_data:
+        # Add player from article metadata
+        for player, (pop, tier) in TOP_PLAYERS.items():
+            if player in text or player in player_name:
+                if player not in player_data:
+                    player_data[player] = {"count": 0, "event_score": 0, "article_count": 0, "popularity": pop}
                 player_data[player]["article_count"] += 1
+                player_data[player]["popularity"] = pop
         
-        for club in TOP_CLUBS:
-            if club in text and club in club_data:
+        # Add clubs from article metadata
+        for club, (pop, tier) in TOP_CLUBS.items():
+            if club in text or club in from_club or club in to_club:
+                if club not in club_data:
+                    club_data[club] = {"count": 0, "event_score": 0, "article_count": 0, "popularity": pop}
                 club_data[club]["article_count"] += 1
+                club_data[club]["popularity"] = pop
     
     # Calculate trend scores
     def calc_trend_score(data):
-        return data["count"] * 10 + data["event_score"] // 5 + data["article_count"] * 5
+        base = data.get("count", 0) * 10 + data.get("event_score", 0) // 5 + data.get("article_count", 0) * 15
+        pop_bonus = data.get("popularity", 50) // 10
+        return base + pop_bonus
     
     for name, data in player_data.items():
         data["trend_score"] = calc_trend_score(data)

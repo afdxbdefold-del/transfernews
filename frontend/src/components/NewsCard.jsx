@@ -42,32 +42,113 @@ function ArticleImage({ src, alt, className, articleId }) {
   );
 }
 
-// Club logo mapping
+// Club logo mapping - Extended
 const CLUB_LOGOS = {
-  'psg': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/160.png&w=60',
-  'hakimi': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/160.png&w=60',
-  'liverpool': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/364.png&w=60',
-  'salah': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/364.png&w=60',
-  'bvb': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/124.png&w=60',
-  'dortmund': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/124.png&w=60',
-  'sancho': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/124.png&w=60',
-  'brandt': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/124.png&w=60',
+  // Bundesliga
   'bayern': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/132.png&w=60',
-  'olise': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/132.png&w=60',
-  'real': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/86.png&w=60',
-  'madrid': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/86.png&w=60',
-  'vinicius': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/86.png&w=60',
-  'rudiger': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/86.png&w=60',
-  'city': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/382.png&w=60',
-  'de bruyne': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/382.png&w=60',
-  'rodri': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/382.png&w=60',
-  'casemiro': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/360.png&w=60',
-  'inter': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/110.png&w=60',
-  'calhanoglu': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/110.png&w=60',
+  'münchen': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/132.png&w=60',
+  'dortmund': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/124.png&w=60',
+  'bvb': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/124.png&w=60',
+  'leverkusen': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/131.png&w=60',
+  'bayer 04': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/131.png&w=60',
+  'leipzig': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/11420.png&w=60',
   'frankfurt': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/3771.png&w=60',
-  'dahoud': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/3771.png&w=60',
-  'larsson': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/3771.png&w=60',
+  'stuttgart': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/134.png&w=60',
+  'gladbach': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/129.png&w=60',
+  'wolfsburg': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/135.png&w=60',
+  
+  // Premier League
+  'manchester city': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/382.png&w=60',
+  'man city': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/382.png&w=60',
+  'city': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/382.png&w=60',
+  'manchester united': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/360.png&w=60',
+  'man united': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/360.png&w=60',
+  'liverpool': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/364.png&w=60',
+  'chelsea': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/363.png&w=60',
+  'arsenal': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/359.png&w=60',
+  'tottenham': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/367.png&w=60',
+  'newcastle': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/361.png&w=60',
+  'aston villa': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/362.png&w=60',
+  'fulham': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/370.png&w=60',
+  
+  // La Liga
+  'real madrid': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/86.png&w=60',
+  'madrid': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/86.png&w=60',
+  'barcelona': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/83.png&w=60',
+  'barca': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/83.png&w=60',
+  'atletico': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/1068.png&w=60',
+  'athletic bilbao': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/93.png&w=60',
+  'bilbao': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/93.png&w=60',
+  
+  // Serie A
+  'juventus': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/111.png&w=60',
+  'juve': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/111.png&w=60',
+  'inter': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/110.png&w=60',
+  'mailand': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/103.png&w=60',
+  'ac milan': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/103.png&w=60',
+  'milan': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/103.png&w=60',
+  'napoli': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/114.png&w=60',
+  'roma': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/104.png&w=60',
+  
+  // Ligue 1
+  'psg': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/160.png&w=60',
+  'paris': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/160.png&w=60',
+  'paris saint': 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/160.png&w=60',
 };
+
+// Get TWO club logos for transfer articles (from -> to)
+function getTransferClubLogos(article) {
+  const fromClub = article?.from_club?.toLowerCase() || '';
+  const toClub = article?.to_club?.toLowerCase() || '';
+  const title = article?.title?.toLowerCase() || '';
+  
+  let fromLogo = null;
+  let toLogo = null;
+  
+  for (const [key, url] of Object.entries(CLUB_LOGOS)) {
+    if (fromClub.includes(key) && !fromLogo) fromLogo = url;
+    if (toClub.includes(key) && !toLogo) toLogo = url;
+  }
+  
+  // Fallback: try to find from title
+  if (!fromLogo || !toLogo) {
+    for (const [key, url] of Object.entries(CLUB_LOGOS)) {
+      if (title.includes(key)) {
+        if (!fromLogo) fromLogo = url;
+        else if (!toLogo && url !== fromLogo) toLogo = url;
+      }
+    }
+  }
+  
+  return { fromLogo, toLogo };
+}
+
+// Status badge configuration
+const STATUS_BADGES = {
+  'official': { label: 'OFFIZIELL', bg: 'bg-green-500', text: 'text-white' },
+  'confirmed': { label: 'BESTÄTIGT', bg: 'bg-green-500', text: 'text-white' },
+  'done': { label: 'DONE DEAL', bg: 'bg-green-500', text: 'text-white' },
+  'hot': { label: 'HEISS', bg: 'bg-red-500', text: 'text-white' },
+  'breaking': { label: 'BREAKING', bg: 'bg-red-600', text: 'text-white' },
+  'rumour': { label: 'GERÜCHT', bg: 'bg-amber-500', text: 'text-black' },
+  'transfer': { label: 'TRANSFER', bg: 'bg-blue-500', text: 'text-white' },
+  'denied': { label: 'DEMENTIERT', bg: 'bg-gray-400', text: 'text-white' },
+  'news': { label: 'NEWS', bg: 'bg-[#79B92A]', text: 'text-white' },
+};
+
+function getStatusBadge(article) {
+  const type = article?.article_type?.toLowerCase() || '';
+  const status = article?.transfer_status?.toLowerCase() || '';
+  const isBreaking = article?.is_breaking;
+  
+  if (isBreaking) return STATUS_BADGES['breaking'];
+  if (status === 'official' || status === 'offiziell' || status === 'bestätigt') return STATUS_BADGES['official'];
+  if (status === 'confirmed' || status === 'done') return STATUS_BADGES['confirmed'];
+  if (status === 'denied' || status === 'dementiert') return STATUS_BADGES['denied'];
+  if (type === 'rumour' || type === 'gerücht') return STATUS_BADGES['rumour'];
+  if (type === 'transfer') return STATUS_BADGES['transfer'];
+  return STATUS_BADGES['news'];
+}
 
 function getClubLogo(title) {
   const titleLower = title?.toLowerCase() || '';
@@ -124,7 +205,8 @@ function ProbabilityBar({ probability }) {
 export function HeroCard({ article, isLive = false }) {
   if (!article) return null;
   
-  const clubLogo = getClubLogo(article.title);
+  const { fromLogo, toLogo } = getTransferClubLogos(article);
+  const statusBadge = getStatusBadge(article);
   
   return (
     <Link to={"/news/" + article.slug} className="block relative" data-testid={"hero-" + article.id}>
@@ -132,17 +214,17 @@ export function HeroCard({ article, isLive = false }) {
         <ArticleImage
           src={article.hero_image || article.feature_image}
           alt={article.title}
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover object-top"
           articleId={article.id}
         />
         
-        {/* Club Logo - Top Right */}
-        {clubLogo && (
-          <img 
-            src={clubLogo} 
-            alt="" 
-            className="absolute top-3 right-3 w-12 h-12 object-contain drop-shadow-lg"
-          />
+        {/* Transfer Club Logos - Top Right */}
+        {(fromLogo || toLogo) && (
+          <div className="absolute top-3 right-3 flex items-center gap-1 bg-white/95 rounded-lg px-2 py-1 shadow-lg">
+            {fromLogo && <img src={fromLogo} alt="" className="w-8 h-8 object-contain" />}
+            {fromLogo && toLogo && <span className="text-gray-400 text-sm font-bold">→</span>}
+            {toLogo && <img src={toLogo} alt="" className="w-8 h-8 object-contain" />}
+          </div>
         )}
         
         {/* Status Badge - Top Left */}
@@ -153,7 +235,9 @@ export function HeroCard({ article, isLive = false }) {
               LIVE
             </div>
           )}
-          <TransferBadge status={article.transfer_status} />
+          <div className={`text-[10px] font-black uppercase px-2 py-1 ${statusBadge.bg} ${statusBadge.text}`}>
+            {statusBadge.label}
+          </div>
         </div>
         
         {/* Gradient Overlay */}
@@ -184,12 +268,13 @@ export function HeroCard({ article, isLive = false }) {
 export function NewsCardHorizontal({ article, showVideo = false }) {
   if (!article) return null;
   
-  const clubLogo = getClubLogo(article.title);
+  const { fromLogo, toLogo } = getTransferClubLogos(article);
+  const statusBadge = getStatusBadge(article);
   
   return (
     <Link 
       to={"/news/" + article.slug} 
-      className="flex gap-3 p-3 bg-white border-b border-gray-100"
+      className="flex gap-3 p-3 bg-white border-b border-gray-100 hover:bg-gray-50 transition-colors"
       data-testid={"news-card-" + article.id}
     >
       {/* Image */}
@@ -197,24 +282,27 @@ export function NewsCardHorizontal({ article, showVideo = false }) {
         <ArticleImage
           src={article.hero_image || article.feature_image}
           alt={article.title}
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover object-top"
           articleId={article.id}
         />
         
-        {/* Club Logo - Top Right */}
-        {clubLogo && (
-          <img 
-            src={clubLogo} 
-            alt="" 
-            className="absolute top-0.5 right-0.5 w-6 h-6 object-contain drop-shadow-md"
-          />
+        {/* Transfer Club Logos - From → To */}
+        {(fromLogo || toLogo) && (
+          <div className="absolute bottom-0.5 right-0.5 flex items-center gap-0.5 bg-white/90 rounded px-1 py-0.5">
+            {fromLogo && <img src={fromLogo} alt="" className="w-4 h-4 object-contain" />}
+            {fromLogo && toLogo && <span className="text-[8px] text-gray-400">→</span>}
+            {toLogo && <img src={toLogo} alt="" className="w-4 h-4 object-contain" />}
+          </div>
         )}
       </div>
       
       {/* Content */}
       <div className="flex-1 flex flex-col justify-center py-0.5">
         <div className="flex items-center gap-2 mb-1">
-          <TransferBadge status={article.transfer_status} />
+          {/* Colorful Status Badge */}
+          <div className={`text-[9px] font-black uppercase px-1.5 py-0.5 ${statusBadge.bg} ${statusBadge.text}`}>
+            {statusBadge.label}
+          </div>
           <span className="text-[10px] text-gray-400">{formatTime(article.published_at)}</span>
         </div>
         

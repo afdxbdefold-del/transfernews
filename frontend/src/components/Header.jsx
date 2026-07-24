@@ -1,24 +1,41 @@
 import { Link, useLocation } from "react-router-dom";
-import { MagnifyingGlass, List, X, User } from "@phosphor-icons/react";
+import { MagnifyingGlass, List, X, CaretDown, Trophy } from "@phosphor-icons/react";
 import { useState, useEffect, useRef } from "react";
 import { autosuggest } from "@/api";
 
+// Liga-Konfiguration mit Logos
+const LEAGUES = [
+  { slug: 'bundesliga', name: 'Bundesliga', country: '🇩🇪', color: 'bg-red-600' },
+  { slug: 'premier-league', name: 'Premier League', country: '🏴󠁧󠁢󠁥󠁮󠁧󠁿', color: 'bg-purple-700' },
+  { slug: 'la-liga', name: 'La Liga', country: '🇪🇸', color: 'bg-orange-500' },
+  { slug: 'serie-a', name: 'Serie A', country: '🇮🇹', color: 'bg-blue-600' },
+  { slug: 'ligue-1', name: 'Ligue 1', country: '🇫🇷', color: 'bg-blue-800' },
+];
+
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [leagueDropdownOpen, setLeagueDropdownOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const searchRef = useRef(null);
+  const leagueRef = useRef(null);
   const location = useLocation();
 
-  useEffect(() => { setMenuOpen(false); }, [location]);
+  useEffect(() => { 
+    setMenuOpen(false); 
+    setLeagueDropdownOpen(false);
+  }, [location]);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (searchRef.current && !searchRef.current.contains(e.target)) {
         setShowSuggestions(false);
         setSearchOpen(false);
+      }
+      if (leagueRef.current && !leagueRef.current.contains(e.target)) {
+        setLeagueDropdownOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -53,13 +70,15 @@ export default function Header() {
     { path: "/", label: "TRANSFERS" },
     { path: "/news", label: "NEWS" },
     { path: "/geruechte", label: "GERÜCHTE" },
-    { path: "/wettbewerb/bundesliga", label: "BUNDESLIGA" },
-    { path: "/wettbewerb/premier-league", label: "PREMIER LEAGUE" },
   ];
-
+  
   const isActive = (path) => {
     if (path === "/") return location.pathname === "/";
     return location.pathname.startsWith(path);
+  };
+  
+  const isLeagueActive = () => {
+    return location.pathname.includes('/wettbewerb/') || location.pathname.includes('/liga/');
   };
 
   return (
@@ -141,8 +160,46 @@ export default function Header() {
                   {item.label}
                 </Link>
               ))}
+              
+              {/* Liga-Dropdown */}
+              <div className="relative h-full" ref={leagueRef}>
+                <button 
+                  onClick={() => setLeagueDropdownOpen(!leagueDropdownOpen)}
+                  className={"flex-shrink-0 h-full flex items-center gap-1 px-3 text-[12px] font-bold uppercase tracking-wide transition-colors " + (isLeagueActive() ? "text-[#79B92A]" : "text-white")}
+                  style={{ fontFamily: "'Oswald', sans-serif" }}
+                  data-testid="league-dropdown-btn"
+                >
+                  <Trophy size={14} weight="fill" />
+                  LIGEN
+                  <CaretDown size={12} className={`transition-transform ${leagueDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+                
+                {/* Dropdown Menu */}
+                {leagueDropdownOpen && (
+                  <div className="absolute top-full left-0 mt-1 w-56 bg-white shadow-xl rounded-lg overflow-hidden z-50 border border-gray-100" data-testid="league-dropdown">
+                    <div className="p-2">
+                      <span className="text-[10px] text-gray-400 uppercase font-bold px-2">Wettbewerbe</span>
+                    </div>
+                    {LEAGUES.map((league) => (
+                      <Link
+                        key={league.slug}
+                        to={`/wettbewerb/${league.slug}`}
+                        onClick={() => setLeagueDropdownOpen(false)}
+                        className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors"
+                        data-testid={`league-${league.slug}`}
+                      >
+                        <span className="text-lg">{league.country}</span>
+                        <div className="flex-1">
+                          <span className="text-sm font-bold text-gray-900">{league.name}</span>
+                        </div>
+                        <div className={`w-2 h-2 rounded-full ${league.color}`}></div>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
-            <button className="text-white">
+            <button className="text-white hidden">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
