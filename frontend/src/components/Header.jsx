@@ -108,14 +108,14 @@ export default function Header() {
         </div>
       </div>
       
-      {/* Top Bar - Dark Blue */}
-      <div className="bg-[#1d4370]">
+      {/* Top Bar - Green */}
+      <div className="bg-[#79B92A]">
         <div className="flex items-center justify-between h-[44px] px-3">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2" data-testid="logo-link">
             <div className="bg-white rounded px-2 py-1">
-              <span className="text-[#1d4370] font-bold text-sm">transfer</span>
-              <span className="text-[#00a83f] font-bold text-sm">news</span>
+              <span className="text-[#79B92A] font-bold text-sm">transfer</span>
+              <span className="text-gray-800 font-bold text-sm">news</span>
             </div>
           </Link>
           
@@ -175,7 +175,7 @@ export default function Header() {
       </div>
 
       {/* Navigation Bar */}
-      <nav className="bg-[#2a5a8f] border-b border-[#1d4370]" data-testid="sports-nav">
+      <nav className="bg-[#5a8a1f] border-b border-[#4a7a15]" data-testid="sports-nav">
         <div className="flex items-center h-[32px] px-3 overflow-x-auto hide-scrollbar">
           {navItems.map((item) => (
             <Link
@@ -183,8 +183,8 @@ export default function Header() {
               to={item.path}
               className={`flex-shrink-0 h-full flex items-center px-3 text-[11px] font-semibold transition-colors border-b-2 ${
                 isActive(item.path) 
-                  ? "text-white border-[#00a83f] bg-[#1d4370]" 
-                  : "text-white/90 border-transparent hover:bg-[#1d4370]/50"
+                  ? "text-white border-white bg-[#4a7a15]" 
+                  : "text-white/90 border-transparent hover:bg-[#4a7a15]/50"
               }`}
             >
               {item.label}
@@ -197,8 +197,8 @@ export default function Header() {
               onClick={() => setLeagueDropdownOpen(!leagueDropdownOpen)}
               className={`flex-shrink-0 h-full flex items-center gap-1 px-3 text-[11px] font-semibold transition-colors border-b-2 ${
                 location.pathname.includes('/wettbewerb/') 
-                  ? "text-white border-[#00a83f] bg-[#1d4370]" 
-                  : "text-white/90 border-transparent hover:bg-[#1d4370]/50"
+                  ? "text-white border-white bg-[#4a7a15]" 
+                  : "text-white/90 border-transparent hover:bg-[#4a7a15]/50"
               }`}
               data-testid="league-dropdown-btn"
             >
@@ -225,7 +225,7 @@ export default function Header() {
           
           <Link
             to="/redaktion"
-            className="flex-shrink-0 h-full flex items-center px-3 text-[11px] font-semibold text-white/90 border-b-2 border-transparent hover:bg-[#1d4370]/50"
+            className="flex-shrink-0 h-full flex items-center px-3 text-[11px] font-semibold text-white/90 border-b-2 border-transparent hover:bg-[#4a7a15]/50"
           >
             Redaktion
           </Link>
@@ -237,7 +237,7 @@ export default function Header() {
         <>
           <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setMenuOpen(false)} />
           <div className="fixed top-0 right-0 w-[280px] h-full bg-white z-50 shadow-2xl overflow-y-auto">
-            <div className="flex items-center justify-between h-[44px] px-3 bg-[#1d4370]">
+            <div className="flex items-center justify-between h-[44px] px-3 bg-[#79B92A]">
               <span className="font-bold text-white text-sm">Menü</span>
               <button onClick={() => setMenuOpen(false)} className="w-8 h-8 flex items-center justify-center text-white">
                 <X size={20} />
@@ -264,7 +264,7 @@ export default function Header() {
                   onClick={() => setMenuOpen(false)}
                   className={`flex items-center h-10 px-4 text-[13px] font-medium border-l-[3px] ${
                     isActive(item.path) 
-                      ? "text-[#00a83f] bg-[#e8f4e8] border-l-[#00a83f]" 
+                      ? "text-[#79B92A] bg-[#e8f4e8] border-l-[#79B92A]" 
                       : "text-gray-700 border-l-transparent hover:bg-gray-50"
                   }`}
                 >
