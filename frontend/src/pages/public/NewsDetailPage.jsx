@@ -374,7 +374,7 @@ export default function NewsDetailPage() {
       <div className="min-h-screen flex flex-col bg-[#f5f5f5]">
         <Header />
         <main className="flex-1">
-          <div className="max-w-[1200px] mx-auto px-3 py-6">
+          <div className="max-w-[1000px] mx-auto px-3 py-6">
             <div className="bg-white p-6">
               <Skeleton className="h-8 w-3/4 mb-4" />
               <Skeleton className="h-64 w-full mb-4" />
@@ -447,13 +447,13 @@ export default function NewsDetailPage() {
 
       {/* Top Ad */}
       <div className="bg-white border-b border-gray-200">
-        <div className="max-w-[1200px] mx-auto px-3 py-2">
+        <div className="max-w-[1000px] mx-auto px-3 py-2">
           <AdSlot slotKey="below_header" minHeight="90px" />
         </div>
       </div>
 
       <main className="flex-1">
-        <div className="max-w-[1200px] mx-auto px-3 py-6">
+        <div className="max-w-[1000px] mx-auto px-3 py-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Article Content */}
             <article className="lg:col-span-2">

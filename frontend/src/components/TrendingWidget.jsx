@@ -148,7 +148,7 @@ export function TrendingBar({ className = "" }) {
 
   return (
     <div className={`bg-gray-900 text-white overflow-hidden ${className}`} data-testid="trending-bar">
-      <div className="max-w-[1280px] mx-auto px-4 py-2 flex items-center gap-4">
+      <div className="max-w-[1000px] mx-auto px-4 py-2 flex items-center gap-4">
         <div className="flex items-center gap-2 shrink-0">
           <TrendUp size={16} weight="bold" className="text-[#79B92A]" />
           <span className="text-xs font-bold uppercase">Trending:</span>

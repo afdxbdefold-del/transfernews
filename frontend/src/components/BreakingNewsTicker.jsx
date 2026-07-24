@@ -27,7 +27,7 @@ export default function BreakingNewsTicker() {
 
   return (
     <div className="bg-red-600" data-testid="breaking-ticker">
-      <div className="max-w-[1200px] mx-auto px-3">
+      <div className="max-w-[1000px] mx-auto px-3">
         <div className="flex items-center h-10 overflow-hidden">
           {/* Breaking Label */}
           <div className="flex items-center flex-shrink-0 bg-white text-red-600 px-3 py-1 mr-4">

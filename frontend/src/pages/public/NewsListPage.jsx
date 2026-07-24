@@ -49,13 +49,13 @@ export default function NewsListPage() {
       
       {/* Top Ad */}
       <div className="bg-white border-b border-gray-200">
-        <div className="max-w-[1200px] mx-auto px-3 py-2">
+        <div className="max-w-[1000px] mx-auto px-3 py-2">
           <AdSlot slotKey="below_header" minHeight="90px" />
         </div>
       </div>
 
       <main className="flex-1">
-        <div className="max-w-[1200px] mx-auto px-3 py-6">
+        <div className="max-w-[1000px] mx-auto px-3 py-6">
           {/* Page Header */}
           <div className="bg-white p-4 mb-6">
             <div className="flex items-center gap-2">

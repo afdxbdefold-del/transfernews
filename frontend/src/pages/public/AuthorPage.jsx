@@ -36,7 +36,7 @@ export default function AuthorPage() {
       <div className="min-h-screen flex flex-col bg-gray-50">
         <Header />
         <main className="flex-1 py-8">
-          <div className="max-w-[1280px] mx-auto px-4">
+          <div className="max-w-[1000px] mx-auto px-4">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               <div className="lg:col-span-2 space-y-6">
                 <Skeleton className="h-48 w-full" />
@@ -105,7 +105,7 @@ export default function AuthorPage() {
       <Header />
 
       <main className="flex-1 py-8">
-        <div className="max-w-[1280px] mx-auto px-4">
+        <div className="max-w-[1000px] mx-auto px-4">
           {/* Back Link */}
           <Link 
             to="/" 

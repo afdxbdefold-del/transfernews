@@ -21,7 +21,7 @@ export default function AboutPage() {
       
       {/* Hero */}
       <section className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white py-20">
-        <div className="max-w-5xl mx-auto px-4 text-center">
+        <div className="max-w-[1000px] mx-auto px-4 text-center">
           <h1 className="text-4xl md:text-5xl font-black mb-6" style={{ fontFamily: "'Oswald', sans-serif" }}>
             Über TransferNews
           </h1>
@@ -32,7 +32,7 @@ export default function AboutPage() {
       </section>
       
       {/* Mission */}
-      <section className="max-w-5xl mx-auto px-4 py-16">
+      <section className="max-w-[1000px] mx-auto px-4 py-16">
         <div className="grid md:grid-cols-2 gap-12 items-center">
           <div>
             <div className="flex items-center gap-2 mb-4">
@@ -77,7 +77,7 @@ export default function AboutPage() {
       
       {/* Werte */}
       <section className="bg-white py-16">
-        <div className="max-w-5xl mx-auto px-4">
+        <div className="max-w-[1000px] mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">Unsere Werte</h2>
             <p className="text-gray-600 max-w-2xl mx-auto">
@@ -123,7 +123,7 @@ export default function AboutPage() {
       </section>
       
       {/* So arbeiten wir */}
-      <section className="max-w-5xl mx-auto px-4 py-16">
+      <section className="max-w-[1000px] mx-auto px-4 py-16">
         <div className="text-center mb-12">
           <h2 className="text-3xl font-bold text-gray-900 mb-4">So arbeiten wir</h2>
           <p className="text-gray-600 max-w-2xl mx-auto">
@@ -168,7 +168,7 @@ export default function AboutPage() {
       
       {/* Quellen-Tiers */}
       <section className="bg-gray-900 text-white py-16">
-        <div className="max-w-5xl mx-auto px-4">
+        <div className="max-w-[1000px] mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold mb-4">Unser Quellen-System</h2>
             <p className="text-gray-400 max-w-2xl mx-auto">
@@ -237,7 +237,7 @@ export default function AboutPage() {
       
       {/* Trust Footer */}
       <section className="bg-gray-100 py-8">
-        <div className="max-w-5xl mx-auto px-4">
+        <div className="max-w-[1000px] mx-auto px-4">
           <div className="flex flex-wrap justify-center gap-8 text-sm text-gray-500">
             <div className="flex items-center gap-2">
               <CheckCircle size={18} className="text-[#79B92A]" weight="fill" />

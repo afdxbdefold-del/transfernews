@@ -51,13 +51,13 @@ export default function HomePage() {
       <main className="flex-1">
         {/* Hero Section */}
         {heroArticle && (
-          <div className="max-w-[1280px] mx-auto">
+          <div className="max-w-[1000px] mx-auto">
             <HeroCard article={heroArticle} isLive={heroArticle.is_breaking} />
           </div>
         )}
         
         {/* Main Content */}
-        <div className="max-w-[1280px] mx-auto">
+        <div className="max-w-[1000px] mx-auto">
           {/* Desktop: 2 columns (Feed + Ticker) */}
           <div className="lg:flex">
             {/* News Feed */}
