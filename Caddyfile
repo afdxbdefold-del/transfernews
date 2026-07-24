@@ -1,4 +1,4 @@
-transfernews.de, www.transfernews.de {
+:80 {
     # API Requests zum Backend
     handle /api/* {
         reverse_proxy backend:8001
@@ -8,9 +8,14 @@ transfernews.de, www.transfernews.de {
     handle {
         reverse_proxy frontend:80
     }
-    
-    # Logging
-    log {
-        output file /var/log/caddy/access.log
-    }
 }
+
+# Sobald DNS aktiv, diese Zeilen aktivieren:
+# transfernews.de, www.transfernews.de {
+#     handle /api/* {
+#         reverse_proxy backend:8001
+#     }
+#     handle {
+#         reverse_proxy frontend:80
+#     }
+# }
