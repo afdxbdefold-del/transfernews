@@ -3,22 +3,25 @@
 ## Letztes Update: 24. Juli 2026
 
 ### Kürzlich abgeschlossen:
-- ✅ **Live-Ticker mit Echtzeit-Meldungen**: 40+ Artikel, Auto-Update alle 30 Sekunden, LIVE-Status für neue Meldungen (24.07.2026)
-- ✅ **Neue Vereinskader**: Liverpool (19), Arsenal (20), Chelsea (19), Barcelona (19) mit vollständigen Kadern (24.07.2026)
-- ✅ **Top-Deals Seite**: Zeigt teuerste Transfers sortiert nach Ablösesumme (Enzo 121M, Rice 116M, Caicedo 115M, etc.) (24.07.2026)
-- ✅ **Spielerbilder**: 51 neue Spieler mit Wikimedia-Bildern angereichert (24.07.2026)
-- ✅ **Volle Kader für Top-Vereine**: Real Madrid (20 Spieler/1250M €), Manchester City (18/1003M €), Bayern erweitert (24.07.2026)
-- ✅ **Transfer-Verlinkung**: Vereinsnamen im Transfer-Tab sind klickbar und navigieren zur Vereinsseite (24.07.2026)
-- ✅ **Marktwert-Daten**: 22+ Top-Spieler mit aktuellen Marktwerten (Mbappé 180M, Haaland 175M, Bellingham 150M, etc.) (24.07.2026)
-- ✅ **Kader-Anzeige**: Vereinsseiten zeigen echte Spieler mit Kadergröße, Kaderwert und "Wertvollste Spieler" (24.07.2026)
-- ✅ **Transfer-Historie**: Transfer-Tab auf Spielerseiten zeigt echte Daten aus DB (24.07.2026)
-- ✅ **Spieler-Verein verknüpfen**: Aktueller Verein im Header angezeigt und klickbar (24.07.2026)
-- ✅ **Trending-Vereine klickbar**: Sidebar-Links funktionieren (24.07.2026)
-- ✅ Bugfix: Artikelbilder laden jetzt korrekt (24.07.2026)
-- ✅ Neues Logo mit Sprechblase integriert (24.07.2026)
+- ✅ **Alle 18 Bundesliga-Clubs komplett**: 406 Spieler, 2.66 Mrd. € Gesamtwert (24.07.2026)
+  - FC Bayern München (42 Spieler, 688M €)
+  - RB Leipzig (17 Spieler, 433M €)
+  - Borussia Dortmund (29 Spieler, 260M €)
+  - Eintracht Frankfurt (16 Spieler, 239M €)
+  - Borussia Mönchengladbach (15 Spieler, 162M €)
+  - Bayer 04 Leverkusen (31 Spieler, 128M €)
+  - SC Freiburg (16 Spieler, 133M €)
+  - + 11 weitere Clubs (VfB Stuttgart, Wolfsburg, Union Berlin, Hoffenheim, Bremen, Augsburg, Mainz, Bochum, Heidenheim, Holstein Kiel, St. Pauli)
+- ✅ **Live-Ticker mit Echtzeit-Meldungen**: 40+ Artikel, Auto-Update alle 30 Sekunden (24.07.2026)
+- ✅ **Neue Vereinskader**: Liverpool, Arsenal, Chelsea, Barcelona (24.07.2026)
+- ✅ **Top-Deals Seite**: Teuerste Transfers sortiert nach Ablösesumme (24.07.2026)
+- ✅ **Spielerbilder**: 51+ Spieler mit Wikimedia-Bildern (24.07.2026)
+- ✅ **Volle Kader für Top-Vereine**: Real Madrid, Manchester City, Bayern erweitert (24.07.2026)
+- ✅ **Transfer-Verlinkung**: Vereinsnamen im Transfer-Tab klickbar (24.07.2026)
+- ✅ **Marktwert-Daten**: Top-Spieler mit aktuellen Marktwerten (24.07.2026)
 
 ### Teilweise erledigt:
-- 🟡 **Vereinslogos laden**: 10 von 31 Vereinen haben Wikipedia-Logos (Urheberrechtsbeschränkungen)
+- 🟡 **Vereinslogos laden**: 10 von 31 Vereinen haben Wikipedia-Logos
 
 ## Latest Update: 24.07.2026
 
