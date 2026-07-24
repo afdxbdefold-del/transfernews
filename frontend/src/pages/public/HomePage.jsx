@@ -207,8 +207,6 @@ export default function HomePage() {
           <div className="space-y-3">
             {/* News Box */}
             <div className="bg-white border border-gray-300 rounded-sm overflow-hidden">
-              <BoxHeader title="Transfer-News" link="/ticker" linkText="alle News" />
-              
               {/* Filter Tabs */}
               <div className="flex border-b border-gray-200 bg-gray-50">
                 {FILTERS.map((filter) => (
