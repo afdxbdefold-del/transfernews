@@ -59,9 +59,9 @@ function NewsRow({ article, showImage = true }) {
   };
   
   const typeLabel = {
-    rumour: { text: 'Gerücht', color: 'bg-amber-500' },
-    transfer: { text: 'Transfer', color: 'bg-[#00a83f]' },
-    news: { text: 'News', color: 'bg-[#1d4370]' },
+    rumour: { text: 'Gerücht', color: 'bg-gray-500' },
+    transfer: { text: 'Transfer', color: 'bg-gray-700' },
+    news: { text: 'News', color: 'bg-gray-400' },
   };
   const type = typeLabel[article.article_type] || typeLabel.news;
   
@@ -105,12 +105,12 @@ function NewsRow({ article, showImage = true }) {
             {type.text}
           </span>
           {article.is_breaking && (
-            <span className="text-[9px] font-bold text-white px-1.5 py-0.5 rounded-sm bg-red-600">
+            <span className="text-[9px] font-bold text-white px-1.5 py-0.5 rounded-sm bg-gray-800">
               BREAKING
             </span>
           )}
           {isNew() && (
-            <span className="text-[9px] font-bold text-red-600">NEU</span>
+            <span className="text-[9px] font-bold text-gray-600">NEU</span>
           )}
           <span className="text-[10px] text-gray-500 flex items-center gap-0.5">
             <Clock size={10} />
