@@ -8,40 +8,26 @@
  */
 export default function PageLayout({ children }) {
   return (
-    <div className="min-h-screen bg-[#c5c5c5] dark:bg-[#1a1a1a]" data-testid="page-layout">
-      {/* Sticky Ad - Links (ganz außen) */}
-      <div 
-        className="fixed left-0 top-0 bottom-0 hidden xl:block z-40"
-        style={{ width: '160px' }}
-      >
-        <div className="sticky top-[100px] p-2">
-          <div 
-            className="ad-slot-sticky bg-gray-200 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded"
-            style={{ width: '160px', height: '600px' }}
-            data-testid="left-sticky-ad"
-          >
-            <div className="flex items-center justify-center h-full text-[10px] text-gray-400 uppercase">
-              Anzeige
-            </div>
-          </div>
+    <div className="min-h-screen bg-[#c5c5c5] dark:bg-[#1a1a1a] relative" data-testid="page-layout">
+      {/* Sticky Skyscraper Links */}
+      <div className="hidden xl:block fixed left-0 top-[100px] z-40" style={{ width: '160px' }}>
+        <div 
+          className="bg-gray-200 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded ml-2 flex items-center justify-center"
+          style={{ width: '160px', height: '600px' }}
+          data-testid="left-sticky-ad"
+        >
+          <span className="text-[10px] text-gray-400 uppercase">Anzeige</span>
         </div>
       </div>
 
-      {/* Sticky Ad - Rechts (ganz außen) */}
-      <div 
-        className="fixed right-0 top-0 bottom-0 hidden xl:block z-40"
-        style={{ width: '160px' }}
-      >
-        <div className="sticky top-[100px] p-2">
-          <div 
-            className="ad-slot-sticky bg-gray-200 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded"
-            style={{ width: '160px', height: '600px' }}
-            data-testid="right-sticky-ad"
-          >
-            <div className="flex items-center justify-center h-full text-[10px] text-gray-400 uppercase">
-              Anzeige
-            </div>
-          </div>
+      {/* Sticky Skyscraper Rechts */}
+      <div className="hidden xl:block fixed right-0 top-[100px] z-40" style={{ width: '160px' }}>
+        <div 
+          className="bg-gray-200 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded mr-2 flex items-center justify-center"
+          style={{ width: '160px', height: '600px' }}
+          data-testid="right-sticky-ad"
+        >
+          <span className="text-[10px] text-gray-400 uppercase">Anzeige</span>
         </div>
       </div>
 
