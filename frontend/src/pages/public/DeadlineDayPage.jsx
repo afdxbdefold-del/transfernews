@@ -21,7 +21,7 @@ const getNextDeadline = () => {
 
 function CountdownBox({ value, label }) {
   return (
-    <div className="bg-[#1d4370] text-white px-3 py-2 rounded text-center min-w-[60px]">
+    <div className="bg-[#79B92A] text-white px-3 py-2 rounded text-center min-w-[60px]">
       <div className="text-2xl md:text-3xl font-bold">{String(value).padStart(2, '0')}</div>
       <div className="text-[10px] uppercase text-white/70">{label}</div>
     </div>
@@ -32,7 +32,7 @@ function NewsRow({ article, isHot }) {
   const typeConfig = {
     rumour: { bg: "bg-amber-500", label: "Gerücht" },
     transfer: { bg: "bg-[#00a83f]", label: "Transfer" },
-    news: { bg: "bg-[#1d4370]", label: "News" },
+    news: { bg: "bg-[#79B92A]", label: "News" },
   };
   const type = typeConfig[article.article_type] || typeConfig.news;
   
@@ -124,7 +124,7 @@ export default function DeadlineDayPage() {
       
       <main className="flex-1 py-3 px-3 space-y-3" data-testid="deadline-day-page">
           {/* Countdown Box */}
-          <div className={`border rounded-sm overflow-hidden ${isDeadlineDay ? 'border-red-500 bg-red-600' : 'border-gray-300 bg-[#1d4370]'}`}>
+          <div className={`border rounded-sm overflow-hidden ${isDeadlineDay ? 'border-red-500 bg-red-600' : 'border-gray-300 bg-[#79B92A]'}`}>
             <div className="p-4 text-center">
               <div className="flex items-center justify-center gap-2 mb-2">
                 <Calendar size={18} className="text-white" />
@@ -163,7 +163,7 @@ export default function DeadlineDayPage() {
           
           {/* All News */}
           <div className="bg-white border border-gray-300 rounded-sm overflow-hidden">
-            <div className="bg-[#1d4370] px-3 py-2 flex items-center justify-between">
+            <div className="bg-[#79B92A] px-3 py-2 flex items-center justify-between">
               <span className="text-white text-[12px] font-bold uppercase">Alle News</span>
               {isDeadlineDay && (
                 <span className="text-[10px] text-white/70 flex items-center gap-1">

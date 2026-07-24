@@ -142,7 +142,7 @@ function NewsRow({ article, showImage = true }) {
 
 function BoxHeader({ title, link, linkText = "mehr" }) {
   return (
-    <div className="bg-[#1d4370] px-3 py-2 flex items-center justify-between">
+    <div className="bg-[#79B92A] px-3 py-2 flex items-center justify-between">
       <h2 className="text-white text-[11px] font-bold uppercase">{title}</h2>
       {link && (
         <Link to={link} className="text-white/70 hover:text-white text-[10px] flex items-center gap-1">

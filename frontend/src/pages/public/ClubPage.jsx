@@ -9,7 +9,7 @@ import { Helmet } from "react-helmet-async";
 
 function BoxHeader({ title, icon: Icon, action }) {
   return (
-    <div className="bg-[#1d4370] px-3 py-2 flex items-center justify-between">
+    <div className="bg-[#79B92A] px-3 py-2 flex items-center justify-between">
       <div className="flex items-center gap-2">
         {Icon && <Icon size={14} className="text-white" />}
         <h2 className="text-white text-[11px] font-bold uppercase">{title}</h2>
@@ -30,7 +30,7 @@ function NewsRow({ article }) {
   const typeConfig = {
     rumour: { bg: "bg-amber-500", label: "Gerücht" },
     transfer: { bg: "bg-[#00a83f]", label: "Transfer" },
-    news: { bg: "bg-[#1d4370]", label: "News" },
+    news: { bg: "bg-[#79B92A]", label: "News" },
   };
   const type = typeConfig[article.article_type] || typeConfig.news;
   
@@ -223,7 +223,7 @@ export default function ClubPage() {
             <div className="space-y-3">
               {/* Club Header Card */}
               <div className="bg-white border border-gray-300 rounded-sm overflow-hidden">
-                <div className="bg-[#1d4370] p-4">
+                <div className="bg-[#79B92A] p-4">
                   <div className="flex items-center gap-4">
                     {/* Club Logo */}
                     <div className="w-[80px] h-[80px] bg-white rounded p-2 flex-shrink-0">

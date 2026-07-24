@@ -95,7 +95,7 @@ export default function FreeAgentsPage() {
       
       <main className="flex-1 py-3 px-3" data-testid="free-agents-page">
         <div className="bg-white border border-gray-300 rounded-sm overflow-hidden">
-            <div className="bg-[#1d4370] px-3 py-2 flex items-center gap-2">
+            <div className="bg-[#79B92A] px-3 py-2 flex items-center gap-2">
               <UserCircle size={16} className="text-white" />
               <h1 className="text-white text-[12px] font-bold uppercase">Ablösefreie Spieler & Verträge</h1>
             </div>

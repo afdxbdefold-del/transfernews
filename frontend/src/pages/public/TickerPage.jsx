@@ -29,7 +29,7 @@ function TickerRow({ article, isNew }) {
   const typeConfig = {
     rumour: { bg: "bg-amber-500", label: "Gerücht" },
     transfer: { bg: "bg-[#00a83f]", label: "Transfer" },
-    news: { bg: "bg-[#1d4370]", label: "News" },
+    news: { bg: "bg-[#79B92A]", label: "News" },
   };
   const type = typeConfig[article.article_type] || typeConfig.news;
   
@@ -133,7 +133,7 @@ export default function TickerPage() {
       <main className="flex-1 py-3 px-3" data-testid="ticker-page">
           <div className="bg-white border border-gray-300 rounded-sm overflow-hidden">
             {/* Header */}
-            <div className="bg-[#1d4370] px-3 py-2 flex items-center justify-between">
+            <div className="bg-[#79B92A] px-3 py-2 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <h1 className="text-white text-[12px] font-bold uppercase">News-Ticker</h1>
                 {autoRefresh && (

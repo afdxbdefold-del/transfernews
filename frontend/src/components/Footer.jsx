@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 
 export default function Footer() {
   return (
-    <footer className="bg-[#1d4370] text-white" data-testid="main-footer">
+    <footer className="bg-[#5a8a1f] text-white" data-testid="main-footer">
       {/* Main Footer Content */}
       <div className="py-4 border-b border-white/10 px-3">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
