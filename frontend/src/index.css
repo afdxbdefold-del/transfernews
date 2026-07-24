@@ -42,6 +42,13 @@ h1, h2, h3, h4, h5, h6 {
   animation: pulse-subtle 2s ease-in-out infinite;
 }
 
+/* Shimmer animation for skeleton loading */
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
 /* Hide scrollbar */
 .hide-scrollbar {
   -ms-overflow-style: none;

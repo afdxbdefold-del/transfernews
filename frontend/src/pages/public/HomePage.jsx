@@ -5,7 +5,7 @@ import { TrendingWidget } from "@/components/TrendingWidget";
 import { useEffect, useState } from "react";
 import { getPublishedArticles } from "@/api";
 import { CaretRight, Newspaper, Fire, Trophy, Funnel } from "@phosphor-icons/react";
-import { Skeleton } from "@/components/ui/skeleton";
+import { NewsCardSkeleton } from "@/components/EnhancedSkeleton";
 import { Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 
@@ -147,16 +147,9 @@ export default function HomePage() {
             <div>
               <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm overflow-hidden">
                 {loading && articles.length === 0 ? (
-                  <div className="divide-y divide-gray-100 dark:divide-gray-800">
+                  <div>
                     {[...Array(8)].map((_, i) => (
-                      <div key={i} className="flex gap-3 p-3">
-                        <Skeleton className="w-[110px] h-[75px] rounded-lg" />
-                        <div className="flex-1">
-                          <Skeleton className="h-4 w-20 mb-2" />
-                          <Skeleton className="h-5 w-full mb-1" />
-                          <Skeleton className="h-5 w-3/4" />
-                        </div>
-                      </div>
+                      <NewsCardSkeleton key={i} />
                     ))}
                   </div>
                 ) : (

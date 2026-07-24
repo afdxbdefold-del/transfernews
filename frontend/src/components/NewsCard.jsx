@@ -282,12 +282,23 @@ export function HeroCard({ article, isLive = false }) {
   );
 }
 
+// Check if article is fresh (< 1 hour old)
+function isArticleFresh(publishedAt) {
+  if (!publishedAt) return false;
+  const published = new Date(publishedAt);
+  const now = new Date();
+  const diffMs = now - published;
+  const diffHours = diffMs / (1000 * 60 * 60);
+  return diffHours < 1;
+}
+
 // Horizontal News Card - Image left, text right (Sport1 mobile style)
 export function NewsCardHorizontal({ article, showVideo = false }) {
   if (!article) return null;
   
   const { fromLogo, toLogo } = getTransferClubLogos(article);
   const statusBadge = getStatusBadge(article);
+  const isFresh = isArticleFresh(article.published_at);
   
   return (
     <Link 
@@ -303,6 +314,17 @@ export function NewsCardHorizontal({ article, showVideo = false }) {
           className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-300"
           articleId={article.id}
         />
+        
+        {/* NEU Badge - Pulsing for fresh articles */}
+        {isFresh && (
+          <div className="absolute top-1 left-1 flex items-center gap-1 bg-red-500 text-white text-[8px] font-black uppercase px-1.5 py-0.5 rounded shadow-lg">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+            </span>
+            NEU
+          </div>
+        )}
         
         {/* Transfer Club Logos - ENHANCED */}
         {(fromLogo || toLogo) && (
@@ -330,6 +352,13 @@ export function NewsCardHorizontal({ article, showVideo = false }) {
             {statusBadge.label}
           </div>
           <span className="text-[10px] text-gray-400 dark:text-gray-500">{formatTime(article.published_at)}</span>
+          {/* Fresh indicator dot */}
+          {isFresh && (
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+            </span>
+          )}
         </div>
         
         <h3 className="text-[14px] font-bold text-gray-900 dark:text-white leading-snug line-clamp-2 group-hover:text-[#79B92A] transition-colors" style={{ fontFamily: "'Oswald', sans-serif" }}>
