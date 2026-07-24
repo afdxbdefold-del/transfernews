@@ -100,7 +100,7 @@ export default function Header() {
             <img 
               src="/logo.png" 
               alt="transfernews" 
-              className="h-[28px] w-auto"
+              className="h-[24px] w-auto"
             />
           </Link>
           
