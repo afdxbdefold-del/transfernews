@@ -183,7 +183,7 @@ export default function Header() {
               to={item.path}
               className={`flex-shrink-0 h-full flex items-center px-3 text-[11px] font-semibold transition-colors border-b-2 ${
                 isActive(item.path) 
-                  ? "text-white border-white bg-[#5a8a1f]" 
+                  ? "text-white border-white" 
                   : "text-white/90 border-transparent hover:bg-[#5a8a1f]/50"
               }`}
             >
@@ -197,7 +197,7 @@ export default function Header() {
               onClick={() => setLeagueDropdownOpen(!leagueDropdownOpen)}
               className={`flex-shrink-0 h-full flex items-center gap-1 px-3 text-[11px] font-semibold transition-colors border-b-2 ${
                 location.pathname.includes('/wettbewerb/') 
-                  ? "text-white border-white bg-[#5a8a1f]" 
+                  ? "text-white border-white" 
                   : "text-white/90 border-transparent hover:bg-[#5a8a1f]/50"
               }`}
               data-testid="league-dropdown-btn"
