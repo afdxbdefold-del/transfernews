@@ -112,10 +112,10 @@ export default function Header() {
                 placeholder="Spieler, Verein, Wettbewerb..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full h-[30px] px-3 pr-8 text-[12px] border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
+                className="w-full h-[30px] px-3 pr-8 text-[12px] border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-[#79B92A] focus:border-transparent"
                 data-testid="search-input"
               />
-              <button type="submit" className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700">
+              <button type="submit" className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#79B92A]">
                 <MagnifyingGlass size={16} />
               </button>
               
@@ -153,7 +153,7 @@ export default function Header() {
       </div>
 
       {/* Navigation Bar */}
-      <nav className="bg-[#2d2d2d]" data-testid="sports-nav">
+      <nav className="bg-[#79B92A]" data-testid="sports-nav">
         <div className="flex items-center h-[44px] px-3 overflow-x-auto hide-scrollbar">
           {navItems.map((item) => (
             <Link
@@ -162,7 +162,7 @@ export default function Header() {
               className={`flex-shrink-0 h-full flex items-center px-3 text-[11px] font-semibold transition-colors border-b-2 ${
                 isActive(item.path) 
                   ? "text-white border-white" 
-                  : "text-gray-300 border-transparent hover:bg-white/10"
+                  : "text-white/90 border-transparent hover:bg-[#5a8a1f]/50"
               }`}
             >
               {item.label}
@@ -176,7 +176,7 @@ export default function Header() {
               className={`flex-shrink-0 h-full flex items-center gap-1 px-3 text-[11px] font-semibold transition-colors border-b-2 ${
                 location.pathname.includes('/wettbewerb/') 
                   ? "text-white border-white" 
-                  : "text-gray-300 border-transparent hover:bg-white/10"
+                  : "text-white/90 border-transparent hover:bg-[#5a8a1f]/50"
               }`}
               data-testid="league-dropdown-btn"
             >
@@ -203,7 +203,7 @@ export default function Header() {
           
           <Link
             to="/redaktion"
-            className="flex-shrink-0 h-full flex items-center px-3 text-[11px] font-semibold text-gray-300 border-b-2 border-transparent hover:bg-white/10"
+            className="flex-shrink-0 h-full flex items-center px-3 text-[11px] font-semibold text-white/90 border-b-2 border-transparent hover:bg-[#5a8a1f]/50"
           >
             Redaktion
           </Link>
@@ -215,7 +215,7 @@ export default function Header() {
         <>
           <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setMenuOpen(false)} />
           <div className="fixed top-0 right-0 w-[280px] h-full bg-white z-50 shadow-2xl overflow-y-auto">
-            <div className="flex items-center justify-between h-[44px] px-3 bg-[#2d2d2d]">
+            <div className="flex items-center justify-between h-[44px] px-3 bg-[#79B92A]">
               <span className="font-bold text-white text-sm">Menü</span>
               <button onClick={() => setMenuOpen(false)} className="w-8 h-8 flex items-center justify-center text-white">
                 <X size={20} />
@@ -229,7 +229,7 @@ export default function Header() {
                   placeholder="Suchen..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full h-[36px] px-3 text-[13px] border border-gray-300 rounded focus:outline-none focus:border-gray-500"
+                  className="w-full h-[36px] px-3 text-[13px] border border-gray-300 rounded focus:outline-none focus:border-[#79B92A]"
                 />
               </form>
             </div>
@@ -242,7 +242,7 @@ export default function Header() {
                   onClick={() => setMenuOpen(false)}
                   className={`flex items-center h-10 px-4 text-[13px] font-medium border-l-[3px] ${
                     isActive(item.path) 
-                      ? "text-gray-900 bg-gray-100 border-l-gray-900" 
+                      ? "text-[#79B92A] bg-[#e8f4e8] border-l-[#79B92A]" 
                       : "text-gray-700 border-l-transparent hover:bg-gray-50"
                   }`}
                 >
