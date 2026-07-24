@@ -454,11 +454,13 @@ async def get_trending_entities(db: AsyncIOMotorDatabase, hours: int = 24) -> di
     # Lookup clubs in database
     club_results = []
     for c, data in trending_clubs:
-        slug = c.replace(" ", "-")
+        slug = c.replace(" ", "-").lower()
+        c_lower = c.lower()
         db_club = await db.clubs.find_one({
             "$or": [
                 {"slug": slug},
-                {"name": {"$regex": f"^{c}$", "$options": "i"}}
+                {"name": {"$regex": f"^{c}$", "$options": "i"}},
+                {"aliases": {"$regex": f"^{c_lower}$", "$options": "i"}}
             ]
         }, {"_id": 0, "id": 1, "name": 1, "slug": 1, "logo": 1})
         

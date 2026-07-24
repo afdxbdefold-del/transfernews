@@ -3,8 +3,8 @@ import Footer from "@/components/Footer";
 import PageLayout from "@/components/PageLayout";
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { getPlayerBySlug, getArticlesByPlayer, getTransfers } from "@/api";
-import { User, MapPin, Calendar, CaretRight, TrendUp, ArrowRight, ArrowLeft, Buildings } from "@phosphor-icons/react";
+import { getPlayerBySlug, getArticlesByPlayer, getPlayerTransfers } from "@/api";
+import { User, MapPin, Calendar, CaretRight, TrendUp, ArrowRight, Buildings, Swap } from "@phosphor-icons/react";
 import { Helmet } from "react-helmet-async";
 
 function BoxHeader({ title, icon: Icon }) {
@@ -74,21 +74,23 @@ function NewsRow({ article }) {
   );
 }
 
-function TransferRow({ transfer, isIncoming }) {
+function TransferRow({ transfer }) {
   return (
-    <div className="flex items-center gap-2 px-3 py-2 border-b border-gray-200 last:border-0 text-[11px]">
-      <div className={`w-5 h-5 rounded flex items-center justify-center ${isIncoming ? 'bg-green-100' : 'bg-red-100'}`}>
-        {isIncoming ? <ArrowRight size={12} className="text-green-600" /> : <ArrowLeft size={12} className="text-red-600" />}
+    <div className="flex items-center gap-3 px-3 py-2.5 border-b border-gray-200 last:border-0 text-[12px]">
+      <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+        <Swap size={14} className="text-gray-500" />
       </div>
       <div className="flex-1 min-w-0">
-        <div className="font-medium text-gray-900 truncate">
-          {isIncoming ? transfer.from_club_name || 'Unbekannt' : transfer.to_club_name || 'Unbekannt'}
+        <div className="flex items-center gap-2 text-gray-700">
+          <span className="font-medium truncate">{transfer.from_club || 'Unbekannt'}</span>
+          <ArrowRight size={12} className="text-[#79B92A] flex-shrink-0" />
+          <span className="font-medium truncate">{transfer.to_club || 'Unbekannt'}</span>
         </div>
-        <div className="text-[10px] text-gray-500">{transfer.season || '-'}</div>
+        <div className="text-[10px] text-gray-500 mt-0.5">{transfer.year || transfer.season || '-'}</div>
       </div>
-      <div className="text-right">
+      <div className="text-right flex-shrink-0">
         <div className="font-bold text-gray-900">
-          {transfer.fee_amount ? formatMarketValue(transfer.fee_amount) : 'ablösefrei'}
+          {transfer.fee || (transfer.fee_amount ? formatMarketValue(transfer.fee_amount) : 'ablösefrei')}
         </div>
         <div className="text-[9px] text-gray-500">{transfer.transfer_type || 'Fest'}</div>
       </div>
@@ -113,7 +115,7 @@ export default function PlayerPage() {
 
         const [articlesRes, transfersRes] = await Promise.all([
           getArticlesByPlayer(playerRes.data.id, { limit: 10 }),
-          getTransfers({ player_id: playerRes.data.id, limit: 20 }),
+          getPlayerTransfers(slug),
         ]);
 
         setArticles(articlesRes.data || []);
@@ -234,7 +236,13 @@ export default function PlayerPage() {
                       {player.current_club_name && (
                         <div className="mt-3 text-[12px] flex items-center gap-2">
                           <Buildings size={14} />
-                          <span>Aktueller Verein: <strong>{player.current_club_name}</strong></span>
+                          <span>Aktueller Verein: </span>
+                          <Link 
+                            to={`/verein/${player.current_club_slug}`}
+                            className="font-bold hover:underline"
+                          >
+                            {player.current_club_name}
+                          </Link>
                         </div>
                       )}
                     </div>
@@ -327,7 +335,7 @@ export default function PlayerPage() {
                             Transfer-Historie
                           </div>
                           {transfers.map((t) => (
-                            <TransferRow key={t.id} transfer={t} isIncoming={t.to_player_id === player.id} />
+                            <TransferRow key={t.id} transfer={t} />
                           ))}
                         </>
                       ) : (

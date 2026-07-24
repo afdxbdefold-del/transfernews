@@ -146,6 +146,8 @@ class PlayerBase(BaseModel):
     birthdate: Optional[str] = None
     position: Optional[str] = None
     current_club_id: Optional[str] = None
+    current_club_name: Optional[str] = None
+    current_club_slug: Optional[str] = None
     image: Optional[str] = None
     meta_title: Optional[str] = None
     meta_description: Optional[str] = None
@@ -163,6 +165,8 @@ class PlayerUpdate(BaseModel):
     birthdate: Optional[str] = None
     position: Optional[str] = None
     current_club_id: Optional[str] = None
+    current_club_name: Optional[str] = None
+    current_club_slug: Optional[str] = None
     image: Optional[str] = None
     meta_title: Optional[str] = None
     meta_description: Optional[str] = None

@@ -313,6 +313,30 @@ async def delete_player(player_id: str, current_user: dict = Depends(require_adm
     return {"message": "Spieler gelöscht"}
 
 
+@api_router.get("/players/{player_id}/transfers")
+async def get_player_transfers(player_id: str):
+    """Get transfer history for a player"""
+    transfers = await db.transfers.find(
+        {"player_id": player_id},
+        {"_id": 0}
+    ).sort("year", -1).to_list(50)
+    return transfers
+
+
+@api_router.get("/players/slug/{slug}/transfers")
+async def get_player_transfers_by_slug(slug: str):
+    """Get transfer history for a player by slug"""
+    player = await db.players.find_one({"slug": slug}, {"_id": 0, "id": 1})
+    if not player:
+        raise HTTPException(status_code=404, detail="Spieler nicht gefunden")
+    
+    transfers = await db.transfers.find(
+        {"player_id": player["id"]},
+        {"_id": 0}
+    ).sort("year", -1).to_list(50)
+    return transfers
+
+
 @api_router.post("/players/enrich-images")
 async def enrich_player_images(
     limit: int = Query(50, ge=1, le=200),
