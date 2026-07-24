@@ -3,6 +3,7 @@
 ## Letztes Update: 24. Juli 2026
 
 ### Kürzlich abgeschlossen:
+- ✅ **Live-Ticker mit Echtzeit-Meldungen**: 40+ Artikel, Auto-Update alle 30 Sekunden, LIVE-Status für neue Meldungen (24.07.2026)
 - ✅ **Neue Vereinskader**: Liverpool (19), Arsenal (20), Chelsea (19), Barcelona (19) mit vollständigen Kadern (24.07.2026)
 - ✅ **Top-Deals Seite**: Zeigt teuerste Transfers sortiert nach Ablösesumme (Enzo 121M, Rice 116M, Caicedo 115M, etc.) (24.07.2026)
 - ✅ **Spielerbilder**: 51 neue Spieler mit Wikimedia-Bildern angereichert (24.07.2026)
@@ -11,8 +12,8 @@
 - ✅ **Marktwert-Daten**: 22+ Top-Spieler mit aktuellen Marktwerten (Mbappé 180M, Haaland 175M, Bellingham 150M, etc.) (24.07.2026)
 - ✅ **Kader-Anzeige**: Vereinsseiten zeigen echte Spieler mit Kadergröße, Kaderwert und "Wertvollste Spieler" (24.07.2026)
 - ✅ **Transfer-Historie**: Transfer-Tab auf Spielerseiten zeigt echte Daten aus DB (24.07.2026)
-- ✅ **Spieler-Verein verknüpfen**: Aktueller Verein (z.B. Inter Miami) wird im Header angezeigt und ist klickbar (24.07.2026)
-- ✅ **Trending-Vereine klickbar**: Sidebar-Links funktionieren und navigieren zu /verein/{slug} (24.07.2026)
+- ✅ **Spieler-Verein verknüpfen**: Aktueller Verein im Header angezeigt und klickbar (24.07.2026)
+- ✅ **Trending-Vereine klickbar**: Sidebar-Links funktionieren (24.07.2026)
 - ✅ Bugfix: Artikelbilder laden jetzt korrekt (24.07.2026)
 - ✅ Neues Logo mit Sprechblase integriert (24.07.2026)
 
