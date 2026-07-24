@@ -1,5 +1,6 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import PageLayout from "@/components/PageLayout";
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { getClubBySlug, getArticlesByClub, getTransfers, getPlayers } from "@/api";
@@ -151,27 +152,25 @@ export default function ClubPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col bg-[#e8e8e8]">
+      <PageLayout>
         <Header />
-        <main className="flex-1 py-3">
-          <div className="max-w-[1000px] mx-auto px-3">
-            <div className="bg-white border border-gray-300 rounded-sm animate-pulse">
-              <div className="h-[100px] bg-gray-200" />
-              <div className="p-4 space-y-3">
-                <div className="h-6 bg-gray-200 rounded w-1/3" />
-                <div className="h-4 bg-gray-200 rounded w-1/4" />
-              </div>
+        <main className="flex-1 py-3 px-3">
+          <div className="bg-white border border-gray-300 rounded-sm animate-pulse">
+            <div className="h-[100px] bg-gray-200" />
+            <div className="p-4 space-y-3">
+              <div className="h-6 bg-gray-200 rounded w-1/3" />
+              <div className="h-4 bg-gray-200 rounded w-1/4" />
             </div>
           </div>
         </main>
         <Footer />
-      </div>
+      </PageLayout>
     );
   }
 
   if (!club) {
     return (
-      <div className="min-h-screen flex flex-col bg-[#e8e8e8]">
+      <PageLayout>
         <Header />
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center bg-white p-8 rounded-sm border border-gray-300">
@@ -181,7 +180,7 @@ export default function ClubPage() {
           </div>
         </main>
         <Footer />
-      </div>
+      </PageLayout>
     );
   }
 
@@ -196,7 +195,7 @@ export default function ClubPage() {
   const squadValue = players.reduce((sum, p) => sum + (p.market_value || 0), 0);
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#e8e8e8]" data-testid="club-page">
+    <PageLayout>
       <Helmet>
         <title>{`${club.name} - Transfers, Kader & News | TransferNews.de`}</title>
         <meta name="description" content={`${club.name} - Alle Infos: Kader, Transfers, Zugänge, Abgänge und aktuelle News.`} />
@@ -205,10 +204,9 @@ export default function ClubPage() {
       
       <Header />
       
-      <main className="flex-1 py-3">
-        <div className="max-w-[1000px] mx-auto px-3">
-          {/* Breadcrumb */}
-          <div className="mb-2 text-[11px] text-gray-500">
+      <main className="flex-1 py-3 px-3" data-testid="club-page">
+        {/* Breadcrumb */}
+        <div className="mb-2 text-[11px] text-gray-500">
             <Link to="/" className="hover:text-[#00a83f]">Startseite</Link>
             <span className="mx-1">›</span>
             {club.competition_name && (
@@ -463,10 +461,9 @@ export default function ClubPage() {
               )}
             </aside>
           </div>
-        </div>
-      </main>
+        </main>
 
-      <Footer />
-    </div>
+        <Footer />
+      </PageLayout>
   );
 }

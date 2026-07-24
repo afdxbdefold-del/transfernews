@@ -1,5 +1,6 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import PageLayout from "@/components/PageLayout";
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { getPlayerBySlug, getArticlesByPlayer, getTransfers } from "@/api";
@@ -128,27 +129,25 @@ export default function PlayerPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col bg-[#e8e8e8]">
+      <PageLayout>
         <Header />
-        <main className="flex-1 py-3">
-          <div className="max-w-[1000px] mx-auto px-3">
-            <div className="bg-white border border-gray-300 rounded-sm animate-pulse">
-              <div className="h-[120px] bg-gray-200" />
-              <div className="p-4 space-y-3">
-                <div className="h-6 bg-gray-200 rounded w-1/3" />
-                <div className="h-4 bg-gray-200 rounded w-1/4" />
-              </div>
+        <main className="flex-1 py-3 px-3">
+          <div className="bg-white border border-gray-300 rounded-sm animate-pulse">
+            <div className="h-[120px] bg-gray-200" />
+            <div className="p-4 space-y-3">
+              <div className="h-6 bg-gray-200 rounded w-1/3" />
+              <div className="h-4 bg-gray-200 rounded w-1/4" />
             </div>
           </div>
         </main>
         <Footer />
-      </div>
+      </PageLayout>
     );
   }
 
   if (!player) {
     return (
-      <div className="min-h-screen flex flex-col bg-[#e8e8e8]">
+      <PageLayout>
         <Header />
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center bg-white p-8 rounded-sm border border-gray-300">
@@ -158,7 +157,7 @@ export default function PlayerPage() {
           </div>
         </main>
         <Footer />
-      </div>
+      </PageLayout>
     );
   }
 
@@ -166,7 +165,7 @@ export default function PlayerPage() {
   const marketValue = player.market_value || null;
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#e8e8e8]" data-testid="player-page">
+    <PageLayout>
       <Helmet>
         <title>{`${player.name} - Profil, News & Transfers | TransferNews.de`}</title>
         <meta name="description" content={`${player.name} - Alle Infos: Marktwert, Transfers, News und Gerüchte.`} />
@@ -175,10 +174,9 @@ export default function PlayerPage() {
       
       <Header />
       
-      <main className="flex-1 py-3">
-        <div className="max-w-[1000px] mx-auto px-3">
-          {/* Breadcrumb */}
-          <div className="mb-2 text-[11px] text-gray-500">
+      <main className="flex-1 py-3 px-3" data-testid="player-page">
+        {/* Breadcrumb */}
+        <div className="mb-2 text-[11px] text-gray-500">
             <Link to="/" className="hover:text-[#00a83f]">Startseite</Link>
             <span className="mx-1">›</span>
             <span className="text-gray-700">{player.name}</span>
@@ -386,10 +384,9 @@ export default function PlayerPage() {
               </div>
             </aside>
           </div>
-        </div>
-      </main>
+        </main>
 
-      <Footer />
-    </div>
+        <Footer />
+      </PageLayout>
   );
 }

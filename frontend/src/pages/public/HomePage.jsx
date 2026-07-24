@@ -1,5 +1,6 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import PageLayout from "@/components/PageLayout";
 import { useEffect, useState } from "react";
 import { getPublishedArticles, getAllTrending } from "@/api";
 import { Link } from "react-router-dom";
@@ -54,7 +55,6 @@ function NewsRow({ article, showImage = true }) {
       className="flex items-start gap-3 p-2 hover:bg-[#e8f4e8] border-b border-gray-200 last:border-0 group"
       data-testid={`news-row-${article.id}`}
     >
-      {/* Thumbnail */}
       {showImage && (
         <div className="w-[70px] h-[50px] flex-shrink-0 bg-gray-200 overflow-hidden rounded-sm">
           {article.image_url ? (
@@ -66,7 +66,6 @@ function NewsRow({ article, showImage = true }) {
       )}
       
       <div className="flex-1 min-w-0">
-        {/* Meta Row */}
         <div className="flex items-center gap-2 mb-0.5">
           <span className={`text-[9px] font-bold text-white px-1.5 py-0.5 rounded-sm ${type.color}`}>
             {type.text}
@@ -85,12 +84,10 @@ function NewsRow({ article, showImage = true }) {
           </span>
         </div>
         
-        {/* Title */}
         <h3 className="text-[13px] font-semibold text-gray-900 group-hover:text-[#00a83f] line-clamp-2 leading-tight">
           {article.title}
         </h3>
         
-        {/* Probability */}
         {article.transfer_probability > 0 && (
           <div className="flex items-center gap-1 mt-1">
             <div className="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden">
@@ -112,7 +109,7 @@ function NewsRow({ article, showImage = true }) {
 function BoxHeader({ title, link, linkText = "mehr" }) {
   return (
     <div className="bg-[#1d4370] px-3 py-2 flex items-center justify-between">
-      <h2 className="text-white text-[12px] font-bold uppercase">{title}</h2>
+      <h2 className="text-white text-[11px] font-bold uppercase">{title}</h2>
       {link && (
         <Link to={link} className="text-white/70 hover:text-white text-[10px] flex items-center gap-1">
           {linkText} <CaretRight size={10} />
@@ -195,7 +192,7 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#e8e8e8]" data-testid="homepage">
+    <PageLayout>
       <Helmet>
         <title>TransferNews.de - Fußball-Transfers & Gerüchte</title>
         <meta name="description" content="Die neuesten Fußball-Transfer-News, Gerüchte und offizielle Wechsel. Bundesliga, Premier League, La Liga und mehr." />
@@ -204,158 +201,162 @@ export default function HomePage() {
       
       <Header />
       
-      <main className="flex-1 py-3">
-        <div className="max-w-[1000px] mx-auto px-3">
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-3">
-            {/* Main Content */}
-            <div className="space-y-3">
-              {/* News Box */}
-              <div className="bg-white border border-gray-300 rounded-sm overflow-hidden">
-                <BoxHeader title="Transfer-News" link="/ticker" linkText="alle News" />
-                
-                {/* Filter Tabs */}
-                <div className="flex border-b border-gray-200 bg-gray-50">
-                  {FILTERS.map((filter) => (
-                    <button
-                      key={filter.id}
-                      onClick={() => setActiveFilter(filter.id)}
-                      className={`px-3 py-2 text-[11px] font-semibold transition-colors ${
-                        activeFilter === filter.id 
-                          ? 'text-[#00a83f] border-b-2 border-[#00a83f] bg-white -mb-[1px]' 
-                          : 'text-gray-600 hover:text-gray-900'
-                      }`}
-                      data-testid={`filter-${filter.id}`}
-                    >
-                      {filter.label}
-                    </button>
-                  ))}
-                </div>
-                
-                {/* News List */}
-                <div>
-                  {loading ? (
-                    [...Array(10)].map((_, i) => (
-                      <div key={i} className="flex items-start gap-3 p-2 border-b border-gray-200 animate-pulse">
-                        <div className="w-[70px] h-[50px] bg-gray-200 rounded-sm" />
-                        <div className="flex-1">
-                          <div className="h-3 bg-gray-200 rounded w-20 mb-2" />
-                          <div className="h-4 bg-gray-200 rounded w-full mb-1" />
-                          <div className="h-4 bg-gray-200 rounded w-2/3" />
-                        </div>
+      <main className="flex-1 py-3 px-3" data-testid="homepage">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-3">
+          {/* Main Content */}
+          <div className="space-y-3">
+            {/* News Box */}
+            <div className="bg-white border border-gray-300 rounded-sm overflow-hidden">
+              <BoxHeader title="Transfer-News" link="/ticker" linkText="alle News" />
+              
+              {/* Filter Tabs */}
+              <div className="flex border-b border-gray-200 bg-gray-50">
+                {FILTERS.map((filter) => (
+                  <button
+                    key={filter.id}
+                    onClick={() => setActiveFilter(filter.id)}
+                    className={`px-3 py-2 text-[11px] font-semibold transition-colors ${
+                      activeFilter === filter.id 
+                        ? 'text-[#00a83f] border-b-2 border-[#00a83f] bg-white -mb-[1px]' 
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                    data-testid={`filter-${filter.id}`}
+                  >
+                    {filter.label}
+                  </button>
+                ))}
+              </div>
+              
+              {/* News List */}
+              <div>
+                {loading ? (
+                  [...Array(10)].map((_, i) => (
+                    <div key={i} className="flex items-start gap-3 p-2 border-b border-gray-200 animate-pulse">
+                      <div className="w-[70px] h-[50px] bg-gray-200 rounded-sm" />
+                      <div className="flex-1">
+                        <div className="h-3 bg-gray-200 rounded w-20 mb-2" />
+                        <div className="h-4 bg-gray-200 rounded w-full mb-1" />
+                        <div className="h-4 bg-gray-200 rounded w-2/3" />
                       </div>
-                    ))
-                  ) : filteredArticles.length > 0 ? (
-                    filteredArticles.map((article) => (
-                      <NewsRow key={article.id} article={article} />
-                    ))
-                  ) : (
-                    <div className="p-8 text-center text-gray-500 text-[13px]">
-                      Keine Artikel in dieser Kategorie
                     </div>
-                  )}
+                  ))
+                ) : filteredArticles.length > 0 ? (
+                  filteredArticles.map((article) => (
+                    <NewsRow key={article.id} article={article} />
+                  ))
+                ) : (
+                  <div className="p-8 text-center text-gray-500 text-[13px]">
+                    Keine Artikel in dieser Kategorie
+                  </div>
+                )}
+              </div>
+              
+              {hasMore && !loading && filteredArticles.length > 0 && (
+                <div className="p-2 border-t border-gray-200 bg-gray-50">
+                  <button
+                    onClick={loadMore}
+                    className="w-full py-2 text-[12px] font-semibold text-[#1d4370] hover:text-[#00a83f] transition-colors"
+                    data-testid="load-more-btn"
+                  >
+                    Mehr News laden
+                  </button>
                 </div>
-                
-                {/* Load More */}
-                {hasMore && !loading && filteredArticles.length > 0 && (
-                  <div className="p-2 border-t border-gray-200 bg-gray-50">
-                    <button
-                      onClick={loadMore}
-                      className="w-full py-2 text-[12px] font-semibold text-[#1d4370] hover:text-[#00a83f] transition-colors"
-                      data-testid="load-more-btn"
-                    >
-                      Mehr News laden
-                    </button>
+              )}
+            </div>
+          </div>
+
+          {/* Sidebar */}
+          <aside className="space-y-3">
+            {/* Trending Players */}
+            <div className="bg-white border border-gray-300 rounded-sm overflow-hidden">
+              <BoxHeader title="Trending Spieler" />
+              <div>
+                {trending.players.length > 0 ? (
+                  trending.players.slice(0, 5).map((player, idx) => (
+                    <TrendingItem key={player.id || idx} item={player} rank={idx + 1} />
+                  ))
+                ) : (
+                  <div className="p-3 text-center text-gray-500 text-[12px]">
+                    Keine Trending-Daten
                   </div>
                 )}
               </div>
             </div>
-
-            {/* Sidebar */}
-            <aside className="space-y-3">
-              {/* Trending Players */}
-              <div className="bg-white border border-gray-300 rounded-sm overflow-hidden">
-                <BoxHeader title="Trending Spieler" />
-                <div>
-                  {trending.players.length > 0 ? (
-                    trending.players.slice(0, 5).map((player, idx) => (
-                      <TrendingItem key={player.id || idx} item={player} rank={idx + 1} />
-                    ))
-                  ) : (
-                    <div className="p-3 text-center text-gray-500 text-[12px]">
-                      Keine Trending-Daten
-                    </div>
-                  )}
-                </div>
+            
+            {/* Trending Clubs */}
+            <div className="bg-white border border-gray-300 rounded-sm overflow-hidden">
+              <BoxHeader title="Trending Vereine" />
+              <div>
+                {trending.clubs.length > 0 ? (
+                  trending.clubs.slice(0, 5).map((club, idx) => (
+                    <TrendingItem key={club.id || idx} item={club} rank={idx + 1} />
+                  ))
+                ) : (
+                  <div className="p-3 text-center text-gray-500 text-[12px]">
+                    Keine Trending-Daten
+                  </div>
+                )}
               </div>
-              
-              {/* Trending Clubs */}
-              <div className="bg-white border border-gray-300 rounded-sm overflow-hidden">
-                <BoxHeader title="Trending Vereine" />
-                <div>
-                  {trending.clubs.length > 0 ? (
-                    trending.clubs.slice(0, 5).map((club, idx) => (
-                      <TrendingItem key={club.id || idx} item={club} rank={idx + 1} />
-                    ))
-                  ) : (
-                    <div className="p-3 text-center text-gray-500 text-[12px]">
-                      Keine Trending-Daten
-                    </div>
-                  )}
-                </div>
-              </div>
-              
-              {/* Leagues */}
-              <div className="bg-white border border-gray-300 rounded-sm overflow-hidden">
-                <BoxHeader title="Wettbewerbe" />
-                <nav>
-                  {LEAGUES.map((league) => (
-                    <Link
-                      key={league.slug}
-                      to={`/wettbewerb/${league.slug}`}
-                      className="flex items-center justify-between px-3 py-2 hover:bg-[#e8f4e8] border-b border-gray-100 last:border-0 group"
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="text-base">{league.flag}</span>
-                        <span className="text-[12px] text-gray-900 group-hover:text-[#00a83f]">
-                          {league.name}
-                        </span>
-                      </div>
-                      <CaretRight size={12} className="text-gray-400" />
-                    </Link>
-                  ))}
-                </nav>
-              </div>
-              
-              {/* Quick Links */}
-              <div className="bg-white border border-gray-300 rounded-sm overflow-hidden">
-                <BoxHeader title="Schnellzugriff" />
-                <nav>
-                  {[
-                    { label: "Deadline Day", path: "/deadline-day", icon: Fire },
-                    { label: "Top-Transfers", path: "/top-deals", icon: TrendUp },
-                    { label: "Ablösefreie Spieler", path: "/abloesefrei" },
-                    { label: "Redaktion", path: "/redaktion" },
-                  ].map((item) => (
-                    <Link
-                      key={item.path}
-                      to={item.path}
-                      className="flex items-center justify-between px-3 py-2 hover:bg-[#e8f4e8] border-b border-gray-100 last:border-0 group"
-                    >
-                      <span className="text-[12px] text-gray-900 group-hover:text-[#00a83f] flex items-center gap-2">
-                        {item.icon && <item.icon size={14} className="text-gray-500" />}
-                        {item.label}
+            </div>
+            
+            {/* Leagues */}
+            <div className="bg-white border border-gray-300 rounded-sm overflow-hidden">
+              <BoxHeader title="Wettbewerbe" />
+              <nav>
+                {LEAGUES.map((league) => (
+                  <Link
+                    key={league.slug}
+                    to={`/wettbewerb/${league.slug}`}
+                    className="flex items-center justify-between px-3 py-2 hover:bg-[#e8f4e8] border-b border-gray-100 last:border-0 group"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-base">{league.flag}</span>
+                      <span className="text-[12px] text-gray-900 group-hover:text-[#00a83f]">
+                        {league.name}
                       </span>
-                      <CaretRight size={12} className="text-gray-400" />
-                    </Link>
-                  ))}
-                </nav>
+                    </div>
+                    <CaretRight size={12} className="text-gray-400" />
+                  </Link>
+                ))}
+              </nav>
+            </div>
+            
+            {/* Quick Links */}
+            <div className="bg-white border border-gray-300 rounded-sm overflow-hidden">
+              <BoxHeader title="Schnellzugriff" />
+              <nav>
+                {[
+                  { label: "Deadline Day", path: "/deadline-day", icon: Fire },
+                  { label: "Top-Transfers", path: "/top-deals", icon: TrendUp },
+                  { label: "Ablösefreie Spieler", path: "/abloesefrei" },
+                  { label: "Redaktion", path: "/redaktion" },
+                ].map((item) => (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    className="flex items-center justify-between px-3 py-2 hover:bg-[#e8f4e8] border-b border-gray-100 last:border-0 group"
+                  >
+                    <span className="text-[12px] text-gray-900 group-hover:text-[#00a83f] flex items-center gap-2">
+                      {item.icon && <item.icon size={14} className="text-gray-500" />}
+                      {item.label}
+                    </span>
+                    <CaretRight size={12} className="text-gray-400" />
+                  </Link>
+                ))}
+              </nav>
+            </div>
+            
+            {/* Ad Slot */}
+            <div className="bg-gray-200 border border-gray-300 rounded-sm" style={{ height: '250px' }}>
+              <div className="flex items-center justify-center h-full text-[10px] text-gray-400 uppercase">
+                Anzeige
               </div>
-            </aside>
-          </div>
+            </div>
+          </aside>
         </div>
       </main>
 
       <Footer />
-    </div>
+    </PageLayout>
   );
 }

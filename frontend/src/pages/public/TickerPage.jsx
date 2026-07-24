@@ -1,5 +1,6 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import PageLayout from "@/components/PageLayout";
 import { useEffect, useState, useRef } from "react";
 import { getPublishedArticles } from "@/api";
 import { Clock, Circle, CaretRight } from "@phosphor-icons/react";
@@ -120,7 +121,7 @@ export default function TickerPage() {
   }, {});
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#e8e8e8]" data-testid="ticker-page">
+    <PageLayout>
       <Helmet>
         <title>News-Ticker - Live Updates | TransferNews.de</title>
         <meta name="description" content="Alle Transfer-News im Live-Ticker." />
@@ -129,8 +130,7 @@ export default function TickerPage() {
       
       <Header />
       
-      <main className="flex-1 py-3">
-        <div className="max-w-[1000px] mx-auto px-3">
+      <main className="flex-1 py-3 px-3" data-testid="ticker-page">
           <div className="bg-white border border-gray-300 rounded-sm overflow-hidden">
             {/* Header */}
             <div className="bg-[#1d4370] px-3 py-2 flex items-center justify-between">
@@ -188,10 +188,9 @@ export default function TickerPage() {
               ))
             )}
           </div>
-        </div>
       </main>
       
       <Footer />
-    </div>
+    </PageLayout>
   );
 }

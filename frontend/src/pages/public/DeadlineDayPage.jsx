@@ -1,5 +1,6 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import PageLayout from "@/components/PageLayout";
 import { useEffect, useState, useRef } from "react";
 import { getPublishedArticles, getBreakingArticles } from "@/api";
 import { Clock, Circle, CaretRight, Calendar } from "@phosphor-icons/react";
@@ -112,7 +113,7 @@ export default function DeadlineDayPage() {
   }, [isDeadlineDay]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#e8e8e8]" data-testid="deadline-day-page">
+    <PageLayout>
       <Helmet>
         <title>Deadline Day - Transfer-Countdown | TransferNews.de</title>
         <meta name="description" content={`Countdown zum ${deadline.name}. Alle Breaking News am Deadline Day.`} />
@@ -121,8 +122,7 @@ export default function DeadlineDayPage() {
       
       <Header />
       
-      <main className="flex-1 py-3">
-        <div className="max-w-[1000px] mx-auto px-3 space-y-3">
+      <main className="flex-1 py-3 px-3 space-y-3" data-testid="deadline-day-page">
           {/* Countdown Box */}
           <div className={`border rounded-sm overflow-hidden ${isDeadlineDay ? 'border-red-500 bg-red-600' : 'border-gray-300 bg-[#1d4370]'}`}>
             <div className="p-4 text-center">
@@ -207,10 +207,9 @@ export default function DeadlineDayPage() {
               </div>
             </div>
           )}
-        </div>
-      </main>
+        </main>
       
-      <Footer />
-    </div>
+        <Footer />
+      </PageLayout>
   );
 }

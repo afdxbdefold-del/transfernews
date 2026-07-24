@@ -313,6 +313,165 @@ async def delete_player(player_id: str, current_user: dict = Depends(require_adm
     return {"message": "Spieler gelöscht"}
 
 
+@api_router.post("/players/enrich-images")
+async def enrich_player_images(
+    limit: int = Query(50, ge=1, le=200),
+    force: bool = Query(False, description="Auch bereits vorhandene Bilder aktualisieren")
+):
+    """
+    Batch-Anreicherung von Spielerbildern über Wikimedia Commons.
+    Sucht automatisch nach Portraits für Spieler ohne Bild.
+    """
+    from wikimedia_images import WikimediaSearcher
+    
+    # Finde Spieler ohne Bild (oder alle wenn force=True)
+    query = {} if force else {"$or": [{"image": None}, {"image": ""}, {"image": {"$exists": False}}]}
+    players = await db.players.find(query, {"_id": 0}).limit(limit).to_list(limit)
+    
+    if not players:
+        return {
+            "status": "success",
+            "message": "Keine Spieler zum Verarbeiten gefunden",
+            "processed": 0,
+            "updated": 0,
+            "failed": 0
+        }
+    
+    searcher = WikimediaSearcher()
+    results = {
+        "processed": 0,
+        "updated": 0,
+        "failed": 0,
+        "details": []
+    }
+    
+    for player in players:
+        player_name = player.get("name", "")
+        player_id = player.get("id", "")
+        
+        if not player_name:
+            continue
+        
+        results["processed"] += 1
+        
+        try:
+            # Suche Spieler-Portrait auf Wikimedia
+            images = await searcher.search_player_image(player_name)
+            
+            # Finde bestes valides Bild
+            best_image = None
+            for img in images:
+                if img.is_valid and img.quality_score >= 50:
+                    # Für Spieler-Portraits bevorzugen wir kleinere, portrait-artige Bilder
+                    best_image = img
+                    break
+            
+            if best_image:
+                # Update Spieler mit Bild
+                await db.players.update_one(
+                    {"id": player_id},
+                    {"$set": {
+                        "image": best_image.url,
+                        "image_source": "wikimedia",
+                        "image_license": best_image.license_name,
+                        "image_author": best_image.author,
+                        "image_source_url": best_image.source_url,
+                        "updated_at": datetime.now(timezone.utc)
+                    }}
+                )
+                results["updated"] += 1
+                results["details"].append({
+                    "player": player_name,
+                    "status": "success",
+                    "image_url": best_image.url,
+                    "quality_score": best_image.quality_score
+                })
+            else:
+                results["failed"] += 1
+                reason = images[0].rejection_reason if images else "Keine Treffer"
+                results["details"].append({
+                    "player": player_name,
+                    "status": "no_image",
+                    "reason": reason
+                })
+        
+        except Exception as e:
+            results["failed"] += 1
+            results["details"].append({
+                "player": player_name,
+                "status": "error",
+                "reason": str(e)
+            })
+        
+        # Rate limiting - kurze Pause zwischen Anfragen
+        await asyncio.sleep(0.5)
+    
+    return {
+        "status": "success",
+        "message": f"{results['updated']} von {results['processed']} Spielern mit Bildern aktualisiert",
+        **results
+    }
+
+
+@api_router.post("/players/{player_id}/update-image")
+async def update_single_player_image(player_id: str):
+    """
+    Aktualisiert das Bild eines einzelnen Spielers über Wikimedia Commons.
+    """
+    from wikimedia_images import WikimediaSearcher
+    
+    # Finde Spieler
+    player = await db.players.find_one({"id": player_id}, {"_id": 0})
+    if not player:
+        raise HTTPException(status_code=404, detail="Spieler nicht gefunden")
+    
+    player_name = player.get("name", "")
+    if not player_name:
+        raise HTTPException(status_code=400, detail="Spielername fehlt")
+    
+    searcher = WikimediaSearcher()
+    
+    try:
+        images = await searcher.search_player_image(player_name)
+        
+        best_image = None
+        for img in images:
+            if img.is_valid and img.quality_score >= 50:
+                best_image = img
+                break
+        
+        if best_image:
+            await db.players.update_one(
+                {"id": player_id},
+                {"$set": {
+                    "image": best_image.url,
+                    "image_source": "wikimedia",
+                    "image_license": best_image.license_name,
+                    "image_author": best_image.author,
+                    "image_source_url": best_image.source_url,
+                    "updated_at": datetime.now(timezone.utc)
+                }}
+            )
+            return {
+                "status": "success",
+                "player": player_name,
+                "image_url": best_image.url,
+                "quality_score": best_image.quality_score,
+                "license": best_image.license_name
+            }
+        else:
+            reason = images[0].rejection_reason if images else "Keine Treffer auf Wikimedia"
+            return {
+                "status": "no_image",
+                "player": player_name,
+                "reason": reason,
+                "searched_variants": len(images)
+            }
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Fehler bei der Bildsuche: {str(e)}")
+
+
 # =============================================================================
 # CLUB ROUTES
 # =============================================================================
