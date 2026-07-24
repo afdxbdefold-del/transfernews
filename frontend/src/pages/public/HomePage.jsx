@@ -10,14 +10,7 @@ import { CaretRight, TrendUp, Clock, Fire, Image } from "@phosphor-icons/react";
 // Optimize Wikimedia URLs to load smaller thumbnails
 function optimizeImageUrl(url, width = 500) {
   if (!url) return null;
-  // Wikimedia thumb URLs: replace width in path (min 500px for Wikimedia)
-  if (url.includes('upload.wikimedia.org') && url.includes('/thumb/')) {
-    return url.replace(/\/\d+px-/, `/${width}px-`);
-  }
-  // Unsplash: add width parameter
-  if (url.includes('unsplash.com')) {
-    return url.includes('?') ? `${url}&w=${width}` : `${url}?w=${width}`;
-  }
+  // Return original URL - Wikimedia URLs already include size
   return url;
 }
 
