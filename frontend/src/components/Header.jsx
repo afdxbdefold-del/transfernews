@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { MagnifyingGlass, List, X, CaretDown, Trophy, Moon, Sun, Lightning, Ranking, UserCircle } from "@phosphor-icons/react";
+import { MagnifyingGlass, List, X, CaretDown, Trophy, Moon, Sun, Lightning, Ranking, UserCircle, Clock } from "@phosphor-icons/react";
 import { useState, useEffect, useRef } from "react";
 import { autosuggest } from "@/api";
 
@@ -86,6 +86,7 @@ export default function Header() {
   const navItems = [
     { path: "/", label: "TRANSFERS" },
     { path: "/ticker", label: "TICKER", icon: Lightning },
+    { path: "/deadline-day", label: "DEADLINE", icon: Clock },
     { path: "/top-deals", label: "TOP-DEALS", icon: Ranking },
     { path: "/abloesefrei", label: "ABLÖSEFREI", icon: UserCircle },
     { path: "/geruechte", label: "GERÜCHTE" },

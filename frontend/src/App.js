@@ -34,6 +34,7 @@ import DatenschutzPage from "@/pages/public/DatenschutzPage";
 import TickerPage from "@/pages/public/TickerPage";
 import TopDealsPage from "@/pages/public/TopDealsPage";
 import FreeAgentsPage from "@/pages/public/FreeAgentsPage";
+import DeadlineDayPage from "@/pages/public/DeadlineDayPage";
 
 // Admin Pages
 import AdminLogin from "@/pages/admin/AdminLogin";
@@ -63,6 +64,7 @@ function App() {
             <Route path="/ticker" element={<TickerPage />} />
             <Route path="/top-deals" element={<TopDealsPage />} />
             <Route path="/abloesefrei" element={<FreeAgentsPage />} />
+            <Route path="/deadline-day" element={<DeadlineDayPage />} />
             <Route path="/spieler/:slug" element={<PlayerPage />} />
             <Route path="/verein/:slug" element={<ClubPage />} />
             <Route path="/wettbewerb/:slug" element={<CompetitionPage />} />
