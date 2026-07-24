@@ -94,13 +94,13 @@ export default function Header() {
       
       {/* Top Bar - White */}
       <div className="bg-white border-b border-gray-200">
-        <div className="flex items-center justify-between h-[44px] px-3">
+        <div className="flex items-center justify-between h-[80px] px-3">
           {/* Logo */}
           <Link to="/" className="flex items-center" data-testid="logo-link">
             <img 
               src="/logo.png" 
               alt="transfernews" 
-              className="h-[34px] w-auto"
+              className="h-[70px] w-auto"
             />
           </Link>
           
