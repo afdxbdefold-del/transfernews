@@ -95,6 +95,19 @@ export default function Header() {
 
   return (
     <header className="sticky top-0 z-50" data-testid="main-header">
+      {/* Top Banner Ad - über Header */}
+      <div className="bg-[#d9d9d9] py-2" data-testid="top-banner-container">
+        <div className="flex justify-center">
+          <div 
+            className="bg-gray-300 border border-gray-400 flex items-center justify-center"
+            style={{ width: '728px', height: '90px' }}
+            data-testid="top-banner-ad"
+          >
+            <span className="text-[11px] text-gray-500 uppercase tracking-wider">Anzeige</span>
+          </div>
+        </div>
+      </div>
+      
       {/* Top Bar - Dark Blue */}
       <div className="bg-[#1d4370]">
         <div className="flex items-center justify-between h-[44px] px-3">
