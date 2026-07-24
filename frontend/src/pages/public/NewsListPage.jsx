@@ -238,7 +238,6 @@ export default function NewsListPage() {
                   {[
                     { label: "Alle Transfers", path: "/", count: articles.length },
                     { label: "Gerüchte", path: "/geruechte", count: articles.filter(a => a.article_type === 'rumour').length },
-                    { label: "Redaktion", path: "/redaktion", count: 12 },
                   ].map((item) => (
                     <Link
                       key={item.path}

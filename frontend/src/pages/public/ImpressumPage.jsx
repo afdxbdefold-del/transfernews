@@ -102,8 +102,7 @@ export default function ImpressumPage() {
           <section className="mb-10">
             <h2 className="text-xl font-bold text-gray-900 mb-4">Redaktionelle Verantwortung</h2>
             <p className="text-gray-700 mb-4">
-              Die redaktionelle Verantwortung für die Inhalte auf TransferNews.de liegt bei unserer 
-              <Link to="/redaktion" className="text-[#79B92A] hover:underline mx-1">Redaktion</Link>
+              Die redaktionelle Verantwortung für die Inhalte auf TransferNews.de liegt bei unserem Team 
               bestehend aus 12 erfahrenen Sportjournalisten.
             </p>
             <div className="bg-green-50 border border-green-200 rounded-lg p-4">

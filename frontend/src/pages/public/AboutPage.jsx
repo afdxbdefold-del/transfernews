@@ -226,13 +226,6 @@ export default function AboutPage() {
           12 erfahrene Sportjournalisten aus 6 Ländern arbeiten täglich daran, 
           Ihnen die besten Transfer-News zu liefern.
         </p>
-        <Link 
-          to="/redaktion"
-          className="inline-flex items-center gap-2 bg-[#79B92A] hover:bg-[#6aa825] text-white font-bold px-8 py-4 rounded-lg transition-colors"
-        >
-          <Users size={20} weight="fill" />
-          Zur Redaktion
-        </Link>
       </section>
       
       {/* Trust Footer */}
@@ -249,7 +242,7 @@ export default function AboutPage() {
             </div>
             <div className="flex items-center gap-2">
               <Clock size={18} className="text-[#79B92A]" weight="fill" />
-              <span>24/7 Redaktion</span>
+              <span>24/7 Berichterstattung</span>
             </div>
             <div className="flex items-center gap-2">
               <Globe size={18} className="text-[#79B92A]" weight="fill" />

@@ -201,12 +201,6 @@ export default function Header() {
             )}
           </div>
           
-          <Link
-            to="/redaktion"
-            className="hidden flex-shrink-0 h-full flex items-center px-3 text-[11px] font-semibold text-white/90 border-b-2 border-transparent hover:bg-[#5a8a1f]/50"
-          >
-            Redaktion
-          </Link>
         </div>
       </nav>
 

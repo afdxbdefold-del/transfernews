@@ -73,7 +73,6 @@ function App() {
             <Route path="/transfers" element={<TransfersPage />} />
             <Route path="/suche" element={<SearchPage />} />
             <Route path="/autor/:slug" element={<AuthorPage />} />
-            <Route path="/redaktion" element={<AuthorsPage />} />
             <Route path="/impressum" element={<ImpressumPage />} />
             <Route path="/ueber-uns" element={<AboutPage />} />
             <Route path="/datenschutz" element={<DatenschutzPage />} />

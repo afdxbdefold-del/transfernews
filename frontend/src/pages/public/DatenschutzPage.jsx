@@ -264,8 +264,6 @@ export default function DatenschutzPage() {
           <Link to="/impressum" className="text-[#79B92A] hover:underline">Impressum</Link>
           <span className="text-gray-300">|</span>
           <Link to="/ueber-uns" className="text-[#79B92A] hover:underline">Über uns</Link>
-          <span className="text-gray-300">|</span>
-          <Link to="/redaktion" className="text-[#79B92A] hover:underline">Redaktion</Link>
         </div>
       </main>
       
