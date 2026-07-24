@@ -286,6 +286,11 @@ export default function HomePage() {
               </div>
             </div>
             
+            {/* Ad 300x250 unter Trending Spieler (nur Desktop) */}
+            <div className="hidden lg:flex bg-gray-200 border border-gray-300 rounded-sm items-center justify-center" style={{ width: '280px', height: '250px' }}>
+              <span className="text-[10px] text-gray-400 uppercase">Anzeige</span>
+            </div>
+            
             {/* Trending Clubs */}
             <div className="bg-white border border-gray-300 rounded-sm overflow-hidden">
               <BoxHeader title="Trending Vereine" />

@@ -1,5 +1,10 @@
 # TransferNews.de - Product Requirements Document
 
+## Letztes Update: 24. Juli 2026
+
+### Kürzlich abgeschlossen:
+- ✅ 300×250 Ad-Platzhalter unter "Trending Spieler" positioniert (24.07.2026)
+
 ## Latest Update: 24.07.2026
 
 ### Recent Changes
