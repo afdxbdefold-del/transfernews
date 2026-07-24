@@ -1,0 +1,17 @@
+# WICHTIG: Ersetze "transfernews.de" mit deiner Domain!
+transfernews.de, www.transfernews.de {
+    # API Requests zum Backend
+    handle /api/* {
+        reverse_proxy backend:8001
+    }
+    
+    # Alle anderen Requests zum Frontend
+    handle {
+        reverse_proxy frontend:80
+    }
+    
+    # Logging
+    log {
+        output file /var/log/caddy/access.log
+    }
+}
