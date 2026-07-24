@@ -2,111 +2,64 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { useEffect, useState } from "react";
 import { getTopTransfers } from "@/api";
-import { Trophy, TrendUp, CurrencyEur, ArrowRight } from "@phosphor-icons/react";
+import { CaretRight, TrendUp } from "@phosphor-icons/react";
 import { Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 
-function formatFee(amount) {
-  if (!amount) return "Unbekannt";
-  if (amount >= 1000000) {
-    return `${(amount / 1000000).toFixed(1)} Mio. €`;
-  }
-  return `${(amount / 1000).toFixed(0)} Tsd. €`;
-}
-
-function TopDealCard({ article, rank }) {
+function TopDealRow({ article, rank }) {
   const probability = article.transfer_probability || 0;
   
   return (
     <Link 
       to={`/news/${article.slug}`}
-      className="block bg-white dark:bg-gray-900 rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow group"
+      className="flex items-center gap-3 p-2 hover:bg-[#e8f4e8] border-b border-gray-200 last:border-0 group"
       data-testid={`top-deal-${rank}`}
     >
-      <div className="relative">
-        {/* Image */}
-        <div className="aspect-[16/9] bg-gray-200 dark:bg-gray-800 overflow-hidden">
-          {article.image_url ? (
-            <img 
-              src={article.image_url} 
-              alt={article.title} 
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              <Trophy size={48} className="text-gray-400" />
-            </div>
-          )}
-        </div>
-        
-        {/* Rank Badge */}
-        <div className={`absolute top-3 left-3 w-10 h-10 rounded-full flex items-center justify-center font-black text-lg ${
-          rank === 1 ? 'bg-yellow-400 text-yellow-900' :
-          rank === 2 ? 'bg-gray-300 text-gray-700' :
-          rank === 3 ? 'bg-amber-600 text-white' :
-          'bg-black/70 text-white'
-        }`} style={{ fontFamily: "'Oswald', sans-serif" }}>
-          {rank}
-        </div>
-        
-        {/* Probability Badge */}
-        {probability > 0 && (
-          <div className="absolute top-3 right-3 bg-[#79B92A] text-white px-3 py-1 rounded-full font-bold text-sm flex items-center gap-1">
-            <TrendUp size={14} weight="bold" />
-            {probability}%
-          </div>
+      {/* Rank */}
+      <div className={`w-7 h-7 flex-shrink-0 rounded flex items-center justify-center text-[12px] font-bold ${
+        rank === 1 ? 'bg-yellow-400 text-yellow-900' :
+        rank === 2 ? 'bg-gray-300 text-gray-700' :
+        rank === 3 ? 'bg-amber-600 text-white' :
+        'bg-gray-100 text-gray-600'
+      }`}>
+        {rank}
+      </div>
+      
+      {/* Image */}
+      <div className="w-[50px] h-[36px] flex-shrink-0 bg-gray-200 overflow-hidden rounded-sm">
+        {article.image_url && (
+          <img src={article.image_url} alt="" className="w-full h-full object-cover" />
         )}
       </div>
       
-      <div className="p-4">
-        {/* Type Badge */}
-        <div className="flex items-center gap-2 mb-2">
-          <span className={`text-[10px] font-bold text-white px-2 py-0.5 rounded ${
-            article.article_type === 'transfer' ? 'bg-emerald-500' :
-            article.article_type === 'rumour' ? 'bg-amber-500' : 'bg-blue-500'
-          }`}>
-            {article.article_type === 'transfer' ? 'BESTÄTIGT' :
-             article.article_type === 'rumour' ? 'GERÜCHT' : 'NEWS'}
-          </span>
-          {article.fee_amount && (
-            <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
-              <CurrencyEur size={12} />
-              {formatFee(article.fee_amount)}
-            </span>
-          )}
-        </div>
-        
-        {/* Title */}
-        <h3 
-          className="font-bold text-lg text-gray-900 dark:text-white group-hover:text-[#79B92A] transition-colors line-clamp-2"
-          style={{ fontFamily: "'Oswald', sans-serif" }}
-        >
+      {/* Content */}
+      <div className="flex-1 min-w-0">
+        <h3 className="text-[12px] font-semibold text-gray-900 group-hover:text-[#00a83f] line-clamp-1">
           {article.title}
         </h3>
-        
-        {/* Excerpt */}
-        {article.excerpt && (
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-2 line-clamp-2">
-            {article.excerpt}
-          </p>
-        )}
-        
-        {/* Probability Bar */}
-        {probability > 0 && (
-          <div className="mt-3">
-            <div className="flex items-center justify-between text-xs mb-1">
-              <span className="text-gray-500 dark:text-gray-400">Wahrscheinlichkeit</span>
-              <span className="font-bold text-[#79B92A]">{probability}%</span>
-            </div>
-            <div className="h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-gradient-to-r from-[#79B92A] to-[#9ED65A] rounded-full transition-all duration-500"
-                style={{ width: `${probability}%` }}
-              />
-            </div>
-          </div>
-        )}
+        <div className="flex items-center gap-2 mt-0.5">
+          <span className={`text-[9px] font-bold text-white px-1.5 py-0.5 rounded-sm ${
+            article.article_type === 'transfer' ? 'bg-[#00a83f]' : 'bg-amber-500'
+          }`}>
+            {article.article_type === 'transfer' ? 'Bestätigt' : 'Gerücht'}
+          </span>
+        </div>
       </div>
+      
+      {/* Probability */}
+      <div className="w-[80px] flex-shrink-0">
+        <div className="flex items-center gap-1">
+          <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+            <div 
+              className={`h-full rounded-full ${probability >= 70 ? 'bg-[#00a83f]' : probability >= 40 ? 'bg-amber-500' : 'bg-red-500'}`}
+              style={{ width: `${probability}%` }}
+            />
+          </div>
+          <span className="text-[11px] font-bold text-gray-700 w-8 text-right">{probability}%</span>
+        </div>
+      </div>
+      
+      <CaretRight size={14} className="text-gray-400 flex-shrink-0" />
     </Link>
   );
 }
@@ -116,85 +69,74 @@ export default function TopDealsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchTopDeals = async () => {
+    const fetch = async () => {
       try {
         const res = await getTopTransfers(30);
         setArticles(res.data?.articles || []);
       } catch (e) {
-        console.error("Top deals fetch error:", e);
+        console.error("Error:", e);
       } finally {
         setLoading(false);
       }
     };
-    
-    fetchTopDeals();
+    fetch();
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-100 dark:bg-gray-950" data-testid="top-deals-page">
+    <div className="min-h-screen flex flex-col bg-[#e8e8e8]" data-testid="top-deals-page">
       <Helmet>
-        <title>Top-Deals - Die heißesten Transfers | TransferNews.de</title>
-        <meta name="description" content="Die Top-Transfers der Saison mit den höchsten Wahrscheinlichkeiten. Aktuelle Transfer-Gerüchte und bestätigte Mega-Deals." />
-        <meta name="robots" content="index, follow" />
+        <title>Top-Transfers | TransferNews.de</title>
+        <meta name="description" content="Die Transfer-Gerüchte mit der höchsten Wahrscheinlichkeit." />
         <link rel="canonical" href="https://transfernews.de/top-deals" />
       </Helmet>
       
       <Header />
       
-      <main className="flex-1">
-        <div className="max-w-[1000px] mx-auto px-3 py-4">
-          {/* Header */}
-          <div className="bg-gradient-to-r from-[#79B92A] to-[#5a8a1f] text-white rounded-lg p-6 mb-6">
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 bg-white/20 rounded-full flex items-center justify-center">
-                <Trophy size={32} weight="fill" />
-              </div>
-              <div>
-                <h1 
-                  className="text-3xl md:text-4xl font-black uppercase"
-                  style={{ fontFamily: "'Oswald', sans-serif" }}
-                  data-testid="page-title"
-                >
-                  Top-Deals
-                </h1>
-                <p className="text-white/80 mt-1">Die heißesten Transfers mit höchster Wahrscheinlichkeit</p>
-              </div>
+      <main className="flex-1 py-3">
+        <div className="max-w-[1000px] mx-auto px-3">
+          <div className="bg-white border border-gray-300 rounded-sm overflow-hidden">
+            <div className="bg-[#1d4370] px-3 py-2 flex items-center gap-2">
+              <TrendUp size={16} className="text-white" />
+              <h1 className="text-white text-[12px] font-bold uppercase">Top-Transfers nach Wahrscheinlichkeit</h1>
             </div>
-          </div>
-          
-          {/* Content Grid */}
-          {loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {[...Array(9)].map((_, i) => (
-                <div key={i} className="bg-white dark:bg-gray-900 rounded-lg overflow-hidden animate-pulse">
-                  <div className="aspect-[16/9] bg-gray-200 dark:bg-gray-800" />
-                  <div className="p-4">
-                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-20 mb-3" />
-                    <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-full mb-2" />
-                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4" />
+            
+            {/* Legend */}
+            <div className="bg-gray-50 px-3 py-2 border-b border-gray-200 flex items-center gap-4 text-[10px]">
+              <span className="text-gray-500">Legende:</span>
+              <span className="flex items-center gap-1"><span className="w-3 h-2 bg-[#00a83f] rounded-sm"></span> Hoch (&gt;70%)</span>
+              <span className="flex items-center gap-1"><span className="w-3 h-2 bg-amber-500 rounded-sm"></span> Mittel (40-70%)</span>
+              <span className="flex items-center gap-1"><span className="w-3 h-2 bg-red-500 rounded-sm"></span> Niedrig (&lt;40%)</span>
+            </div>
+            
+            {loading ? (
+              <div className="divide-y divide-gray-200">
+                {[...Array(10)].map((_, i) => (
+                  <div key={i} className="flex items-center gap-3 p-2 animate-pulse">
+                    <div className="w-7 h-7 bg-gray-200 rounded" />
+                    <div className="w-[50px] h-[36px] bg-gray-200 rounded-sm" />
+                    <div className="flex-1">
+                      <div className="h-4 bg-gray-200 rounded w-3/4 mb-1" />
+                      <div className="h-3 bg-gray-200 rounded w-16" />
+                    </div>
+                    <div className="w-[80px] h-2 bg-gray-200 rounded-full" />
                   </div>
-                </div>
-              ))}
-            </div>
-          ) : articles.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {articles.map((article, index) => (
-                <TopDealCard key={article.id} article={article} rank={index + 1} />
-              ))}
-            </div>
-          ) : (
-            <div className="bg-white dark:bg-gray-900 rounded-lg p-12 text-center">
-              <Trophy size={64} className="mx-auto text-gray-300 dark:text-gray-600 mb-4" />
-              <h2 className="text-xl font-bold text-gray-700 dark:text-gray-300 mb-2">Keine Top-Deals vorhanden</h2>
-              <p className="text-gray-500 dark:text-gray-400 mb-4">Aktuell sind keine Transfers mit hoher Wahrscheinlichkeit verfügbar.</p>
-              <Link 
-                to="/"
-                className="inline-flex items-center gap-2 text-[#79B92A] font-bold hover:underline"
-              >
-                Alle News ansehen <ArrowRight size={16} />
-              </Link>
-            </div>
-          )}
+                ))}
+              </div>
+            ) : articles.length > 0 ? (
+              <div>
+                {articles.map((article, idx) => (
+                  <TopDealRow key={article.id} article={article} rank={idx + 1} />
+                ))}
+              </div>
+            ) : (
+              <div className="p-8 text-center text-gray-500 text-[13px]">
+                Keine Top-Transfers mit Wahrscheinlichkeitsangabe vorhanden.
+                <Link to="/" className="block mt-2 text-[#00a83f] hover:underline">
+                  Alle News ansehen
+                </Link>
+              </div>
+            )}
+          </div>
         </div>
       </main>
       

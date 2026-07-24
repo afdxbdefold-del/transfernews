@@ -1,15 +1,15 @@
 import { Link, useLocation } from "react-router-dom";
-import { MagnifyingGlass, List, X, CaretDown, Trophy, Moon, Sun, Lightning, Ranking, UserCircle, Clock } from "@phosphor-icons/react";
+import { MagnifyingGlass, List, X, CaretDown, Moon, Sun } from "@phosphor-icons/react";
 import { useState, useEffect, useRef } from "react";
 import { autosuggest } from "@/api";
 
-// Liga-Konfiguration mit Logos
+// Liga-Konfiguration
 const LEAGUES = [
-  { slug: 'bundesliga', name: 'Bundesliga', country: '🇩🇪', color: 'bg-red-600' },
-  { slug: 'premier-league', name: 'Premier League', country: '🏴󠁧󠁢󠁥󠁮󠁧󠁿', color: 'bg-purple-700' },
-  { slug: 'la-liga', name: 'La Liga', country: '🇪🇸', color: 'bg-orange-500' },
-  { slug: 'serie-a', name: 'Serie A', country: '🇮🇹', color: 'bg-blue-600' },
-  { slug: 'ligue-1', name: 'Ligue 1', country: '🇫🇷', color: 'bg-blue-800' },
+  { slug: 'bundesliga', name: 'Bundesliga', country: '🇩🇪' },
+  { slug: 'premier-league', name: 'Premier League', country: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
+  { slug: 'la-liga', name: 'La Liga', country: '🇪🇸' },
+  { slug: 'serie-a', name: 'Serie A', country: '🇮🇹' },
+  { slug: 'ligue-1', name: 'Ligue 1', country: '🇫🇷' },
 ];
 
 export default function Header() {
@@ -18,7 +18,6 @@ export default function Header() {
   const [searchQuery, setSearchQuery] = useState("");
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('darkMode') === 'true';
@@ -29,7 +28,6 @@ export default function Header() {
   const leagueRef = useRef(null);
   const location = useLocation();
 
-  // Dark Mode Effect
   useEffect(() => {
     if (darkMode) {
       document.documentElement.classList.add('dark');
@@ -49,7 +47,6 @@ export default function Header() {
     const handleClickOutside = (e) => {
       if (searchRef.current && !searchRef.current.contains(e.target)) {
         setShowSuggestions(false);
-        setSearchOpen(false);
       }
       if (leagueRef.current && !leagueRef.current.contains(e.target)) {
         setLeagueDropdownOpen(false);
@@ -84,198 +81,211 @@ export default function Header() {
   };
 
   const navItems = [
-    { path: "/", label: "TRANSFERS" },
-    { path: "/ticker", label: "TICKER", icon: Lightning },
-    { path: "/deadline-day", label: "DEADLINE", icon: Clock },
-    { path: "/top-deals", label: "TOP-DEALS", icon: Ranking },
-    { path: "/abloesefrei", label: "ABLÖSEFREI", icon: UserCircle },
-    { path: "/geruechte", label: "GERÜCHTE" },
+    { path: "/", label: "Startseite" },
+    { path: "/ticker", label: "News-Ticker" },
+    { path: "/geruechte", label: "Gerüchte" },
+    { path: "/top-deals", label: "Top-Transfers" },
+    { path: "/abloesefrei", label: "Ablösefrei" },
+    { path: "/deadline-day", label: "Deadline Day" },
   ];
   
   const isActive = (path) => {
     if (path === "/") return location.pathname === "/";
     return location.pathname.startsWith(path);
   };
-  
-  const isLeagueActive = () => {
-    return location.pathname.includes('/wettbewerb/') || location.pathname.includes('/liga/');
-  };
 
   return (
     <header className="sticky top-0 z-50" data-testid="main-header">
-      {/* Top Bar - White with Logo */}
-      <div className="bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800">
-        <div className="max-w-[1000px] mx-auto px-4">
-          <div className="flex items-center justify-between h-[50px]">
-            {/* Logo Left */}
-            <Link to="/" className="flex items-center" data-testid="logo-link">
-              <img src="/logo.svg" alt="TransferNews" className="h-5 dark:invert" />
+      {/* Top Bar - Dark Blue */}
+      <div className="bg-[#1d4370]">
+        <div className="max-w-[1000px] mx-auto px-3">
+          <div className="flex items-center justify-between h-[44px]">
+            {/* Logo */}
+            <Link to="/" className="flex items-center gap-2" data-testid="logo-link">
+              <div className="bg-white rounded px-2 py-1">
+                <span className="text-[#1d4370] font-bold text-sm">transfer</span>
+                <span className="text-[#00a83f] font-bold text-sm">news</span>
+              </div>
             </Link>
             
-            {/* Right Icons */}
-            <div className="flex items-center gap-1">
-              {/* Dark Mode Toggle */}
-              <button
-                onClick={() => setDarkMode(!darkMode)}
-                className="w-10 h-10 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
-                data-testid="dark-mode-toggle"
-                title={darkMode ? "Light Mode" : "Dark Mode"}
-              >
-                {darkMode ? <Sun size={22} weight="fill" className="text-yellow-400" /> : <Moon size={22} />}
-              </button>
-              <button
-                onClick={() => setSearchOpen(!searchOpen)}
-                className="w-10 h-10 flex items-center justify-center text-gray-600 dark:text-gray-300"
-                data-testid="search-button"
-              >
-                <MagnifyingGlass size={22} />
-              </button>
-              <button
-                onClick={() => setMenuOpen(!menuOpen)}
-                className="w-10 h-10 flex items-center justify-center text-gray-600 dark:text-gray-300"
-                data-testid="burger-menu-button"
-              >
-                <List size={24} />
-              </button>
-            </div>
-          </div>
-        </div>
-        
-        {/* Search Dropdown */}
-        {searchOpen && (
-          <div className="border-t border-gray-100 px-4 py-3" ref={searchRef}>
-            <form onSubmit={handleSearch}>
-              <input
-                type="text"
-                placeholder="Spieler, Verein suchen..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full border border-gray-300 px-4 py-2 text-sm focus:outline-none focus:border-[#79B92A]"
-                autoFocus
-                data-testid="search-input"
-              />
-            </form>
-            {showSuggestions && suggestions.length > 0 && (
-              <div className="mt-2 bg-white border border-gray-200">
-                {suggestions.map((item, idx) => (
-                  <Link
-                    key={idx}
-                    to={item.type === "player" ? "/spieler/" + item.slug : "/verein/" + item.slug}
-                    className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-0"
-                    onClick={() => { setShowSuggestions(false); setSearchOpen(false); }}
-                  >
-                    <span className="text-sm font-medium">{item.name}</span>
-                    <span className="text-xs text-gray-400">{item.type === "player" ? "Spieler" : "Verein"}</span>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Navigation Bar - BLACK */}
-      <nav className="bg-black" data-testid="sports-nav">
-        <div className="max-w-[1000px] mx-auto px-4">
-          <div className="flex items-center justify-between h-[40px]">
-            <div className="flex items-center h-full overflow-x-auto hide-scrollbar">
-              {navItems.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <Link
-                    key={item.path}
-                    to={item.path}
-                    className={"flex-shrink-0 h-full flex items-center gap-1 px-3 text-[12px] font-bold uppercase tracking-wide transition-colors " + (isActive(item.path) ? "text-[#79B92A]" : "text-white")}
-                    style={{ fontFamily: "'Oswald', sans-serif" }}
-                  >
-                    {Icon && <Icon size={14} weight="fill" />}
-                    {item.label}
-                  </Link>
-                );
-              })}
-              
-              {/* Liga-Dropdown */}
-              <div className="relative h-full" ref={leagueRef}>
-                <button 
-                  onClick={() => setLeagueDropdownOpen(!leagueDropdownOpen)}
-                  className={"flex-shrink-0 h-full flex items-center gap-1 px-3 text-[12px] font-bold uppercase tracking-wide transition-colors " + (isLeagueActive() ? "text-[#79B92A]" : "text-white")}
-                  style={{ fontFamily: "'Oswald', sans-serif" }}
-                  data-testid="league-dropdown-btn"
-                >
-                  <Trophy size={14} weight="fill" />
-                  LIGEN
-                  <CaretDown size={12} className={`transition-transform ${leagueDropdownOpen ? 'rotate-180' : ''}`} />
+            {/* Search Bar - Desktop */}
+            <div className="hidden md:flex flex-1 max-w-[400px] mx-4" ref={searchRef}>
+              <form onSubmit={handleSearch} className="w-full relative">
+                <input
+                  type="text"
+                  placeholder="Spieler, Verein, Wettbewerb..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full h-[30px] px-3 pr-8 text-[12px] border-0 rounded-sm focus:outline-none focus:ring-2 focus:ring-[#00a83f]"
+                  data-testid="search-input"
+                />
+                <button type="submit" className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#1d4370]">
+                  <MagnifyingGlass size={16} />
                 </button>
                 
-                {/* Dropdown Menu - Rendered outside the nav flow */}
-                {leagueDropdownOpen && (
-                  <div 
-                    className="fixed w-56 bg-white shadow-xl rounded-lg overflow-hidden border border-gray-100"
-                    style={{ 
-                      top: '90px',
-                      left: leagueRef.current?.getBoundingClientRect().left + 'px',
-                      zIndex: 9999
-                    }}
-                    data-testid="league-dropdown"
-                  >
-                    <div className="p-2">
-                      <span className="text-[10px] text-gray-400 uppercase font-bold px-2">Wettbewerbe</span>
-                    </div>
-                    {LEAGUES.map((league) => (
+                {/* Search Suggestions */}
+                {showSuggestions && suggestions.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 shadow-lg mt-1 z-50">
+                    {suggestions.map((item, idx) => (
                       <Link
-                        key={league.slug}
-                        to={`/wettbewerb/${league.slug}`}
-                        onClick={() => setLeagueDropdownOpen(false)}
-                        className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors"
-                        data-testid={`league-${league.slug}`}
+                        key={idx}
+                        to={item.type === "player" ? "/spieler/" + item.slug : "/verein/" + item.slug}
+                        className="flex items-center gap-2 px-3 py-2 hover:bg-[#e8f4e8] text-[12px] border-b border-gray-100 last:border-0"
+                        onClick={() => setShowSuggestions(false)}
                       >
-                        <span className="text-lg">{league.country}</span>
-                        <div className="flex-1">
-                          <span className="text-sm font-bold text-gray-900">{league.name}</span>
-                        </div>
-                        <div className={`w-2 h-2 rounded-full ${league.color}`}></div>
+                        <span className="font-medium text-gray-900">{item.name}</span>
+                        <span className="text-[10px] text-gray-500 bg-gray-100 px-1 rounded">
+                          {item.type === "player" ? "Spieler" : "Verein"}
+                        </span>
                       </Link>
                     ))}
                   </div>
                 )}
-              </div>
+              </form>
             </div>
-            <button className="text-white hidden">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
+            
+            {/* Right Actions */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setDarkMode(!darkMode)}
+                className="w-8 h-8 flex items-center justify-center text-white/80 hover:text-white transition-colors"
+                data-testid="dark-mode-toggle"
+                title={darkMode ? "Light Mode" : "Dark Mode"}
+              >
+                {darkMode ? <Sun size={18} weight="fill" className="text-yellow-300" /> : <Moon size={18} />}
+              </button>
+              <button
+                onClick={() => setMenuOpen(!menuOpen)}
+                className="md:hidden w-8 h-8 flex items-center justify-center text-white"
+                data-testid="burger-menu-button"
+              >
+                <List size={22} />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Navigation Bar - Lighter Blue */}
+      <nav className="bg-[#2a5a8f] border-b border-[#1d4370]" data-testid="sports-nav">
+        <div className="max-w-[1000px] mx-auto px-3">
+          <div className="flex items-center h-[32px] overflow-x-auto hide-scrollbar">
+            {navItems.map((item) => (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={`flex-shrink-0 h-full flex items-center px-3 text-[11px] font-semibold transition-colors border-b-2 ${
+                  isActive(item.path) 
+                    ? "text-white border-[#00a83f] bg-[#1d4370]" 
+                    : "text-white/90 border-transparent hover:bg-[#1d4370]/50"
+                }`}
+              >
+                {item.label}
+              </Link>
+            ))}
+            
+            {/* Liga-Dropdown */}
+            <div className="relative h-full" ref={leagueRef}>
+              <button 
+                onClick={() => setLeagueDropdownOpen(!leagueDropdownOpen)}
+                className={`flex-shrink-0 h-full flex items-center gap-1 px-3 text-[11px] font-semibold transition-colors border-b-2 ${
+                  location.pathname.includes('/wettbewerb/') 
+                    ? "text-white border-[#00a83f] bg-[#1d4370]" 
+                    : "text-white/90 border-transparent hover:bg-[#1d4370]/50"
+                }`}
+                data-testid="league-dropdown-btn"
+              >
+                Wettbewerbe
+                <CaretDown size={10} className={`transition-transform ${leagueDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {leagueDropdownOpen && (
+                <div 
+                  className="absolute top-full left-0 w-48 bg-white shadow-lg border border-gray-200 z-50"
+                  data-testid="league-dropdown"
+                >
+                  {LEAGUES.map((league) => (
+                    <Link
+                      key={league.slug}
+                      to={`/wettbewerb/${league.slug}`}
+                      onClick={() => setLeagueDropdownOpen(false)}
+                      className="flex items-center gap-2 px-3 py-2 hover:bg-[#e8f4e8] text-[12px] border-b border-gray-100 last:border-0"
+                      data-testid={`league-${league.slug}`}
+                    >
+                      <span>{league.country}</span>
+                      <span className="font-medium text-gray-900">{league.name}</span>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+            
+            <Link
+              to="/redaktion"
+              className="flex-shrink-0 h-full flex items-center px-3 text-[11px] font-semibold text-white/90 border-b-2 border-transparent hover:bg-[#1d4370]/50"
+            >
+              Redaktion
+            </Link>
           </div>
         </div>
       </nav>
 
-      {/* Mobile Burger Menu */}
+      {/* Mobile Menu */}
       {menuOpen && (
         <>
           <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setMenuOpen(false)} />
           <div className="fixed top-0 right-0 w-[280px] h-full bg-white z-50 shadow-2xl overflow-y-auto" data-testid="burger-menu">
-            <div className="flex items-center justify-between h-[50px] px-4 border-b border-gray-100">
-              <span className="font-bold">Menu</span>
-              <button onClick={() => setMenuOpen(false)} className="w-10 h-10 flex items-center justify-center">
-                <X size={24} />
+            <div className="flex items-center justify-between h-[44px] px-3 bg-[#1d4370]">
+              <span className="font-bold text-white text-sm">Menü</span>
+              <button onClick={() => setMenuOpen(false)} className="w-8 h-8 flex items-center justify-center text-white">
+                <X size={20} />
               </button>
             </div>
-            <nav className="py-2">
-              {navItems.map((item) => {
-                const Icon = item.icon;
-                return (
+            
+            {/* Mobile Search */}
+            <div className="p-3 bg-gray-50 border-b">
+              <form onSubmit={handleSearch}>
+                <input
+                  type="text"
+                  placeholder="Suchen..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full h-[36px] px-3 text-[13px] border border-gray-300 rounded focus:outline-none focus:border-[#00a83f]"
+                />
+              </form>
+            </div>
+            
+            <nav className="py-1">
+              {navItems.map((item) => (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  onClick={() => setMenuOpen(false)}
+                  className={`flex items-center h-10 px-4 text-[13px] font-medium border-l-3 ${
+                    isActive(item.path) 
+                      ? "text-[#00a83f] bg-[#e8f4e8] border-l-[#00a83f]" 
+                      : "text-gray-700 border-l-transparent hover:bg-gray-50"
+                  }`}
+                  style={{ borderLeftWidth: '3px' }}
+                >
+                  {item.label}
+                </Link>
+              ))}
+              
+              <div className="border-t border-gray-200 mt-2 pt-2">
+                <div className="px-4 py-2 text-[10px] text-gray-500 uppercase font-bold">Wettbewerbe</div>
+                {LEAGUES.map((league) => (
                   <Link
-                    key={item.path}
-                    to={item.path}
+                    key={league.slug}
+                    to={`/wettbewerb/${league.slug}`}
                     onClick={() => setMenuOpen(false)}
-                    className={"flex items-center gap-2 h-12 px-4 text-[14px] font-bold uppercase " + (isActive(item.path) ? "text-[#79B92A]" : "text-gray-900")}
-                    style={{ fontFamily: "'Oswald', sans-serif" }}
+                    className="flex items-center gap-2 h-10 px-4 text-[13px] text-gray-700 hover:bg-gray-50"
                   >
-                    {Icon && <Icon size={18} weight="fill" />}
-                    {item.label}
+                    <span>{league.country}</span>
+                    <span>{league.name}</span>
                   </Link>
-                );
-              })}
+                ))}
+              </div>
             </nav>
           </div>
         </>

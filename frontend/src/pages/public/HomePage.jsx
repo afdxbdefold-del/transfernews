@@ -1,22 +1,16 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import { NewsCardHorizontal } from "@/components/NewsCard";
-import { TrendingWidget } from "@/components/TrendingWidget";
 import { useEffect, useState } from "react";
-import { getPublishedArticles } from "@/api";
-import { CaretRight, Newspaper, Fire, Trophy, Funnel } from "@phosphor-icons/react";
-import { NewsCardSkeleton } from "@/components/EnhancedSkeleton";
+import { getPublishedArticles, getAllTrending } from "@/api";
 import { Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
-
-import { HotTransfers } from "@/components/HotTransfers";
-import { WebsiteSchema } from "@/components/SchemaMarkup";
+import { CaretRight, TrendUp, Clock, Fire } from "@phosphor-icons/react";
 
 const FILTERS = [
-  { id: 'all', label: 'Alle', icon: Newspaper },
-  { id: 'rumour', label: 'Gerüchte', icon: Fire },
-  { id: 'transfer', label: 'Transfers', icon: Trophy },
-  { id: 'news', label: 'News', icon: Newspaper },
+  { id: 'all', label: 'Alle News' },
+  { id: 'rumour', label: 'Gerüchte' },
+  { id: 'transfer', label: 'Transfers' },
+  { id: 'news', label: 'News' },
 ];
 
 const LEAGUES = [
@@ -27,16 +21,133 @@ const LEAGUES = [
   { slug: 'ligue-1', name: 'Ligue 1', flag: '🇫🇷' },
 ];
 
+function formatDate(dateString) {
+  if (!dateString) return "";
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now - date;
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  
+  if (diffMins < 60) return `${diffMins} Min.`;
+  if (diffHours < 24) return `${diffHours} Std.`;
+  return date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+}
+
+function NewsRow({ article, showImage = true }) {
+  const isNew = () => {
+    if (!article.published_at) return false;
+    const diffHours = (new Date() - new Date(article.published_at)) / 3600000;
+    return diffHours < 2;
+  };
+  
+  const typeLabel = {
+    rumour: { text: 'Gerücht', color: 'bg-amber-500' },
+    transfer: { text: 'Transfer', color: 'bg-[#00a83f]' },
+    news: { text: 'News', color: 'bg-[#1d4370]' },
+  };
+  const type = typeLabel[article.article_type] || typeLabel.news;
+  
+  return (
+    <Link 
+      to={`/news/${article.slug}`}
+      className="flex items-start gap-3 p-2 hover:bg-[#e8f4e8] border-b border-gray-200 last:border-0 group"
+      data-testid={`news-row-${article.id}`}
+    >
+      {/* Thumbnail */}
+      {showImage && (
+        <div className="w-[70px] h-[50px] flex-shrink-0 bg-gray-200 overflow-hidden rounded-sm">
+          {article.image_url ? (
+            <img src={article.image_url} alt="" className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full bg-gray-300" />
+          )}
+        </div>
+      )}
+      
+      <div className="flex-1 min-w-0">
+        {/* Meta Row */}
+        <div className="flex items-center gap-2 mb-0.5">
+          <span className={`text-[9px] font-bold text-white px-1.5 py-0.5 rounded-sm ${type.color}`}>
+            {type.text}
+          </span>
+          {article.is_breaking && (
+            <span className="text-[9px] font-bold text-white px-1.5 py-0.5 rounded-sm bg-red-600">
+              BREAKING
+            </span>
+          )}
+          {isNew() && (
+            <span className="text-[9px] font-bold text-red-600">NEU</span>
+          )}
+          <span className="text-[10px] text-gray-500 flex items-center gap-0.5">
+            <Clock size={10} />
+            {formatDate(article.published_at)}
+          </span>
+        </div>
+        
+        {/* Title */}
+        <h3 className="text-[13px] font-semibold text-gray-900 group-hover:text-[#00a83f] line-clamp-2 leading-tight">
+          {article.title}
+        </h3>
+        
+        {/* Probability */}
+        {article.transfer_probability > 0 && (
+          <div className="flex items-center gap-1 mt-1">
+            <div className="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-[#00a83f] rounded-full"
+                style={{ width: `${article.transfer_probability}%` }}
+              />
+            </div>
+            <span className="text-[10px] font-bold text-[#00a83f]">{article.transfer_probability}%</span>
+          </div>
+        )}
+      </div>
+      
+      <CaretRight size={14} className="text-gray-400 flex-shrink-0 mt-2" />
+    </Link>
+  );
+}
+
+function BoxHeader({ title, link, linkText = "mehr" }) {
+  return (
+    <div className="bg-[#1d4370] px-3 py-2 flex items-center justify-between">
+      <h2 className="text-white text-[12px] font-bold uppercase">{title}</h2>
+      {link && (
+        <Link to={link} className="text-white/70 hover:text-white text-[10px] flex items-center gap-1">
+          {linkText} <CaretRight size={10} />
+        </Link>
+      )}
+    </div>
+  );
+}
+
+function TrendingItem({ item, rank }) {
+  return (
+    <Link 
+      to={item.slug ? `/spieler/${item.slug}` : '#'}
+      className="flex items-center gap-2 px-3 py-1.5 hover:bg-[#e8f4e8] border-b border-gray-100 last:border-0"
+    >
+      <span className="w-5 h-5 bg-gray-200 rounded-full flex items-center justify-center text-[10px] font-bold text-gray-600">
+        {rank}
+      </span>
+      <span className="flex-1 text-[12px] text-gray-900 truncate">{item.name}</span>
+      <span className="text-[10px] text-gray-500">{item.score || item.count}</span>
+    </Link>
+  );
+}
+
 export default function HomePage() {
   const [articles, setArticles] = useState([]);
   const [filteredArticles, setFilteredArticles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState('all');
+  const [trending, setTrending] = useState({ players: [], clubs: [] });
   const [hasMore, setHasMore] = useState(true);
   const limit = 30;
 
   useEffect(() => {
-    fetchArticles();
+    fetchData();
   }, []);
 
   useEffect(() => {
@@ -47,200 +158,194 @@ export default function HomePage() {
     }
   }, [activeFilter, articles]);
 
-  const fetchArticles = async (loadMore = false) => {
+  const fetchData = async () => {
     try {
       setLoading(true);
-      const skip = loadMore ? articles.length : 0;
-      const res = await getPublishedArticles({ skip, limit });
-      const data = Array.isArray(res.data) ? res.data : [];
+      const [articlesRes, trendingRes] = await Promise.all([
+        getPublishedArticles({ limit }),
+        getAllTrending(24)
+      ]);
       
-      if (loadMore) {
-        setArticles([...articles, ...data]);
-      } else {
-        setArticles(data);
-      }
+      const data = Array.isArray(articlesRes.data) ? articlesRes.data : [];
+      setArticles(data);
       setHasMore(data.length === limit);
+      
+      if (trendingRes.data) {
+        setTrending({
+          players: trendingRes.data.trending_players || [],
+          clubs: trendingRes.data.trending_clubs || []
+        });
+      }
     } catch (e) {
-      console.error("News list error:", e);
+      console.error("Fetch error:", e);
     } finally {
       setLoading(false);
     }
   };
 
-  const loadMore = () => {
-    fetchArticles(true);
+  const loadMore = async () => {
+    try {
+      const res = await getPublishedArticles({ skip: articles.length, limit });
+      const data = Array.isArray(res.data) ? res.data : [];
+      setArticles([...articles, ...data]);
+      setHasMore(data.length === limit);
+    } catch (e) {
+      console.error("Load more error:", e);
+    }
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-950" data-testid="homepage">
+    <div className="min-h-screen flex flex-col bg-[#e8e8e8]" data-testid="homepage">
       <Helmet>
-        <title>TransferNews.de - Alle Fußball-Transfers & Gerüchte</title>
+        <title>TransferNews.de - Fußball-Transfers & Gerüchte</title>
         <meta name="description" content="Die neuesten Fußball-Transfer-News, Gerüchte und offizielle Wechsel. Bundesliga, Premier League, La Liga und mehr." />
-        <meta name="robots" content="index, follow, max-image-preview:large" />
         <link rel="canonical" href="https://transfernews.de" />
       </Helmet>
       
-      <WebsiteSchema />
-      
       <Header />
       
-      {/* Hot Transfers Section */}
-      <HotTransfers />
-
-      <main className="flex-1">
-        <div className="max-w-[1000px] mx-auto px-3 py-4">
-          {/* Page Header with Filter Tabs */}
-          <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm mb-4">
-            <div className="p-4 border-b border-gray-100 dark:border-gray-800">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Newspaper size={28} weight="fill" className="text-[#79B92A]" />
-                  <h1 
-                    className="text-2xl md:text-3xl font-black uppercase text-gray-900 dark:text-white"
-                    style={{ fontFamily: "'Oswald', sans-serif" }}
-                    data-testid="page-title"
-                  >
-                    Transfer-News
-                  </h1>
-                </div>
-              </div>
-            </div>
-            
-            {/* Filter Tabs */}
-            <div className="flex items-center gap-1 p-2 overflow-x-auto hide-scrollbar">
-              {FILTERS.map((filter) => {
-                const Icon = filter.icon;
-                const isActive = activeFilter === filter.id;
-                
-                return (
-                  <button
-                    key={filter.id}
-                    onClick={() => setActiveFilter(filter.id)}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-all whitespace-nowrap ${
-                      isActive 
-                        ? 'bg-[#79B92A] text-white' 
-                        : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-                    }`}
-                    data-testid={`filter-${filter.id}`}
-                  >
-                    <Icon size={16} weight={isActive ? "fill" : "regular"} />
-                    {filter.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-4">
+      <main className="flex-1 py-3">
+        <div className="max-w-[1000px] mx-auto px-3">
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-3">
             {/* Main Content */}
-            <div>
-              <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm overflow-hidden">
-                {loading && articles.length === 0 ? (
-                  <div>
-                    {[...Array(8)].map((_, i) => (
-                      <NewsCardSkeleton key={i} />
-                    ))}
-                  </div>
-                ) : (
-                  <>
-                    {/* News Cards with Images */}
-                    <div>
-                      {filteredArticles.map((article) => (
-                        <NewsCardHorizontal key={article.id} article={article} />
-                      ))}
+            <div className="space-y-3">
+              {/* News Box */}
+              <div className="bg-white border border-gray-300 rounded-sm overflow-hidden">
+                <BoxHeader title="Transfer-News" link="/ticker" linkText="alle News" />
+                
+                {/* Filter Tabs */}
+                <div className="flex border-b border-gray-200 bg-gray-50">
+                  {FILTERS.map((filter) => (
+                    <button
+                      key={filter.id}
+                      onClick={() => setActiveFilter(filter.id)}
+                      className={`px-3 py-2 text-[11px] font-semibold transition-colors ${
+                        activeFilter === filter.id 
+                          ? 'text-[#00a83f] border-b-2 border-[#00a83f] bg-white -mb-[1px]' 
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                      data-testid={`filter-${filter.id}`}
+                    >
+                      {filter.label}
+                    </button>
+                  ))}
+                </div>
+                
+                {/* News List */}
+                <div>
+                  {loading ? (
+                    [...Array(10)].map((_, i) => (
+                      <div key={i} className="flex items-start gap-3 p-2 border-b border-gray-200 animate-pulse">
+                        <div className="w-[70px] h-[50px] bg-gray-200 rounded-sm" />
+                        <div className="flex-1">
+                          <div className="h-3 bg-gray-200 rounded w-20 mb-2" />
+                          <div className="h-4 bg-gray-200 rounded w-full mb-1" />
+                          <div className="h-4 bg-gray-200 rounded w-2/3" />
+                        </div>
+                      </div>
+                    ))
+                  ) : filteredArticles.length > 0 ? (
+                    filteredArticles.map((article) => (
+                      <NewsRow key={article.id} article={article} />
+                    ))
+                  ) : (
+                    <div className="p-8 text-center text-gray-500 text-[13px]">
+                      Keine Artikel in dieser Kategorie
                     </div>
-                    
-                    {hasMore && filteredArticles.length > 0 && (
-                      <div className="p-4 border-t border-gray-100 dark:border-gray-800">
-                        <button
-                          onClick={loadMore}
-                          disabled={loading}
-                          className="w-full bg-[#79B92A] text-white py-3 font-black uppercase hover:bg-[#6aa325] transition-colors disabled:opacity-50 rounded-lg"
-                          style={{ fontFamily: "'Oswald', sans-serif" }}
-                          data-testid="load-more-btn"
-                        >
-                          {loading ? "LÄDT..." : "MEHR NEWS LADEN"}
-                        </button>
-                      </div>
-                    )}
-
-                    {filteredArticles.length === 0 && !loading && (
-                      <div className="text-center py-12">
-                        <Funnel size={48} className="mx-auto text-gray-300 dark:text-gray-600 mb-4" />
-                        <p className="text-gray-500 dark:text-gray-400">Keine Artikel in dieser Kategorie</p>
-                        <button 
-                          onClick={() => setActiveFilter('all')}
-                          className="mt-3 text-[#79B92A] font-bold hover:underline"
-                        >
-                          Alle anzeigen
-                        </button>
-                      </div>
-                    )}
-                  </>
+                  )}
+                </div>
+                
+                {/* Load More */}
+                {hasMore && !loading && filteredArticles.length > 0 && (
+                  <div className="p-2 border-t border-gray-200 bg-gray-50">
+                    <button
+                      onClick={loadMore}
+                      className="w-full py-2 text-[12px] font-semibold text-[#1d4370] hover:text-[#00a83f] transition-colors"
+                      data-testid="load-more-btn"
+                    >
+                      Mehr News laden
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
 
             {/* Sidebar */}
-            <aside className="space-y-4">
-              {/* Trending Widget */}
-              <TrendingWidget />
-              
-              {/* Liga Quick Links */}
-              <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm overflow-hidden">
-                <div className="p-3 border-b border-gray-100 dark:border-gray-800">
-                  <h3 
-                    className="text-sm font-black uppercase text-gray-900 dark:text-white flex items-center gap-2"
-                    style={{ fontFamily: "'Oswald', sans-serif" }}
-                  >
-                    <Trophy size={16} weight="fill" className="text-[#79B92A]" />
-                    Ligen
-                  </h3>
+            <aside className="space-y-3">
+              {/* Trending Players */}
+              <div className="bg-white border border-gray-300 rounded-sm overflow-hidden">
+                <BoxHeader title="Trending Spieler" />
+                <div>
+                  {trending.players.length > 0 ? (
+                    trending.players.slice(0, 5).map((player, idx) => (
+                      <TrendingItem key={player.id || idx} item={player} rank={idx + 1} />
+                    ))
+                  ) : (
+                    <div className="p-3 text-center text-gray-500 text-[12px]">
+                      Keine Trending-Daten
+                    </div>
+                  )}
                 </div>
+              </div>
+              
+              {/* Trending Clubs */}
+              <div className="bg-white border border-gray-300 rounded-sm overflow-hidden">
+                <BoxHeader title="Trending Vereine" />
+                <div>
+                  {trending.clubs.length > 0 ? (
+                    trending.clubs.slice(0, 5).map((club, idx) => (
+                      <TrendingItem key={club.id || idx} item={club} rank={idx + 1} />
+                    ))
+                  ) : (
+                    <div className="p-3 text-center text-gray-500 text-[12px]">
+                      Keine Trending-Daten
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              {/* Leagues */}
+              <div className="bg-white border border-gray-300 rounded-sm overflow-hidden">
+                <BoxHeader title="Wettbewerbe" />
                 <nav>
                   {LEAGUES.map((league) => (
                     <Link
                       key={league.slug}
                       to={`/wettbewerb/${league.slug}`}
-                      className="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group border-b border-gray-50 dark:border-gray-800 last:border-0"
+                      className="flex items-center justify-between px-3 py-2 hover:bg-[#e8f4e8] border-b border-gray-100 last:border-0 group"
                     >
                       <div className="flex items-center gap-2">
-                        <span className="text-lg">{league.flag}</span>
-                        <span className="font-medium text-sm text-gray-700 dark:text-gray-300 group-hover:text-[#79B92A] transition-colors">
+                        <span className="text-base">{league.flag}</span>
+                        <span className="text-[12px] text-gray-900 group-hover:text-[#00a83f]">
                           {league.name}
                         </span>
                       </div>
-                      <CaretRight size={14} className="text-gray-400 group-hover:text-[#79B92A]" />
+                      <CaretRight size={12} className="text-gray-400" />
                     </Link>
                   ))}
                 </nav>
               </div>
               
-              {/* Categories */}
-              <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm overflow-hidden">
-                <div className="p-3 border-b border-gray-100 dark:border-gray-800">
-                  <h3 
-                    className="text-sm font-black uppercase text-gray-900 dark:text-white"
-                    style={{ fontFamily: "'Oswald', sans-serif" }}
-                  >
-                    Kategorien
-                  </h3>
-                </div>
+              {/* Quick Links */}
+              <div className="bg-white border border-gray-300 rounded-sm overflow-hidden">
+                <BoxHeader title="Schnellzugriff" />
                 <nav>
                   {[
-                    { label: "Alle Transfers", path: "/" },
-                    { label: "Gerüchte", path: "/geruechte" },
+                    { label: "Deadline Day", path: "/deadline-day", icon: Fire },
+                    { label: "Top-Transfers", path: "/top-deals", icon: TrendUp },
+                    { label: "Ablösefreie Spieler", path: "/abloesefrei" },
                     { label: "Redaktion", path: "/redaktion" },
                   ].map((item) => (
                     <Link
                       key={item.path}
                       to={item.path}
-                      className="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group border-b border-gray-50 dark:border-gray-800 last:border-0"
+                      className="flex items-center justify-between px-3 py-2 hover:bg-[#e8f4e8] border-b border-gray-100 last:border-0 group"
                     >
-                      <span className="font-medium text-sm text-gray-700 dark:text-gray-300 group-hover:text-[#79B92A] transition-colors">
+                      <span className="text-[12px] text-gray-900 group-hover:text-[#00a83f] flex items-center gap-2">
+                        {item.icon && <item.icon size={14} className="text-gray-500" />}
                         {item.label}
                       </span>
-                      <CaretRight size={14} className="text-gray-400 group-hover:text-[#79B92A]" />
+                      <CaretRight size={12} className="text-gray-400" />
                     </Link>
                   ))}
                 </nav>
