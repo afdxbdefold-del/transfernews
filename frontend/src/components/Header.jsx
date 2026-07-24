@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { MagnifyingGlass, List, X, CaretDown, Moon, Sun } from "@phosphor-icons/react";
+import { MagnifyingGlass, List, X, CaretDown } from "@phosphor-icons/react";
 import { useState, useEffect, useRef } from "react";
 import { autosuggest } from "@/api";
 
@@ -17,25 +17,9 @@ export default function Header() {
   const [searchQuery, setSearchQuery] = useState("");
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [darkMode, setDarkMode] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('darkMode') === 'true';
-    }
-    return false;
-  });
   const searchRef = useRef(null);
   const leagueRef = useRef(null);
   const location = useLocation();
-
-  useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('darkMode', 'true');
-    } else {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('darkMode', 'false');
-    }
-  }, [darkMode]);
 
   useEffect(() => { 
     setMenuOpen(false); 
@@ -120,8 +104,8 @@ export default function Header() {
           </Link>
           
           {/* Search Bar - Desktop */}
-          <div className="hidden md:flex flex-1 max-w-[400px] mx-4" ref={searchRef}>
-            <form onSubmit={handleSearch} className="w-full relative">
+          <div className="hidden md:flex flex-1 justify-end" ref={searchRef}>
+            <form onSubmit={handleSearch} className="w-full max-w-[350px] relative">
               <input
                 type="text"
                 placeholder="Spieler, Verein, Wettbewerb..."
@@ -156,13 +140,6 @@ export default function Header() {
           
           {/* Right Actions */}
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => setDarkMode(!darkMode)}
-              className="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-[#79B92A] transition-colors"
-              data-testid="dark-mode-toggle"
-            >
-              {darkMode ? <Sun size={18} weight="fill" className="text-yellow-500" /> : <Moon size={18} />}
-            </button>
             <button
               onClick={() => setMenuOpen(!menuOpen)}
               className="md:hidden w-8 h-8 flex items-center justify-center text-gray-700"
