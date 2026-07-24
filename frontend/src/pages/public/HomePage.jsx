@@ -103,9 +103,6 @@ export default function HomePage() {
                     Transfer-News
                   </h1>
                 </div>
-                <span className="text-sm text-gray-500 dark:text-gray-400">
-                  {filteredArticles.length} Artikel
-                </span>
               </div>
             </div>
             
@@ -114,9 +111,6 @@ export default function HomePage() {
               {FILTERS.map((filter) => {
                 const Icon = filter.icon;
                 const isActive = activeFilter === filter.id;
-                const count = filter.id === 'all' 
-                  ? articles.length 
-                  : articles.filter(a => a.article_type === filter.id).length;
                 
                 return (
                   <button
@@ -131,11 +125,6 @@ export default function HomePage() {
                   >
                     <Icon size={16} weight={isActive ? "fill" : "regular"} />
                     {filter.label}
-                    <span className={`text-xs px-1.5 py-0.5 rounded-full ${
-                      isActive ? 'bg-white/20' : 'bg-gray-200 dark:bg-gray-700'
-                    }`}>
-                      {count}
-                    </span>
                   </button>
                 );
               })}
@@ -239,9 +228,9 @@ export default function HomePage() {
                 </div>
                 <nav>
                   {[
-                    { label: "Alle Transfers", path: "/", count: articles.length },
-                    { label: "Gerüchte", path: "/geruechte", count: articles.filter(a => a.article_type === 'rumour').length },
-                    { label: "Redaktion", path: "/redaktion", count: 12 },
+                    { label: "Alle Transfers", path: "/" },
+                    { label: "Gerüchte", path: "/geruechte" },
+                    { label: "Redaktion", path: "/redaktion" },
                   ].map((item) => (
                     <Link
                       key={item.path}
@@ -251,12 +240,7 @@ export default function HomePage() {
                       <span className="font-medium text-sm text-gray-700 dark:text-gray-300 group-hover:text-[#79B92A] transition-colors">
                         {item.label}
                       </span>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full">
-                          {item.count}
-                        </span>
-                        <CaretRight size={14} className="text-gray-400 group-hover:text-[#79B92A]" />
-                      </div>
+                      <CaretRight size={14} className="text-gray-400 group-hover:text-[#79B92A]" />
                     </Link>
                   ))}
                 </nav>
