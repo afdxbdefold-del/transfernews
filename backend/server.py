@@ -262,15 +262,18 @@ async def create_player(player_data: PlayerCreate, current_user: dict = Depends(
 async def get_players(
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
-    search: Optional[str] = None
+    search: Optional[str] = None,
+    current_club_id: Optional[str] = None
 ):
-    """Get all players with optional search"""
+    """Get all players with optional search and club filter"""
     query = {}
     if search:
         query["$or"] = [
             {"name": {"$regex": search, "$options": "i"}},
             {"aliases": {"$regex": search, "$options": "i"}}
         ]
+    if current_club_id:
+        query["current_club_id"] = current_club_id
     players = await db.players.find(query, {"_id": 0}).skip(skip).limit(limit).to_list(limit)
     return players
 
