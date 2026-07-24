@@ -33,7 +33,7 @@ export default function HomePage() {
   const tickerArticles = articles.slice(0, 10);
 
   return (
-    <div className="min-h-screen flex flex-col bg-white" data-testid="homepage">
+    <div className="min-h-screen flex flex-col bg-white dark:bg-gray-950 transition-colors duration-300" data-testid="homepage">
       <Helmet>
         <title>TransferNews.de - Alle Fußball-Transfers & Gerüchte</title>
         <meta name="description" content="Die neuesten Fußball-Transfer-News, Gerüchte und offizielle Wechsel. Bundesliga, Premier League, La Liga und mehr." />
@@ -49,12 +49,12 @@ export default function HomePage() {
       {/* Hot Transfers Section */}
       <HotTransfers />
       
-      <main className="flex-1">
+      <main className="flex-1 bg-gray-50 dark:bg-gray-900">
         {/* Main Content - Desktop: Hero + Sidebar nebeneinander */}
         <div className="max-w-[1000px] mx-auto px-3">
           <div className="lg:grid lg:grid-cols-[1fr_280px] lg:gap-4">
             {/* Left Column: Hero + News Feed */}
-            <div>
+            <div className="bg-white dark:bg-gray-900">
               {/* Hero Section */}
               {heroArticle && (
                 <HeroCard article={heroArticle} isLive={heroArticle.is_breaking} />
@@ -67,7 +67,7 @@ export default function HomePage() {
             </div>
             
             {/* Sidebar Ticker + Trending - Desktop only */}
-            <div className="hidden lg:block border-l border-gray-100">
+            <div className="hidden lg:block border-l border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900">
               {/* Trending Widget */}
               <TrendingWidget className="m-4" />
               

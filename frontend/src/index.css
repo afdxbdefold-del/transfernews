@@ -25,6 +25,21 @@ h1, h2, h3, h4, h5, h6 {
     --brand-black: #1a1a1a;
     --radius: 0rem;
   }
+  
+  .dark {
+    --background: 0 0% 4%;
+    --foreground: 0 0% 96%;
+  }
+}
+
+/* Subtle pulse animation for probability bars */
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.85; }
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 2s ease-in-out infinite;
 }
 
 /* Hide scrollbar */

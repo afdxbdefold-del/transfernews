@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { MagnifyingGlass, List, X, CaretDown, Trophy } from "@phosphor-icons/react";
+import { MagnifyingGlass, List, X, CaretDown, Trophy, Moon, Sun } from "@phosphor-icons/react";
 import { useState, useEffect, useRef } from "react";
 import { autosuggest } from "@/api";
 
@@ -19,9 +19,26 @@ export default function Header() {
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [darkMode, setDarkMode] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('darkMode') === 'true';
+    }
+    return false;
+  });
   const searchRef = useRef(null);
   const leagueRef = useRef(null);
   const location = useLocation();
+
+  // Dark Mode Effect
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('darkMode', 'true');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('darkMode', 'false');
+    }
+  }, [darkMode]);
 
   useEffect(() => { 
     setMenuOpen(false); 
@@ -84,26 +101,35 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-50" data-testid="main-header">
       {/* Top Bar - White with Logo */}
-      <div className="bg-white">
+      <div className="bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800">
         <div className="max-w-[1280px] mx-auto px-4">
           <div className="flex items-center justify-between h-[50px]">
             {/* Logo Left */}
             <Link to="/" className="flex items-center" data-testid="logo-link">
-              <img src="/logo.svg" alt="TransferNews" className="h-5" />
+              <img src="/logo.svg" alt="TransferNews" className="h-5 dark:invert" />
             </Link>
             
             {/* Right Icons */}
             <div className="flex items-center gap-1">
+              {/* Dark Mode Toggle */}
+              <button
+                onClick={() => setDarkMode(!darkMode)}
+                className="w-10 h-10 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
+                data-testid="dark-mode-toggle"
+                title={darkMode ? "Light Mode" : "Dark Mode"}
+              >
+                {darkMode ? <Sun size={22} weight="fill" className="text-yellow-400" /> : <Moon size={22} />}
+              </button>
               <button
                 onClick={() => setSearchOpen(!searchOpen)}
-                className="w-10 h-10 flex items-center justify-center"
+                className="w-10 h-10 flex items-center justify-center text-gray-600 dark:text-gray-300"
                 data-testid="search-button"
               >
                 <MagnifyingGlass size={22} />
               </button>
               <button
                 onClick={() => setMenuOpen(!menuOpen)}
-                className="w-10 h-10 flex items-center justify-center"
+                className="w-10 h-10 flex items-center justify-center text-gray-600 dark:text-gray-300"
                 data-testid="burger-menu-button"
               >
                 <List size={24} />

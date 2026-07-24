@@ -178,25 +178,31 @@ function TransferBadge({ status }) {
   );
 }
 
-// Transfer Probability Bar Component
-function ProbabilityBar({ probability }) {
+// Transfer Probability Bar Component - ENHANCED
+function ProbabilityBar({ probability, size = "small" }) {
   if (!probability) return null;
   
   const getColor = (p) => {
-    if (p >= 80) return 'bg-[#79B92A]';  // Green - confirmed
-    if (p >= 50) return 'bg-[#79B92A]/70';  // Light green
-    return 'bg-gray-400';  // Gray - low probability
+    if (p >= 80) return { bar: 'bg-gradient-to-r from-green-500 to-green-400', text: 'text-green-600' };
+    if (p >= 60) return { bar: 'bg-gradient-to-r from-lime-500 to-lime-400', text: 'text-lime-600' };
+    if (p >= 40) return { bar: 'bg-gradient-to-r from-amber-500 to-yellow-400', text: 'text-amber-600' };
+    return { bar: 'bg-gradient-to-r from-gray-400 to-gray-300', text: 'text-gray-500' };
   };
   
+  const colors = getColor(probability);
+  const isLarge = size === "large";
+  
   return (
-    <div className="flex items-center gap-2">
-      <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+    <div className={`flex items-center gap-2 ${isLarge ? 'w-full' : ''}`}>
+      <div className={`flex-1 ${isLarge ? 'h-3' : 'h-2'} bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden shadow-inner`}>
         <div 
-          className={`h-full ${getColor(probability)} transition-all`}
+          className={`h-full ${colors.bar} rounded-full transition-all duration-500 ease-out animate-pulse-subtle`}
           style={{ width: `${probability}%` }}
         />
       </div>
-      <span className="text-[10px] font-bold text-gray-500">{probability}%</span>
+      <span className={`${isLarge ? 'text-sm font-black' : 'text-[11px] font-bold'} ${colors.text} dark:text-gray-300 min-w-[36px] text-right`}>
+        {probability}%
+      </span>
     </div>
   );
 }
@@ -218,12 +224,24 @@ export function HeroCard({ article, isLive = false }) {
           articleId={article.id}
         />
         
-        {/* Transfer Club Logos - Top Right */}
+        {/* Transfer Club Logos - Top Right - ENHANCED */}
         {(fromLogo || toLogo) && (
-          <div className="absolute top-3 right-3 flex items-center gap-1 bg-white/95 rounded-lg px-2 py-1 shadow-lg">
-            {fromLogo && <img src={fromLogo} alt="" className="w-8 h-8 object-contain" />}
-            {fromLogo && toLogo && <span className="text-gray-400 text-sm font-bold">→</span>}
-            {toLogo && <img src={toLogo} alt="" className="w-8 h-8 object-contain" />}
+          <div className="absolute top-3 right-3 flex items-center gap-2 bg-white/95 dark:bg-gray-800/95 rounded-xl px-3 py-2 shadow-xl backdrop-blur-sm border border-gray-100 dark:border-gray-700">
+            {fromLogo && (
+              <div className="w-10 h-10 rounded-full bg-gray-50 dark:bg-gray-700 p-1 shadow-inner">
+                <img src={fromLogo} alt="" className="w-full h-full object-contain" />
+              </div>
+            )}
+            {fromLogo && toLogo && (
+              <div className="flex flex-col items-center">
+                <span className="text-[#79B92A] text-lg font-black">→</span>
+              </div>
+            )}
+            {toLogo && (
+              <div className="w-10 h-10 rounded-full bg-gray-50 dark:bg-gray-700 p-1 shadow-inner">
+                <img src={toLogo} alt="" className="w-full h-full object-contain" />
+              </div>
+            )}
           </div>
         )}
         
@@ -245,10 +263,10 @@ export function HeroCard({ article, isLive = false }) {
         
         {/* Content */}
         <div className="absolute bottom-0 left-0 right-0 p-4">
-          {/* Probability Bar */}
+          {/* Probability Bar - ENHANCED */}
           {article.transfer_probability && (
-            <div className="mb-2 max-w-[180px]">
-              <ProbabilityBar probability={article.transfer_probability} />
+            <div className="mb-3 max-w-[220px]">
+              <ProbabilityBar probability={article.transfer_probability} size="large" />
             </div>
           )}
           
@@ -274,24 +292,32 @@ export function NewsCardHorizontal({ article, showVideo = false }) {
   return (
     <Link 
       to={"/news/" + article.slug} 
-      className="flex gap-3 p-3 bg-white border-b border-gray-100 hover:bg-gray-50 transition-colors"
+      className="flex gap-3 p-3 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group"
       data-testid={"news-card-" + article.id}
     >
       {/* Image */}
-      <div className="relative w-[100px] h-[70px] flex-shrink-0 bg-gray-100 overflow-hidden rounded">
+      <div className="relative w-[110px] h-[75px] flex-shrink-0 bg-gray-100 dark:bg-gray-800 overflow-hidden rounded-lg shadow-sm">
         <ArticleImage
           src={article.hero_image || article.feature_image}
           alt={article.title}
-          className="w-full h-full object-cover object-top"
+          className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-300"
           articleId={article.id}
         />
         
-        {/* Transfer Club Logos - From → To */}
+        {/* Transfer Club Logos - ENHANCED */}
         {(fromLogo || toLogo) && (
-          <div className="absolute bottom-0.5 right-0.5 flex items-center gap-0.5 bg-white/90 rounded px-1 py-0.5">
-            {fromLogo && <img src={fromLogo} alt="" className="w-4 h-4 object-contain" />}
-            {fromLogo && toLogo && <span className="text-[8px] text-gray-400">→</span>}
-            {toLogo && <img src={toLogo} alt="" className="w-4 h-4 object-contain" />}
+          <div className="absolute bottom-1 right-1 flex items-center gap-1 bg-white/95 dark:bg-gray-800/95 rounded-lg px-1.5 py-1 shadow-md backdrop-blur-sm">
+            {fromLogo && (
+              <div className="w-5 h-5 rounded-full bg-gray-50 dark:bg-gray-700 overflow-hidden">
+                <img src={fromLogo} alt="" className="w-full h-full object-contain" />
+              </div>
+            )}
+            {fromLogo && toLogo && <span className="text-[10px] text-[#79B92A] font-bold">→</span>}
+            {toLogo && (
+              <div className="w-5 h-5 rounded-full bg-gray-50 dark:bg-gray-700 overflow-hidden">
+                <img src={toLogo} alt="" className="w-full h-full object-contain" />
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -300,19 +326,19 @@ export function NewsCardHorizontal({ article, showVideo = false }) {
       <div className="flex-1 flex flex-col justify-center py-0.5">
         <div className="flex items-center gap-2 mb-1">
           {/* Colorful Status Badge */}
-          <div className={`text-[9px] font-black uppercase px-1.5 py-0.5 ${statusBadge.bg} ${statusBadge.text}`}>
+          <div className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded ${statusBadge.bg} ${statusBadge.text}`}>
             {statusBadge.label}
           </div>
-          <span className="text-[10px] text-gray-400">{formatTime(article.published_at)}</span>
+          <span className="text-[10px] text-gray-400 dark:text-gray-500">{formatTime(article.published_at)}</span>
         </div>
         
-        <h3 className="text-[14px] font-bold text-gray-900 leading-snug line-clamp-2" style={{ fontFamily: "'Oswald', sans-serif" }}>
+        <h3 className="text-[14px] font-bold text-gray-900 dark:text-white leading-snug line-clamp-2 group-hover:text-[#79B92A] transition-colors" style={{ fontFamily: "'Oswald', sans-serif" }}>
           {article.title}
         </h3>
         
-        {/* Probability Bar - smaller */}
+        {/* Probability Bar - ENHANCED */}
         {article.transfer_probability && (
-          <div className="mt-1.5 max-w-[150px]">
+          <div className="mt-2 max-w-[180px]">
             <ProbabilityBar probability={article.transfer_probability} />
           </div>
         )}
