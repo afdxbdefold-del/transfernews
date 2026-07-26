@@ -126,3 +126,4 @@ yarl==1.23.0
 zipp==3.23.0
 playwright==1.58.0
 APScheduler==3.11.2
+feedparser
