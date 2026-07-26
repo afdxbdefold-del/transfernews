@@ -2838,3 +2838,14 @@ app.add_middleware(
 @app.on_event("shutdown")
 async def shutdown_db_client():
     client.close()
+
+# Temporary endpoint to download database export
+@api_router.get("/download-db-export")
+async def download_db_export():
+    import base64
+    file_path = "/tmp/dbexport.tar.gz"
+    if os.path.exists(file_path):
+        with open(file_path, "rb") as f:
+            content = base64.b64encode(f.read()).decode()
+        return {"data": content}
+    return {"error": "File not found"}
