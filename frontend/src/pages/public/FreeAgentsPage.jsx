@@ -8,6 +8,9 @@ import { Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 
 function FreeAgentRow({ article }) {
+  // Use hero_image or image_url as fallback (API returns hero_image)
+  const imageUrl = article.hero_image || article.image_url;
+  
   return (
     <Link 
       to={`/news/${article.slug}`}
@@ -16,8 +19,8 @@ function FreeAgentRow({ article }) {
     >
       {/* Image */}
       <div className="w-[50px] h-[50px] flex-shrink-0 bg-gray-200 overflow-hidden rounded-sm">
-        {article.image_url ? (
-          <img src={article.image_url} alt="" className="w-full h-full object-cover" />
+        {imageUrl ? (
+          <img src={imageUrl} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
             <UserCircle size={24} className="text-gray-400" />

@@ -29,6 +29,9 @@ function CountdownBox({ value, label }) {
 }
 
 function NewsRow({ article, isHot }) {
+  // Use hero_image or image_url as fallback (API returns hero_image)
+  const imageUrl = article.hero_image || article.image_url;
+  
   const typeConfig = {
     rumour: { bg: "bg-amber-500", label: "Gerücht" },
     transfer: { bg: "bg-[#00a83f]", label: "Transfer" },
@@ -42,7 +45,7 @@ function NewsRow({ article, isHot }) {
       className={`flex items-start gap-3 p-2 hover:bg-[#e8f4e8] border-b border-gray-200 last:border-0 group ${isHot ? 'bg-red-50' : ''}`}
     >
       <div className="w-[70px] h-[50px] flex-shrink-0 bg-gray-200 overflow-hidden rounded-sm">
-        {article.image_url && <img src={article.image_url} alt="" className="w-full h-full object-cover" />}
+        {imageUrl && <img src={imageUrl} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />}
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-0.5">

@@ -61,7 +61,7 @@ function NewsRow({ article }) {
       className="flex items-center gap-3 px-3 py-2 hover:bg-[#e8f4e8] border-b border-gray-200 last:border-0 group"
     >
       <div className="w-[50px] h-[36px] flex-shrink-0 bg-gray-200 overflow-hidden rounded-sm">
-        {article.image_url && <img src={article.image_url} alt="" className="w-full h-full object-cover" />}
+        {(article.hero_image || article.image_url) && <img src={article.hero_image || article.image_url} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />}
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1 mb-0.5">
