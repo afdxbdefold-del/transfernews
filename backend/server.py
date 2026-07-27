@@ -2835,6 +2835,26 @@ async def download_db_export():
     return {"error": "File not found"}
 
 # Include the router in the main app
+# ads.txt endpoint for TheMonetizer
+@app.get("/ads.txt")
+async def ads_txt():
+    """Serve ads.txt from TheMonetizer"""
+    import httpx
+    from fastapi.responses import PlainTextResponse
+    
+    themoneytizer_url = "https://ads.themoneytizer.com/ads_txt.php?site_id=141912&id=131755"
+    
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.get(themoneytizer_url)
+            if response.status_code == 200:
+                return PlainTextResponse(response.text)
+    except Exception as e:
+        logger.error(f"Failed to fetch ads.txt: {e}")
+    
+    # Fallback empty ads.txt
+    return PlainTextResponse("")
+
 app.include_router(api_router)
 
 app.add_middleware(
