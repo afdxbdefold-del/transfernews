@@ -266,7 +266,7 @@ export default function HomePage() {
       <Header />
       
       <main className="flex-1 py-3 px-3" data-testid="homepage">
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-3">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-3">
           {/* Main Content */}
           <div className="space-y-3">
             {/* News Box */}

@@ -132,7 +132,7 @@ export default function NewsListPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-4">
             {/* Main Content */}
             <div>
               <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm overflow-hidden">
