@@ -43,12 +43,12 @@ export default function AuthorPage() {
                 <Skeleton className="h-48 w-full" />
                 <Skeleton className="h-8 w-3/4" />
                 <Skeleton className="h-32 w-full" />
-              </PageLayout>
+              </div>
               <div>
                 <Skeleton className="h-64 w-full" />
-              </PageLayout>
-            </PageLayout>
-          </PageLayout>
+              </div>
+            </div>
+          </div>
         </main>
         <Footer />
       </PageLayout>
@@ -65,7 +65,7 @@ export default function AuthorPage() {
             <Link to="/" className="text-[#79B92A] hover:underline">
               Zur Startseite
             </Link>
-          </PageLayout>
+          </div>
         </main>
         <Footer />
       </PageLayout>
@@ -133,7 +133,7 @@ export default function AuthorPage() {
                     ) : (
                       <User size={48} weight="bold" className="text-white" />
                     )}
-                  </PageLayout>
+                  </div>
                   
                   {/* Info */}
                   <div className="flex-1">
@@ -143,7 +143,7 @@ export default function AuthorPage() {
                         <PencilLine size={12} weight="bold" className="mr-1" />
                         Autor
                       </Badge>
-                    </PageLayout>
+                    </div>
                     
                     {author.bio && (
                       <p className="text-gray-600 mb-4">{author.bio}</p>
@@ -157,7 +157,7 @@ export default function AuthorPage() {
                             {exp}
                           </Badge>
                         ))}
-                      </PageLayout>
+                      </div>
                     )}
                     
                     {/* Social Links */}
@@ -193,10 +193,10 @@ export default function AuthorPage() {
                           <Envelope size={20} weight="fill" />
                         </a>
                       )}
-                    </PageLayout>
-                  </PageLayout>
-                </PageLayout>
-              </PageLayout>
+                    </div>
+                  </div>
+                </div>
+              </div>
 
               {/* Articles */}
               <div>
@@ -206,28 +206,28 @@ export default function AuthorPage() {
                     Artikel von {author.name}
                     <span className="text-gray-400 font-normal ml-2">({author.article_count})</span>
                   </h2>
-                </PageLayout>
+                </div>
 
                 {author.articles && author.articles.length > 0 ? (
                   <div className="space-y-4">
                     {author.articles.map((article) => (
                       <NewsCard key={article.id} article={article} />
                     ))}
-                  </PageLayout>
+                  </div>
                 ) : (
                   <div className="bg-white border border-gray-200 p-8 text-center text-gray-500">
                     Noch keine Artikel veröffentlicht.
-                  </PageLayout>
+                  </div>
                 )}
-              </PageLayout>
-            </PageLayout>
+              </div>
+            </div>
 
             {/* Sidebar */}
             <aside className="space-y-6">
               <TrendingWidget />
             </aside>
-          </PageLayout>
-        </PageLayout>
+          </div>
+        </div>
       </main>
 
       <Footer />

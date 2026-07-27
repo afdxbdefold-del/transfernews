@@ -25,7 +25,7 @@ export default function ImpressumPage() {
             <h1 className="text-3xl font-black text-gray-900" style={{ fontFamily: "'Oswald', sans-serif" }}>
               Impressum
             </h1>
-          </PageLayout>
+          </div>
           
           {/* Angaben gemäß § 5 TMG */}
           <section className="mb-10">
@@ -44,13 +44,13 @@ export default function ImpressumPage() {
                 <div>
                   <p className="text-gray-500">Handelsregister:</p>
                   <p className="font-medium">HRB 123456, Amtsgericht München</p>
-                </PageLayout>
+                </div>
                 <div>
                   <p className="text-gray-500">USt-IdNr.:</p>
                   <p className="font-medium">DE123456789</p>
-                </PageLayout>
-              </PageLayout>
-            </PageLayout>
+                </div>
+              </div>
+            </div>
           </section>
           
           {/* Vertreten durch */}
@@ -82,7 +82,7 @@ export default function ImpressumPage() {
                 <MapPin size={18} className="text-gray-400" />
                 München, Deutschland
               </p>
-            </PageLayout>
+            </div>
           </section>
           
           {/* Verantwortlich für den Inhalt */}
@@ -111,7 +111,7 @@ export default function ImpressumPage() {
                 <ShieldCheck size={18} weight="fill" />
                 Alle Artikel werden von ausgebildeten Journalisten verfasst und geprüft.
               </p>
-            </PageLayout>
+            </div>
           </section>
           
           {/* Haftungsausschluss */}
@@ -152,10 +152,10 @@ export default function ImpressumPage() {
               Verbraucherschlichtungsstelle teilzunehmen.
             </p>
           </section>
-        </PageLayout>
+        </div>
       </main>
       
       <Footer />
-    </PageLayout>
+    </div>
   );
 }

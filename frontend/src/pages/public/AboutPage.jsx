@@ -29,7 +29,7 @@ export default function AboutPage() {
           <p className="text-xl text-gray-300 max-w-3xl mx-auto">
             Deutschlands führendes Transfer-Nachrichtenportal. Schnell, zuverlässig, verifiziert.
           </p>
-        </PageLayout>
+        </div>
       </section>
       
       {/* Mission */}
@@ -39,7 +39,7 @@ export default function AboutPage() {
             <div className="flex items-center gap-2 mb-4">
               <Target size={24} className="text-[#79B92A]" weight="fill" />
               <span className="text-[#79B92A] font-semibold uppercase tracking-wider text-sm">Unsere Mission</span>
-            </PageLayout>
+            </div>
             <h2 className="text-3xl font-bold text-gray-900 mb-6">
               Die schnellsten und zuverlässigsten Transfer-News
             </h2>
@@ -52,28 +52,28 @@ export default function AboutPage() {
               Heute erreichen wir monatlich über 2 Millionen Leser und sind eine der vertrauenswürdigsten 
               Quellen für Transfer-News im deutschsprachigen Raum.
             </p>
-          </PageLayout>
+          </div>
           <div className="bg-white rounded-xl shadow-lg p-8">
             <div className="grid grid-cols-2 gap-6 text-center">
               <div>
-                <div className="text-4xl font-black text-[#79B92A]">2M+</PageLayout>
-                <div className="text-gray-500 text-sm">Monatliche Leser</PageLayout>
-              </PageLayout>
+                <div className="text-4xl font-black text-[#79B92A]">2M+</div>
+                <div className="text-gray-500 text-sm">Monatliche Leser</div>
+              </div>
               <div>
-                <div className="text-4xl font-black text-[#79B92A]">12</PageLayout>
-                <div className="text-gray-500 text-sm">Redakteure</PageLayout>
-              </PageLayout>
+                <div className="text-4xl font-black text-[#79B92A]">12</div>
+                <div className="text-gray-500 text-sm">Redakteure</div>
+              </div>
               <div>
-                <div className="text-4xl font-black text-[#79B92A]">6</PageLayout>
-                <div className="text-gray-500 text-sm">Länder-Korrespondenten</PageLayout>
-              </PageLayout>
+                <div className="text-4xl font-black text-[#79B92A]">6</div>
+                <div className="text-gray-500 text-sm">Länder-Korrespondenten</div>
+              </div>
               <div>
-                <div className="text-4xl font-black text-[#79B92A]">24/7</PageLayout>
-                <div className="text-gray-500 text-sm">Redaktion aktiv</PageLayout>
-              </PageLayout>
-            </PageLayout>
-          </PageLayout>
-        </PageLayout>
+                <div className="text-4xl font-black text-[#79B92A]">24/7</div>
+                <div className="text-gray-500 text-sm">Redaktion aktiv</div>
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
       
       {/* Werte */}
@@ -84,43 +84,43 @@ export default function AboutPage() {
             <p className="text-gray-600 max-w-2xl mx-auto">
               Diese Prinzipien leiten unsere tägliche Arbeit und garantieren die Qualität unserer Berichterstattung.
             </p>
-          </PageLayout>
+          </div>
           
           <div className="grid md:grid-cols-3 gap-8">
             <div className="text-center p-6">
               <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <ShieldCheck size={32} className="text-[#79B92A]" weight="fill" />
-              </PageLayout>
+              </div>
               <h3 className="text-xl font-bold text-gray-900 mb-2">Zuverlässigkeit</h3>
               <p className="text-gray-600 text-sm">
                 Wir veröffentlichen nur Informationen aus verifizierten Quellen. 
                 Jede Meldung wird von mindestens einem Redakteur geprüft.
               </p>
-            </PageLayout>
+            </div>
             
             <div className="text-center p-6">
               <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Lightning size={32} className="text-[#79B92A]" weight="fill" />
-              </PageLayout>
+              </div>
               <h3 className="text-xl font-bold text-gray-900 mb-2">Geschwindigkeit</h3>
               <p className="text-gray-600 text-sm">
                 Breaking News in unter 2 Minuten. Unser 24/7-Team garantiert, 
                 dass Sie keine wichtige Meldung verpassen.
               </p>
-            </PageLayout>
+            </div>
             
             <div className="text-center p-6">
               <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Eye size={32} className="text-[#79B92A]" weight="fill" />
-              </PageLayout>
+              </div>
               <h3 className="text-xl font-bold text-gray-900 mb-2">Transparenz</h3>
               <p className="text-gray-600 text-sm">
                 Wir nennen unsere Quellen und kennzeichnen den Sicherheitsgrad 
                 jeder Meldung. Keine versteckten Agenden.
               </p>
-            </PageLayout>
-          </PageLayout>
-        </PageLayout>
+            </div>
+          </div>
+        </div>
       </section>
       
       {/* So arbeiten wir */}
@@ -130,41 +130,41 @@ export default function AboutPage() {
           <p className="text-gray-600 max-w-2xl mx-auto">
             Unser redaktioneller Prozess garantiert höchste Qualität bei maximaler Geschwindigkeit.
           </p>
-        </PageLayout>
+        </div>
         
         <div className="grid md:grid-cols-4 gap-6">
           <div className="bg-white rounded-lg p-6 shadow-sm border-t-4 border-[#79B92A]">
-            <div className="text-3xl font-black text-[#79B92A] mb-2">01</PageLayout>
+            <div className="text-3xl font-black text-[#79B92A] mb-2">01</div>
             <h3 className="font-bold text-gray-900 mb-2">Quellenmonitoring</h3>
             <p className="text-gray-600 text-sm">
               19 internationale Quellen werden rund um die Uhr überwacht – von Sky Sports bis Gazzetta.
             </p>
-          </PageLayout>
+          </div>
           
           <div className="bg-white rounded-lg p-6 shadow-sm border-t-4 border-[#79B92A]">
-            <div className="text-3xl font-black text-[#79B92A] mb-2">02</PageLayout>
+            <div className="text-3xl font-black text-[#79B92A] mb-2">02</div>
             <h3 className="font-bold text-gray-900 mb-2">Verifizierung</h3>
             <p className="text-gray-600 text-sm">
               Jede Meldung wird auf Glaubwürdigkeit geprüft. Wir nutzen ein Tier-System für Quellen.
             </p>
-          </PageLayout>
+          </div>
           
           <div className="bg-white rounded-lg p-6 shadow-sm border-t-4 border-[#79B92A]">
-            <div className="text-3xl font-black text-[#79B92A] mb-2">03</PageLayout>
+            <div className="text-3xl font-black text-[#79B92A] mb-2">03</div>
             <h3 className="font-bold text-gray-900 mb-2">Anreicherung</h3>
             <p className="text-gray-600 text-sm">
               Wir fügen Kontext hinzu: Marktwerte, Vertragsdaten, Karriere-Historie aus Transfermarkt.
             </p>
-          </PageLayout>
+          </div>
           
           <div className="bg-white rounded-lg p-6 shadow-sm border-t-4 border-[#79B92A]">
-            <div className="text-3xl font-black text-[#79B92A] mb-2">04</PageLayout>
+            <div className="text-3xl font-black text-[#79B92A] mb-2">04</div>
             <h3 className="font-bold text-gray-900 mb-2">Publikation</h3>
             <p className="text-gray-600 text-sm">
               Fertige Artikel werden mit Autorennennung, Quellen-Badge und Confidence-Score veröffentlicht.
             </p>
-          </PageLayout>
-        </PageLayout>
+          </div>
+        </div>
       </section>
       
       {/* Quellen-Tiers */}
@@ -175,49 +175,49 @@ export default function AboutPage() {
             <p className="text-gray-400 max-w-2xl mx-auto">
               Nicht alle Quellen sind gleich. Wir kategorisieren sie nach Zuverlässigkeit.
             </p>
-          </PageLayout>
+          </div>
           
           <div className="grid md:grid-cols-3 gap-6">
             <div className="bg-gray-800 rounded-lg p-6">
               <div className="flex items-center gap-2 mb-4">
                 <span className="bg-green-500 text-white text-xs font-bold px-2 py-1 rounded">TIER 1</span>
                 <span className="text-green-400 font-semibold">Höchste Zuverlässigkeit</span>
-              </PageLayout>
+              </div>
               <p className="text-gray-400 text-sm mb-4">
                 Offizielle Club-Statements, etablierte Journalisten mit direkten Vereinskontakten.
               </p>
               <div className="text-xs text-gray-500">
                 Sky Sports, L'Équipe, kicker, Fabrizio Romano
-              </PageLayout>
-            </PageLayout>
+              </div>
+            </div>
             
             <div className="bg-gray-800 rounded-lg p-6">
               <div className="flex items-center gap-2 mb-4">
                 <span className="bg-yellow-500 text-white text-xs font-bold px-2 py-1 rounded">TIER 2</span>
                 <span className="text-yellow-400 font-semibold">Gute Zuverlässigkeit</span>
-              </PageLayout>
+              </div>
               <p className="text-gray-400 text-sm mb-4">
                 Renommierte Sportmedien mit guter Track-Record bei Transfers.
               </p>
               <div className="text-xs text-gray-500">
                 BBC Sport, Marca, Gazzetta, Goal.com
-              </PageLayout>
-            </PageLayout>
+              </div>
+            </div>
             
             <div className="bg-gray-800 rounded-lg p-6">
               <div className="flex items-center gap-2 mb-4">
                 <span className="bg-orange-500 text-white text-xs font-bold px-2 py-1 rounded">TIER 3</span>
                 <span className="text-orange-400 font-semibold">Gerüchte-Niveau</span>
-              </PageLayout>
+              </div>
               <p className="text-gray-400 text-sm mb-4">
                 Aggregatoren und kleinere Medien. Wir markieren diese explizit als "Gerücht".
               </p>
               <div className="text-xs text-gray-500">
                 90min, CaughtOffside, TEAMtalk
-              </PageLayout>
-            </PageLayout>
-          </PageLayout>
-        </PageLayout>
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
       
       {/* Team CTA */}
@@ -236,24 +236,24 @@ export default function AboutPage() {
             <div className="flex items-center gap-2">
               <CheckCircle size={18} className="text-[#79B92A]" weight="fill" />
               <span>Verifizierte Quellen</span>
-            </PageLayout>
+            </div>
             <div className="flex items-center gap-2">
               <Certificate size={18} className="text-[#79B92A]" weight="fill" />
               <span>Ausgebildete Journalisten</span>
-            </PageLayout>
+            </div>
             <div className="flex items-center gap-2">
               <Clock size={18} className="text-[#79B92A]" weight="fill" />
               <span>24/7 Berichterstattung</span>
-            </PageLayout>
+            </div>
             <div className="flex items-center gap-2">
               <Globe size={18} className="text-[#79B92A]" weight="fill" />
               <span>6 Länder-Korrespondenten</span>
-            </PageLayout>
-          </PageLayout>
-        </PageLayout>
+            </div>
+          </div>
+        </div>
       </section>
       
       <Footer />
-    </PageLayout>
+    </div>
   );
 }

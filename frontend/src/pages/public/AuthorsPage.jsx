@@ -165,7 +165,7 @@ function AuthorCard({ author }) {
           className="w-full h-full object-cover object-top hover:scale-105 transition-transform duration-500"
           loading="lazy"
         />
-      </PageLayout>
+      </div>
       
       {/* Info */}
       <div className="p-5">
@@ -183,19 +183,19 @@ function AuthorCard({ author }) {
               {tag}
             </span>
           ))}
-        </PageLayout>
+        </div>
         
         {/* Stats */}
         <div className="flex items-center gap-4 text-sm text-gray-500 mb-4">
           <div className="flex items-center gap-1">
             <Article size={16} />
             <span>{author.articles} Artikel</span>
-          </PageLayout>
+          </div>
           <div className="flex items-center gap-1">
             <Calendar size={16} />
             <span>Seit {author.since}</span>
-          </PageLayout>
-        </PageLayout>
+          </div>
+        </div>
         
         {/* Social Links */}
         <div className="flex gap-3 pt-3 border-t border-gray-100">
@@ -217,9 +217,9 @@ function AuthorCard({ author }) {
              className="text-gray-400 hover:text-[#79B92A] transition-colors">
             <EnvelopeSimple size={20} weight="fill" />
           </a>
-        </PageLayout>
-      </PageLayout>
-    </PageLayout>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -244,7 +244,7 @@ export default function AuthorsPage() {
             <span className="text-[#79B92A] font-semibold uppercase tracking-wider text-sm">
               Unser Team
             </span>
-          </PageLayout>
+          </div>
           <h1 className="text-4xl md:text-5xl font-black mb-4" style={{ fontFamily: "'Oswald', sans-serif" }}>
             Die TransferNews Redaktion
           </h1>
@@ -256,19 +256,19 @@ export default function AuthorsPage() {
           {/* Trust Badges */}
           <div className="flex flex-wrap gap-6 text-sm">
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-[#79B92A] rounded-full"></PageLayout>
+              <div className="w-2 h-2 bg-[#79B92A] rounded-full"></div>
               <span>Verifizierte Journalisten</span>
-            </PageLayout>
+            </div>
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-[#79B92A] rounded-full"></PageLayout>
+              <div className="w-2 h-2 bg-[#79B92A] rounded-full"></div>
               <span>Exklusive Quellen</span>
-            </PageLayout>
+            </div>
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-[#79B92A] rounded-full"></PageLayout>
+              <div className="w-2 h-2 bg-[#79B92A] rounded-full"></div>
               <span>24/7 Transfer-Coverage</span>
-            </PageLayout>
-          </PageLayout>
-        </PageLayout>
+            </div>
+          </div>
+        </div>
       </section>
       
       {/* Authors Grid */}
@@ -283,8 +283,8 @@ export default function AuthorsPage() {
             {AUTHORS.filter(a => ["Chefredakteur", "Senior Redakteurin", "Breaking News Editor"].includes(a.role)).map(author => (
               <AuthorCard key={author.id} author={author} />
             ))}
-          </PageLayout>
-        </PageLayout>
+          </div>
+        </div>
         
         {/* Korrespondenten */}
         <div className="mb-12">
@@ -296,8 +296,8 @@ export default function AuthorsPage() {
             {AUTHORS.filter(a => a.role.includes("Korrespondent") || a.role.includes("Experte") || a.role.includes("Expertin") || a.role.includes("Analystin")).map(author => (
               <AuthorCard key={author.id} author={author} />
             ))}
-          </PageLayout>
-        </PageLayout>
+          </div>
+        </div>
         
         {/* Digital Team */}
         <div>
@@ -309,8 +309,8 @@ export default function AuthorsPage() {
             {AUTHORS.filter(a => a.role.includes("Podcast") || a.role.includes("Social") || a.role.includes("Analyst") || a.role.includes("Daten")).map(author => (
               <AuthorCard key={author.id} author={author} />
             ))}
-          </PageLayout>
-        </PageLayout>
+          </div>
+        </div>
       </section>
       
       {/* E-E-A-T Trust Section */}
@@ -318,22 +318,22 @@ export default function AuthorsPage() {
         <div className="max-w-6xl mx-auto px-4">
           <div className="grid md:grid-cols-3 gap-8 text-center">
             <div>
-              <div className="text-4xl font-black text-[#79B92A] mb-2">12+</PageLayout>
-              <div className="text-gray-600">Jahre Erfahrung (Durchschnitt)</PageLayout>
-            </PageLayout>
+              <div className="text-4xl font-black text-[#79B92A] mb-2">12+</div>
+              <div className="text-gray-600">Jahre Erfahrung (Durchschnitt)</div>
+            </div>
             <div>
-              <div className="text-4xl font-black text-[#79B92A] mb-2">{totalArticles.toLocaleString()}+</PageLayout>
-              <div className="text-gray-600">Veröffentlichte Artikel</PageLayout>
-            </PageLayout>
+              <div className="text-4xl font-black text-[#79B92A] mb-2">{totalArticles.toLocaleString()}+</div>
+              <div className="text-gray-600">Veröffentlichte Artikel</div>
+            </div>
             <div>
-              <div className="text-4xl font-black text-[#79B92A] mb-2">6</PageLayout>
-              <div className="text-gray-600">Länder mit Korrespondenten</PageLayout>
-            </PageLayout>
-          </PageLayout>
-        </PageLayout>
+              <div className="text-4xl font-black text-[#79B92A] mb-2">6</div>
+              <div className="text-gray-600">Länder mit Korrespondenten</div>
+            </div>
+          </div>
+        </div>
       </section>
       
       <Footer />
-    </PageLayout>
+    </div>
   );
 }
