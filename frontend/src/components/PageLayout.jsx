@@ -10,24 +10,27 @@ import { useEffect } from 'react';
  */
 export default function PageLayout({ children }) {
   useEffect(() => {
-    // Load TheMonetizer scripts
-    const script1 = document.createElement('script');
-    script1.src = '//ads.themoneytizer.com/s/gen.js?type=4';
-    script1.async = true;
-    
-    const script2 = document.createElement('script');
-    script2.src = '//ads.themoneytizer.com/s/requestform.js?siteId=141912&formatId=4';
-    script2.async = true;
-    
-    const container = document.getElementById('141912-4');
-    if (container && !container.hasChildNodes()) {
-      container.appendChild(script1);
-      container.appendChild(script2);
-    }
-    
-    return () => {
-      // Cleanup if needed
+    // Load TheMonetizer scripts for format 4 (skyscraper)
+    const loadAd = (containerId, formatId) => {
+      const container = document.getElementById(containerId);
+      if (container && !container.hasChildNodes()) {
+        const script1 = document.createElement('script');
+        script1.src = `//ads.themoneytizer.com/s/gen.js?type=${formatId}`;
+        script1.async = true;
+        
+        const script2 = document.createElement('script');
+        script2.src = `//ads.themoneytizer.com/s/requestform.js?siteId=141912&formatId=${formatId}`;
+        script2.async = true;
+        
+        container.appendChild(script1);
+        container.appendChild(script2);
+      }
     };
+    
+    loadAd('141912-4', 4);
+    loadAd('141912-6', 6);
+    
+    return () => {};
   }, []);
 
   return (
@@ -44,6 +47,7 @@ export default function PageLayout({ children }) {
         }
       `}</style>
       <div id="141912-4" className="hidden lg:block"></div>
+      <div id="141912-6"></div>
 
       {/* Main Content Box - 1000px zentriert */}
       <div className="w-full max-w-[1000px] mx-auto min-h-screen bg-[#e8e8e8] dark:bg-gray-950">
