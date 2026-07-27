@@ -59,9 +59,9 @@ export function TrendingWidget({ className = "" }) {
           </div>
           <ul className="divide-y divide-gray-50">
             {trending_players.slice(0, 5).map((player, idx) => (
-              <li key={player.name}>
+              <li key={player.slug || player.name}>
                 <Link
-                  to={`/spieler/${player.name.toLowerCase().replace(/\s+/g, '-')}`}
+                  to={`/spieler/${player.slug || player.name.toLowerCase().replace(/\s+/g, '-')}`}
                   className="flex items-center px-4 py-2.5 hover:bg-gray-50 transition-colors group"
                   data-testid={`trending-player-${idx}`}
                 >
@@ -90,9 +90,9 @@ export function TrendingWidget({ className = "" }) {
           </div>
           <ul className="divide-y divide-gray-50">
             {trending_clubs.slice(0, 5).map((club, idx) => (
-              <li key={club.name}>
+              <li key={club.slug || club.name}>
                 <Link
-                  to={`/verein/${club.name.toLowerCase().replace(/\s+/g, '-')}`}
+                  to={`/verein/${club.slug || club.name.toLowerCase().replace(/\s+/g, '-')}`}
                   className="flex items-center px-4 py-2.5 hover:bg-gray-50 transition-colors group"
                   data-testid={`trending-club-${idx}`}
                 >
@@ -156,8 +156,8 @@ export function TrendingBar({ className = "" }) {
         <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide">
           {allTrending.map((item, idx) => (
             <Link
-              key={`${item.type}-${item.name}`}
-              to={`/${item.type === 'player' ? 'spieler' : 'verein'}/${item.name.toLowerCase().replace(/\s+/g, '-')}`}
+              key={`${item.type}-${item.slug || item.name}`}
+              to={`/${item.type === 'player' ? 'spieler' : 'verein'}/${item.slug || item.name.toLowerCase().replace(/\s+/g, '-')}`}
               className="text-xs hover:text-[#79B92A] transition-colors whitespace-nowrap capitalize"
             >
               {item.name}

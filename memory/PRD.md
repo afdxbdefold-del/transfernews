@@ -3,6 +3,11 @@
 ## Letztes Update: 27. Juli 2026
 
 ### Kürzlich abgeschlossen:
+- ✅ **Spieler-Slug Fix in TrendingWidget** (27.07.2026)
+  - Trending-Links nutzen jetzt `player.slug` aus der API statt generierte Slugs
+  - Fix: `/spieler/florian-wirtz` → `/spieler/wirtz`
+  - Fix: `/spieler/erling-haaland` → `/spieler/haaland`
+  - TrendingWidget.jsx und TrendingBar korrigiert
 - ✅ **StandardSidebar auf allen redaktionellen Seiten** (27.07.2026)
   - RumoursPage (/geruechte)
   - TickerPage (/ticker)
