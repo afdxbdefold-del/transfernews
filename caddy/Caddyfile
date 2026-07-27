@@ -1,0 +1,11 @@
+transfernews.de, www.transfernews.de {
+    # API Requests zum Backend
+    handle /api/* {
+        reverse_proxy backend:8001
+    }
+    
+    # Alle anderen Requests zum Frontend
+    handle {
+        reverse_proxy frontend:80
+    }
+}

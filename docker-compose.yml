@@ -26,12 +26,11 @@ services:
       - app-network
 
   caddy:
-    image: caddy:alpine
+    build: ./caddy
     ports:
       - "80:80"
       - "443:443"
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile
       - caddy_data:/data
       - caddy_config:/config
     depends_on:
