@@ -1,5 +1,5 @@
 import { useLocation } from 'react-router-dom';
-import { useTheMoneytizerAds, StickySkyscraperAd, GlobalAd, MegabannerAd, BillboardAd } from './TheMoneytizerAds';
+import { useTheMoneytizerAds, StickySkyscraperAd, GlobalAd, MegabannerAd } from './TheMoneytizerAds';
 
 // Pages without ads
 const NO_AD_PAGES = ['/impressum', '/datenschutz', '/ueber-uns', '/about'];
@@ -32,14 +32,6 @@ export default function PageLayout({ children }) {
 
       {/* Main Content Box - 1000px zentriert */}
       <div className="w-full max-w-[1000px] mx-auto min-h-screen bg-[#e8e8e8] dark:bg-gray-950">
-        {/* Billboard unter dem Header-Bereich, innerhalb der Content-Box */}
-        {showAds && (
-          <div className="hidden lg:block bg-[#d9d9d9] py-2" data-testid="billboard-container">
-            <div className="flex justify-center">
-              <BillboardAd />
-            </div>
-          </div>
-        )}
         {children}
       </div>
     </div>

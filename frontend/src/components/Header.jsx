@@ -2,6 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import { MagnifyingGlass, List, X, CaretDown } from "@phosphor-icons/react";
 import { useState, useEffect, useRef } from "react";
 import { autosuggest } from "@/api";
+import { BillboardAd } from "./TheMoneytizerAds";
 
 const LEAGUES = [
   { slug: 'bundesliga', name: 'Bundesliga', country: '🇩🇪' },
@@ -265,6 +266,15 @@ export default function Header() {
             </nav>
           </div>
         </>
+      )}
+
+      {/* Billboard unter dem Navigationsmenü */}
+      {showAds && (
+        <div className="hidden lg:block bg-[#d9d9d9] py-2" data-testid="billboard-container">
+          <div className="flex justify-center">
+            <BillboardAd />
+          </div>
+        </div>
       )}
     </header>
   );
