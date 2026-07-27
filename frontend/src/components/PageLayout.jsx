@@ -1,35 +1,49 @@
+import { useEffect } from 'react';
+
 /**
  * PageLayout - Globales Layout für alle Seiten
  * 
  * Struktur wie transfermarkt.de:
  * - Gesamter Content in 1000px zentrierter Box
- * - Links und rechts Platz für Sticky Ads
+ * - Rechts TheMonetizer Sticky Ad
  * - Header, Nav, Content, Footer alle innerhalb der Box
  */
 export default function PageLayout({ children }) {
+  useEffect(() => {
+    // Load TheMonetizer scripts
+    const script1 = document.createElement('script');
+    script1.src = '//ads.themoneytizer.com/s/gen.js?type=4';
+    script1.async = true;
+    
+    const script2 = document.createElement('script');
+    script2.src = '//ads.themoneytizer.com/s/requestform.js?siteId=141912&formatId=4';
+    script2.async = true;
+    
+    const container = document.getElementById('141912-4');
+    if (container && !container.hasChildNodes()) {
+      container.appendChild(script1);
+      container.appendChild(script2);
+    }
+    
+    return () => {
+      // Cleanup if needed
+    };
+  }, []);
+
   return (
     <div className="min-h-screen bg-[#f2f2f2] dark:bg-[#1a1a1a] relative" data-testid="page-layout">
-      {/* Sticky Skyscraper Links */}
-      <div className="hidden xl:block fixed left-0 top-[100px] z-40" style={{ width: '160px' }}>
-        <div 
-          className="bg-gray-200 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded ml-2 flex items-center justify-center"
-          style={{ width: '160px', height: '600px' }}
-          data-testid="left-sticky-ad"
-        >
-          <span className="text-[10px] text-gray-400 uppercase">Anzeige</span>
-        </div>
-      </div>
-
-      {/* Sticky Skyscraper Rechts */}
-      <div className="hidden xl:block fixed right-0 top-[100px] z-40" style={{ width: '160px' }}>
-        <div 
-          className="bg-gray-200 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded mr-2 flex items-center justify-center"
-          style={{ width: '160px', height: '600px' }}
-          data-testid="right-sticky-ad"
-        >
-          <span className="text-[10px] text-gray-400 uppercase">Anzeige</span>
-        </div>
-      </div>
+      {/* TheMonetizer Sticky Skyscraper Rechts */}
+      <style>{`
+        @media (min-width: 1024px) {
+          #sas_26324 {
+            position: fixed;
+            right: 0px;
+            top: 90px;
+            z-index: 99999999;
+          }
+        }
+      `}</style>
+      <div id="141912-4" className="hidden lg:block"></div>
 
       {/* Main Content Box - 1000px zentriert */}
       <div className="w-full max-w-[1000px] mx-auto min-h-screen bg-[#e8e8e8] dark:bg-gray-950">
