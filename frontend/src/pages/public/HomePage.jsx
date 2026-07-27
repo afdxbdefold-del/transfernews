@@ -192,6 +192,21 @@ export default function HomePage() {
 
   useEffect(() => {
     fetchData();
+    // Load MREC ad
+    const loadMrec = () => {
+      const container = document.getElementById('141912-2');
+      if (container && !container.hasChildNodes()) {
+        const script1 = document.createElement('script');
+        script1.src = '//ads.themoneytizer.com/s/gen.js?type=2';
+        script1.async = true;
+        const script2 = document.createElement('script');
+        script2.src = '//ads.themoneytizer.com/s/requestform.js?siteId=141912&formatId=2';
+        script2.async = true;
+        container.appendChild(script1);
+        container.appendChild(script2);
+      }
+    };
+    loadMrec();
   }, []);
 
   useEffect(() => {
@@ -338,9 +353,9 @@ export default function HomePage() {
               </div>
             </div>
             
-            {/* Ad 300x250 unter Trending Spieler (nur Desktop) */}
-            <div className="hidden lg:flex bg-gray-200 border border-gray-300 rounded-sm items-center justify-center" style={{ width: '280px', height: '250px' }}>
-              <span className="text-[10px] text-gray-400 uppercase">Anzeige</span>
+            {/* TheMonetizer MREC 300x250 */}
+            <div className="hidden lg:block" id="mrec-container-1">
+              <div id="141912-2"></div>
             </div>
             
             {/* Trending Clubs */}
