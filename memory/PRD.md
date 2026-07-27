@@ -1,8 +1,24 @@
 # TransferNews.de - Product Requirements Document
 
-## Letztes Update: 24. Juli 2026
+## Letztes Update: 27. Juli 2026
 
 ### Kürzlich abgeschlossen:
+- ✅ **StandardSidebar auf allen redaktionellen Seiten** (27.07.2026)
+  - RumoursPage (/geruechte)
+  - TickerPage (/ticker)
+  - TopDealsPage (/top-deals)
+  - FreeAgentsPage (/abloesefrei)
+  - DeadlineDayPage (/deadline-day)
+  - SearchPage (/suche)
+  - Grid-Layout: lg:grid-cols-[1fr_300px] für Desktop
+  - Sidebar versteckt auf Mobile (hidden lg:block)
+  - Trending Widget in jeder Sidebar
+- ✅ **Error Overlay Fix für TheMoneytizer Scripts** (27.07.2026)
+  - Cross-Origin Script-Fehler werden in index.html abgefangen
+  - Keine störenden Error-Overlays mehr im Development
+- ✅ **data-testid Attribute für Ads** (27.07.2026)
+  - megabanner-ad, billboard-ad für besseres Testing
+- ⚠️ **TheMoneytizer Ads auf Preview**: Megabanner/Billboard laden Scripts aber rendern nicht (Domain nicht autorisiert). Auf Production (transfernews.de) sollte es funktionieren.
 - ✅ **Alle 18 Bundesliga-Clubs komplett**: 406 Spieler, 2.66 Mrd. € Gesamtwert (24.07.2026)
   - FC Bayern München (42 Spieler, 688M €)
   - RB Leipzig (17 Spieler, 433M €)

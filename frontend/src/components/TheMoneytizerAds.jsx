@@ -100,12 +100,12 @@ export function useTheMoneytizerAds() {
 // Ad Container Components - key attribute should be passed from parent for remounting
 export function MegabannerAd() {
   const containerRef = useAdLoader(1);
-  return <div ref={containerRef} className="flex justify-center min-h-[90px]"></div>;
+  return <div ref={containerRef} data-testid="megabanner-ad" className="flex justify-center min-h-[90px]"></div>;
 }
 
 export function BillboardAd() {
   const containerRef = useAdLoader(31);
-  return <div ref={containerRef} style={{textAlign: 'center', minHeight: '250px'}}></div>;
+  return <div ref={containerRef} data-testid="billboard-ad" style={{textAlign: 'center', minHeight: '250px'}}></div>;
 }
 
 export function SidebarAd300x600() {
