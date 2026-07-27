@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { getActiveAdSlots } from "@/api";
 
 export function AdSlot({ slotKey, className = "", minHeight = "90px" }) {
@@ -43,8 +43,26 @@ export function AdBanner({ slotKey, size = "leaderboard" }) {
   return <AdSlot slotKey={slotKey} />;
 }
 
+// TheMonetizer 300x600 Sidebar Ad (format 3)
 export function SidebarAd({ slotKey }) {
-  return <AdSlot slotKey={slotKey} minHeight="250px" />;
+  const containerRef = useRef(null);
+  
+  useEffect(() => {
+    if (containerRef.current && !containerRef.current.hasChildNodes()) {
+      const script1 = document.createElement('script');
+      script1.src = '//ads.themoneytizer.com/s/gen.js?type=3';
+      script1.async = true;
+      
+      const script2 = document.createElement('script');
+      script2.src = '//ads.themoneytizer.com/s/requestform.js?siteId=141912&formatId=3';
+      script2.async = true;
+      
+      containerRef.current.appendChild(script1);
+      containerRef.current.appendChild(script2);
+    }
+  }, []);
+
+  return <div id="141912-3" ref={containerRef} data-testid={`ad-slot-${slotKey}`}></div>;
 }
 
 export function FeedAd({ slotKey }) {
