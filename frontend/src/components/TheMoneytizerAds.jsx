@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 
 // Pages without ads
@@ -10,63 +10,74 @@ export function useShouldShowAds() {
   return !NO_AD_PAGES.some(p => location.pathname.startsWith(p));
 }
 
-// Load ad into a container with error handling
-function loadAdIntoContainer(container, formatId) {
-  if (!container) return;
+// Unique ID generator for ad containers
+let adIdCounter = 0;
+const generateAdId = () => `tm-ad-${++adIdCounter}-${Date.now()}`;
+
+// Component that loads ad scripts fresh on each mount
+function AdUnit({ formatId, minHeight, className = "", style = {} }) {
+  const location = useLocation();
+  const containerRef = useRef(null);
+  const [containerId] = useState(() => generateAdId());
+  const [loaded, setLoaded] = useState(false);
   
-  // Clear previous content
-  container.innerHTML = '';
+  const shouldShow = !NO_AD_PAGES.some(p => location.pathname.startsWith(p));
   
-  try {
-    // Create and append scripts with error handling
+  const loadAd = useCallback(() => {
+    const container = containerRef.current;
+    if (!container || !shouldShow) return;
+    
+    // Clear any existing content
+    container.innerHTML = '';
+    setLoaded(false);
+    
+    // Create script elements
     const script1 = document.createElement('script');
     script1.src = `//ads.themoneytizer.com/s/gen.js?type=${formatId}`;
     script1.async = true;
-    script1.onerror = () => console.log(`Ad script gen.js type=${formatId} failed to load`);
     
     const script2 = document.createElement('script');
     script2.src = `//ads.themoneytizer.com/s/requestform.js?siteId=141912&formatId=${formatId}`;
     script2.async = true;
-    script2.onerror = () => console.log(`Ad script requestform.js formatId=${formatId} failed to load`);
+    script2.onload = () => {
+      // Give the ad time to render
+      setTimeout(() => setLoaded(true), 500);
+    };
     
     container.appendChild(script1);
     container.appendChild(script2);
-  } catch (e) {
-    console.log('Ad loading error:', e);
-  }
-}
-
-// Hook for individual ad loading - loads on mount
-function useAdLoader(formatId) {
-  const location = useLocation();
-  const containerRef = useRef(null);
+  }, [formatId, shouldShow]);
   
+  // Load ad on mount and route change
   useEffect(() => {
-    const shouldLoad = !NO_AD_PAGES.some(p => location.pathname.startsWith(p));
-    if (!shouldLoad) return;
-    
-    const container = containerRef.current;
-    if (!container) return;
-    
     // Small delay to ensure DOM is ready
-    const timer = setTimeout(() => {
-      loadAdIntoContainer(container, formatId);
-    }, 100);
+    const timer = setTimeout(loadAd, 100);
     
     return () => {
       clearTimeout(timer);
       // Cleanup on unmount
-      if (container) {
-        try {
-          container.innerHTML = '';
-        } catch (e) {
-          // Ignore cleanup errors
-        }
+      if (containerRef.current) {
+        containerRef.current.innerHTML = '';
       }
     };
-  }, [formatId, location.pathname]);
+  }, [loadAd, location.pathname]);
   
-  return containerRef;
+  if (!shouldShow) return null;
+  
+  return (
+    <div 
+      ref={containerRef}
+      id={containerId}
+      className={className}
+      style={{ 
+        minHeight, 
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        ...style 
+      }}
+    />
+  );
 }
 
 // Hook for PageLayout to load global/sticky ads
@@ -80,15 +91,33 @@ export function useTheMoneytizerAds() {
     
     const loadGlobalAds = () => {
       // Skyscraper (Format 4)
-      const skyscraper = document.getElementById('141912-4');
+      const skyscraper = document.getElementById('tm-skyscraper');
       if (skyscraper && skyscraper.childElementCount === 0) {
-        loadAdIntoContainer(skyscraper, 4);
+        const script1 = document.createElement('script');
+        script1.src = '//ads.themoneytizer.com/s/gen.js?type=4';
+        script1.async = true;
+        
+        const script2 = document.createElement('script');
+        script2.src = '//ads.themoneytizer.com/s/requestform.js?siteId=141912&formatId=4';
+        script2.async = true;
+        
+        skyscraper.appendChild(script1);
+        skyscraper.appendChild(script2);
       }
       
       // Global (Format 6)
-      const global = document.getElementById('141912-6');
+      const global = document.getElementById('tm-global');
       if (global && global.childElementCount === 0) {
-        loadAdIntoContainer(global, 6);
+        const g1 = document.createElement('script');
+        g1.src = '//ads.themoneytizer.com/s/gen.js?type=6';
+        g1.async = true;
+        
+        const g2 = document.createElement('script');
+        g2.src = '//ads.themoneytizer.com/s/requestform.js?siteId=141912&formatId=6';
+        g2.async = true;
+        
+        global.appendChild(g1);
+        global.appendChild(g2);
       }
     };
     
@@ -97,55 +126,86 @@ export function useTheMoneytizerAds() {
   }, [location.pathname]);
 }
 
-// Ad Container Components - key attribute should be passed from parent for remounting
+// Megabanner 970x90 (Format 1)
 export function MegabannerAd() {
-  const containerRef = useAdLoader(1);
-  return <div ref={containerRef} data-testid="megabanner-ad" className="flex justify-center min-h-[90px]"></div>;
+  const location = useLocation();
+  return (
+    <div data-testid="megabanner-ad" key={`megabanner-${location.pathname}`}>
+      <AdUnit formatId={1} minHeight="90px" />
+    </div>
+  );
 }
 
+// Billboard 970x250 (Format 31)
 export function BillboardAd() {
-  const containerRef = useAdLoader(31);
-  return <div ref={containerRef} data-testid="billboard-ad" style={{textAlign: 'center', minHeight: '250px'}}></div>;
+  const location = useLocation();
+  return (
+    <div data-testid="billboard-ad" key={`billboard-${location.pathname}`}>
+      <AdUnit formatId={31} minHeight="250px" />
+    </div>
+  );
 }
 
+// Sidebar 300x600 (Format 3)
 export function SidebarAd300x600() {
-  const containerRef = useAdLoader(3);
-  return <div ref={containerRef} className="min-h-[600px]"></div>;
+  const location = useLocation();
+  return (
+    <div data-testid="sidebar-ad-300x600" key={`sidebar-${location.pathname}`}>
+      <AdUnit formatId={3} minHeight="600px" />
+    </div>
+  );
 }
 
+// MREC 300x250 (Format 2)
 export function MrecAd() {
-  const containerRef = useAdLoader(2);
-  return <div ref={containerRef} className="min-h-[250px]"></div>;
+  const location = useLocation();
+  return (
+    <div data-testid="mrec-ad" key={`mrec-${location.pathname}`}>
+      <AdUnit formatId={2} minHeight="250px" />
+    </div>
+  );
 }
 
+// MREC 2 (Format 19)
 export function MrecAd2() {
-  const containerRef = useAdLoader(19);
-  return <div ref={containerRef} className="min-h-[250px]"></div>;
+  const location = useLocation();
+  return (
+    <div data-testid="mrec-ad-2" key={`mrec2-${location.pathname}`}>
+      <AdUnit formatId={19} minHeight="250px" />
+    </div>
+  );
 }
 
+// Above Footer (Format 28)
 export function AboveFooterAd() {
-  const containerRef = useAdLoader(28);
-  return <div ref={containerRef} className="min-h-[90px]"></div>;
+  const location = useLocation();
+  return (
+    <div data-testid="above-footer-ad" key={`footer-${location.pathname}`}>
+      <AdUnit formatId={28} minHeight="90px" />
+    </div>
+  );
 }
 
+// Sticky Skyscraper
 export function StickySkyscraperAd() {
   return (
     <>
       <style>{`
         @media (min-width: 1024px) {
-          #sas_26324 {
+          #tm-skyscraper {
             position: fixed;
-            right: 0px;
+            left: 0px;
             top: 90px;
             z-index: 99999999;
           }
         }
       `}</style>
-      <div id="141912-4" className="hidden lg:block"></div>
+      <div id="tm-skyscraper" className="hidden lg:block"></div>
     </>
   );
 }
 
+// Global Ad Container
 export function GlobalAd() {
-  return <div id="141912-6"></div>;
+  return <div id="tm-global"></div>;
 }
