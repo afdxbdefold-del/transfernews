@@ -2,7 +2,6 @@ import { Link, useLocation } from "react-router-dom";
 import { MagnifyingGlass, List, X, CaretDown } from "@phosphor-icons/react";
 import { useState, useEffect, useRef } from "react";
 import { autosuggest } from "@/api";
-import { MegabannerAd, BillboardAd } from "./TheMoneytizerAds";
 
 const LEAGUES = [
   { slug: 'bundesliga', name: 'Bundesliga', country: '🇩🇪' },
@@ -14,6 +13,19 @@ const LEAGUES = [
 
 // Pages without ads
 const NO_AD_PAGES = ['/impressum', '/datenschutz', '/ueber-uns', '/about'];
+
+// Hard link component for main navigation - forces full page reload to fix TheMoneytizer ads
+function NavLink({ to, children, className, ...props }) {
+  return (
+    <a 
+      href={to} 
+      className={className}
+      {...props}
+    >
+      {children}
+    </a>
+  );
+}
 
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -84,15 +96,6 @@ export default function Header() {
 
   return (
     <header data-testid="main-header">
-      {/* TheMonetizer Megabanner - über Header (nur Desktop) */}
-      {showAds && (
-        <div className="hidden lg:block py-2 bg-[#f2f2f2]" data-testid="top-banner-container">
-          <div className="flex justify-center">
-            <MegabannerAd />
-          </div>
-        </div>
-      )}
-      
       {/* Top Bar - White */}
       <div className="bg-white border-b border-gray-200">
         <div className="flex items-center justify-between h-[44px] px-3">
@@ -157,7 +160,7 @@ export default function Header() {
       <nav className="bg-[#79B92A]" data-testid="sports-nav">
         <div className="flex items-center h-[44px] px-3 overflow-x-auto hide-scrollbar">
           {navItems.map((item) => (
-            <Link
+            <NavLink
               key={item.path}
               to={item.path}
               className={`flex-shrink-0 h-full flex items-center px-3 text-[11px] font-semibold transition-colors border-b-2 ${
@@ -167,7 +170,7 @@ export default function Header() {
               }`}
             >
               {item.label}
-            </Link>
+            </NavLink>
           ))}
           
           {/* Liga-Dropdown */}
@@ -188,7 +191,7 @@ export default function Header() {
             {leagueDropdownOpen && (
               <div className="absolute top-full left-0 w-48 bg-white shadow-lg border border-gray-200 z-50">
                 {LEAGUES.map((league) => (
-                  <Link
+                  <NavLink
                     key={league.slug}
                     to={`/wettbewerb/${league.slug}`}
                     onClick={() => setLeagueDropdownOpen(false)}
@@ -196,7 +199,7 @@ export default function Header() {
                   >
                     <span>{league.country}</span>
                     <span className="font-medium text-gray-900">{league.name}</span>
-                  </Link>
+                  </NavLink>
                 ))}
               </div>
             )}
@@ -231,7 +234,7 @@ export default function Header() {
             
             <nav className="py-1">
               {navItems.map((item) => (
-                <Link
+                <NavLink
                   key={item.path}
                   to={item.path}
                   onClick={() => setMenuOpen(false)}
@@ -242,13 +245,13 @@ export default function Header() {
                   }`}
                 >
                   {item.label}
-                </Link>
+                </NavLink>
               ))}
               
               <div className="border-t border-gray-200 mt-2 pt-2">
                 <div className="px-4 py-2 text-[10px] text-gray-500 uppercase font-bold">Wettbewerbe</div>
                 {LEAGUES.map((league) => (
-                  <Link
+                  <NavLink
                     key={league.slug}
                     to={`/wettbewerb/${league.slug}`}
                     onClick={() => setMenuOpen(false)}
@@ -256,21 +259,12 @@ export default function Header() {
                   >
                     <span>{league.country}</span>
                     <span>{league.name}</span>
-                  </Link>
+                  </NavLink>
                 ))}
               </div>
             </nav>
           </div>
         </>
-      )}
-      
-      {/* TheMonetizer Billboard 970x250 - unter dem Menü (nur Desktop) */}
-      {showAds && (
-        <div className="hidden lg:block bg-[#d9d9d9] py-2" data-testid="billboard-container">
-          <div className="flex justify-center">
-            <BillboardAd />
-          </div>
-        </div>
       )}
     </header>
   );

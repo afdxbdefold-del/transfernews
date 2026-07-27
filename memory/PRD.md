@@ -3,6 +3,11 @@
 ## Letztes Update: 27. Juli 2026
 
 ### Kürzlich abgeschlossen:
+- ✅ **TheMoneytizer Ads Fix bei Navigation** (27.07.2026)
+  - Problem: Ads verschwanden bei SPA-Navigation
+  - Lösung: Hauptnavigation verwendet jetzt echte `<a href>` Links statt React Router `<Link>`
+  - Das erzwingt einen Full Page Reload bei Navigation im Header
+  - Alle Ads (Megabanner, Billboard, Sidebar, Skyscraper) bleiben bei Seitenwechsel sichtbar
 - ✅ **Spieler-Slug Fix in TrendingWidget** (27.07.2026)
   - Trending-Links nutzen jetzt `player.slug` aus der API statt generierte Slugs
   - Fix: `/spieler/florian-wirtz` → `/spieler/wirtz`
