@@ -11,20 +11,30 @@ const LEAGUES = [
   { slug: 'ligue-1', name: 'Ligue 1', country: '🇫🇷' },
 ];
 
-// Load TheMonetizer megabanner
+// Load TheMonetizer megabanner and billboard
 const loadMegabanner = () => {
-  const container = document.getElementById('141912-1');
-  if (container && !container.hasChildNodes()) {
+  const container1 = document.getElementById('141912-1');
+  if (container1 && !container1.hasChildNodes()) {
     const script1 = document.createElement('script');
     script1.src = '//ads.themoneytizer.com/s/gen.js?type=1';
     script1.async = true;
-    
     const script2 = document.createElement('script');
     script2.src = '//ads.themoneytizer.com/s/requestform.js?siteId=141912&formatId=1';
     script2.async = true;
-    
-    container.appendChild(script1);
-    container.appendChild(script2);
+    container1.appendChild(script1);
+    container1.appendChild(script2);
+  }
+  
+  const container31 = document.getElementById('141912-31');
+  if (container31 && !container31.hasChildNodes()) {
+    const script1 = document.createElement('script');
+    script1.src = '//ads.themoneytizer.com/s/gen.js?type=31';
+    script1.async = true;
+    const script2 = document.createElement('script');
+    script2.src = '//ads.themoneytizer.com/s/requestform.js?siteId=141912&formatId=31';
+    script2.async = true;
+    container31.appendChild(script1);
+    container31.appendChild(script2);
   }
 };
 
@@ -275,16 +285,10 @@ export default function Header() {
         </>
       )}
       
-      {/* Billboard Ad - unter dem Menü (nur Desktop) */}
+      {/* TheMonetizer Billboard 970x250 - unter dem Menü (nur Desktop) */}
       <div className="hidden lg:block bg-[#d9d9d9] py-2" data-testid="billboard-container">
         <div className="flex justify-center">
-          <div 
-            className="bg-gray-300 border border-gray-400 flex items-center justify-center"
-            style={{ width: '970px', height: '250px' }}
-            data-testid="billboard-ad"
-          >
-            <span className="text-[11px] text-gray-500 uppercase tracking-wider">Anzeige</span>
-          </div>
+          <div style={{textAlign: 'center'}} id="141912-31" data-testid="billboard-ad"></div>
         </div>
       </div>
     </header>
