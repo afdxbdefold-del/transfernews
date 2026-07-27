@@ -1,8 +1,29 @@
 import { Link } from "react-router-dom";
+import { useEffect } from "react";
 
 export default function Footer() {
+  useEffect(() => {
+    const container = document.getElementById('141912-28');
+    if (container && !container.hasChildNodes()) {
+      const script1 = document.createElement('script');
+      script1.src = '//ads.themoneytizer.com/s/gen.js?type=28';
+      script1.async = true;
+      const script2 = document.createElement('script');
+      script2.src = '//ads.themoneytizer.com/s/requestform.js?siteId=141912&formatId=28';
+      script2.async = true;
+      container.appendChild(script1);
+      container.appendChild(script2);
+    }
+  }, []);
+
   return (
-    <footer className="bg-neutral-800 text-white" data-testid="main-footer">
+    <>
+      {/* Ad above footer */}
+      <div className="bg-[#e8e8e8] py-3 flex justify-center">
+        <div id="141912-28"></div>
+      </div>
+      
+      <footer className="bg-neutral-800 text-white" data-testid="main-footer">
       {/* Main Footer Content */}
       <div className="py-4 border-b border-white/10 px-3">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -56,5 +77,6 @@ export default function Footer() {
         </div>
       </div>
     </footer>
+    </>
   );
 }
