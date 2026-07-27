@@ -2,6 +2,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import PageLayout from "@/components/PageLayout";
 import { SidebarAd } from "@/components/AdSlot";
+import { MrecAd, MrecAd2 } from "@/components/TheMoneytizerAds";
 import { useEffect, useState } from "react";
 import { getPublishedArticles, getAllTrending } from "@/api";
 import { Link } from "react-router-dom";
@@ -193,22 +194,6 @@ export default function HomePage() {
 
   useEffect(() => {
     fetchData();
-    // Load MREC ads
-    const loadMrec = (containerId, formatId) => {
-      const container = document.getElementById(containerId);
-      if (container && !container.hasChildNodes()) {
-        const script1 = document.createElement('script');
-        script1.src = `//ads.themoneytizer.com/s/gen.js?type=${formatId}`;
-        script1.async = true;
-        const script2 = document.createElement('script');
-        script2.src = `//ads.themoneytizer.com/s/requestform.js?siteId=141912&formatId=${formatId}`;
-        script2.async = true;
-        container.appendChild(script1);
-        container.appendChild(script2);
-      }
-    };
-    loadMrec('141912-2', 2);
-    loadMrec('141912-19', 19);
   }, []);
 
   useEffect(() => {
@@ -356,8 +341,8 @@ export default function HomePage() {
             </div>
             
             {/* TheMonetizer MREC 300x250 */}
-            <div className="hidden lg:block" id="mrec-container-1">
-              <div id="141912-2"></div>
+            <div className="hidden lg:block">
+              <MrecAd />
             </div>
             
             {/* Trending Clubs */}
@@ -423,8 +408,8 @@ export default function HomePage() {
             </div>
             
             {/* TheMonetizer MREC 2 (Format 19) */}
-            <div className="hidden lg:block" id="mrec-container-2">
-              <div id="141912-19"></div>
+            <div className="hidden lg:block">
+              <MrecAd2 />
             </div>
           </aside>
         </div>

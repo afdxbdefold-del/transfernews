@@ -2,6 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import { MagnifyingGlass, List, X, CaretDown } from "@phosphor-icons/react";
 import { useState, useEffect, useRef } from "react";
 import { autosuggest } from "@/api";
+import { MegabannerAd, BillboardAd } from "./TheMoneytizerAds";
 
 const LEAGUES = [
   { slug: 'bundesliga', name: 'Bundesliga', country: '🇩🇪' },
@@ -11,32 +12,8 @@ const LEAGUES = [
   { slug: 'ligue-1', name: 'Ligue 1', country: '🇫🇷' },
 ];
 
-// Load TheMonetizer megabanner and billboard
-const loadMegabanner = () => {
-  const container1 = document.getElementById('141912-1');
-  if (container1 && !container1.hasChildNodes()) {
-    const script1 = document.createElement('script');
-    script1.src = '//ads.themoneytizer.com/s/gen.js?type=1';
-    script1.async = true;
-    const script2 = document.createElement('script');
-    script2.src = '//ads.themoneytizer.com/s/requestform.js?siteId=141912&formatId=1';
-    script2.async = true;
-    container1.appendChild(script1);
-    container1.appendChild(script2);
-  }
-  
-  const container31 = document.getElementById('141912-31');
-  if (container31 && !container31.hasChildNodes()) {
-    const script1 = document.createElement('script');
-    script1.src = '//ads.themoneytizer.com/s/gen.js?type=31';
-    script1.async = true;
-    const script2 = document.createElement('script');
-    script2.src = '//ads.themoneytizer.com/s/requestform.js?siteId=141912&formatId=31';
-    script2.async = true;
-    container31.appendChild(script1);
-    container31.appendChild(script2);
-  }
-};
+// Pages without ads
+const NO_AD_PAGES = ['/impressum', '/datenschutz', '/ueber-uns', '/about'];
 
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -47,11 +24,11 @@ export default function Header() {
   const searchRef = useRef(null);
   const leagueRef = useRef(null);
   const location = useLocation();
+  const showAds = !NO_AD_PAGES.some(p => location.pathname.startsWith(p));
 
   useEffect(() => { 
     setMenuOpen(false); 
     setLeagueDropdownOpen(false);
-    loadMegabanner();
   }, [location]);
 
   useEffect(() => {
@@ -108,11 +85,13 @@ export default function Header() {
   return (
     <header data-testid="main-header">
       {/* TheMonetizer Megabanner - über Header (nur Desktop) */}
-      <div className="hidden lg:block py-2 bg-[#f2f2f2]" data-testid="top-banner-container">
-        <div className="flex justify-center">
-          <div id="141912-1" data-testid="top-banner-ad"></div>
+      {showAds && (
+        <div className="hidden lg:block py-2 bg-[#f2f2f2]" data-testid="top-banner-container">
+          <div className="flex justify-center">
+            <MegabannerAd />
+          </div>
         </div>
-      </div>
+      )}
       
       {/* Top Bar - White */}
       <div className="bg-white border-b border-gray-200">
@@ -286,11 +265,13 @@ export default function Header() {
       )}
       
       {/* TheMonetizer Billboard 970x250 - unter dem Menü (nur Desktop) */}
-      <div className="hidden lg:block bg-[#d9d9d9] py-2" data-testid="billboard-container">
-        <div className="flex justify-center">
-          <div style={{textAlign: 'center'}} id="141912-31" data-testid="billboard-ad"></div>
+      {showAds && (
+        <div className="hidden lg:block bg-[#d9d9d9] py-2" data-testid="billboard-container">
+          <div className="flex justify-center">
+            <BillboardAd />
+          </div>
         </div>
-      </div>
+      )}
     </header>
   );
 }

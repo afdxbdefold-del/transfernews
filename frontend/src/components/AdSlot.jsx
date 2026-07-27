@@ -1,5 +1,6 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { getActiveAdSlots } from "@/api";
+import { SidebarAd300x600, MrecAd, MrecAd2 } from "./TheMoneytizerAds";
 
 export function AdSlot({ slotKey, className = "", minHeight = "90px" }) {
   const [slot, setSlot] = useState(null);
@@ -20,7 +21,6 @@ export function AdSlot({ slotKey, className = "", minHeight = "90px" }) {
     fetchSlot();
   }, [slotKey]);
 
-  // Only render if slot has actual ad code
   if (loading) return null;
   if (!slot || !slot.is_active) return null;
   if (!slot.html_code && !slot.embed_code && !slot.js_code) return null;
@@ -43,30 +43,14 @@ export function AdBanner({ slotKey, size = "leaderboard" }) {
   return <AdSlot slotKey={slotKey} />;
 }
 
-// TheMonetizer 300x600 Sidebar Ad (format 3)
+// TheMonetizer 300x600 Sidebar Ad
 export function SidebarAd({ slotKey }) {
-  const containerRef = useRef(null);
-  
-  useEffect(() => {
-    if (containerRef.current && !containerRef.current.hasChildNodes()) {
-      const script1 = document.createElement('script');
-      script1.src = '//ads.themoneytizer.com/s/gen.js?type=3';
-      script1.async = true;
-      
-      const script2 = document.createElement('script');
-      script2.src = '//ads.themoneytizer.com/s/requestform.js?siteId=141912&formatId=3';
-      script2.async = true;
-      
-      containerRef.current.appendChild(script1);
-      containerRef.current.appendChild(script2);
-    }
-  }, []);
-
-  return <div id="141912-3" ref={containerRef} data-testid={`ad-slot-${slotKey}`}></div>;
+  return <SidebarAd300x600 />;
 }
 
+// TheMonetizer MREC
 export function FeedAd({ slotKey }) {
-  return <AdSlot slotKey={slotKey} minHeight="90px" />;
+  return <MrecAd />;
 }
 
 export function MobileStickyAd() {
