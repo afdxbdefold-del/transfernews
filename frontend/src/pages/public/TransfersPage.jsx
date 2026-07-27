@@ -1,5 +1,6 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import PageLayout from "@/components/PageLayout";
 import { AdSlot, SidebarAd } from "@/components/AdSlot";
 import { useEffect, useState } from "react";
 import { getConfirmedTransfers, getPlayer, getClub } from "@/api";
@@ -81,18 +82,10 @@ export default function TransfersPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50" data-testid="transfers-page">
+    <PageLayout>
       <Header />
 
-      {/* Top Ad */}
-      <div className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
-          <AdSlot slotKey="below_header" minHeight="90px" />
-        </div>
-      </div>
-
-      <main className="flex-1">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="flex-1 py-3 px-3" data-testid="transfers-page">
           {/* Page Title */}
           <div className="mb-8">
             <h1 className="font-['Oswald'] text-4xl font-bold uppercase flex items-center" data-testid="page-title">
@@ -212,13 +205,11 @@ export default function TransfersPage() {
             <aside className="space-y-6">
               <SidebarAd slotKey="sidebar_top" />
               <SidebarAd slotKey="sidebar_middle" />
-              <SidebarAd slotKey="sidebar_bottom" />
             </aside>
           </div>
-        </div>
       </main>
 
       <Footer />
-    </div>
+    </PageLayout>
   );
 }

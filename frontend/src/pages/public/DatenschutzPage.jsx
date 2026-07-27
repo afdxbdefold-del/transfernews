@@ -1,3 +1,4 @@
+import PageLayout from "@/components/PageLayout";
 import React from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -24,7 +25,7 @@ export default function DatenschutzPage() {
             <h1 className="text-3xl font-black text-gray-900" style={{ fontFamily: "'Oswald', sans-serif" }}>
               Datenschutzerklärung
             </h1>
-          </div>
+          </PageLayout>
           
           <p className="text-gray-600 mb-8">
             Der Schutz Ihrer persönlichen Daten ist uns ein besonderes Anliegen. Wir verarbeiten Ihre Daten 
@@ -43,7 +44,7 @@ export default function DatenschutzPage() {
               <p className="mt-3">
                 E-Mail: <a href="mailto:datenschutz@transfernews.de" className="text-[#79B92A] hover:underline">datenschutz@transfernews.de</a>
               </p>
-            </div>
+            </PageLayout>
           </section>
           
           {/* 2. Erhobene Daten */}
@@ -68,7 +69,7 @@ export default function DatenschutzPage() {
                 <Lock size={18} weight="fill" />
                 Diese Daten werden nicht mit anderen Datenquellen zusammengeführt.
               </p>
-            </div>
+            </PageLayout>
           </section>
           
           {/* 3. Cookies */}
@@ -99,7 +100,7 @@ export default function DatenschutzPage() {
                 <strong>Cookie-Einstellungen:</strong> Sie können Ihre Cookie-Präferenzen jederzeit in Ihren 
                 Browsereinstellungen ändern oder alle Cookies löschen.
               </p>
-            </div>
+            </PageLayout>
           </section>
           
           {/* 4. Rechtsgrundlage */}
@@ -140,28 +141,28 @@ export default function DatenschutzPage() {
               <div className="bg-gray-50 p-4 rounded-lg">
                 <h4 className="font-semibold text-gray-900 mb-1">Auskunftsrecht</h4>
                 <p className="text-sm text-gray-600">Sie können Auskunft über Ihre bei uns gespeicherten Daten verlangen.</p>
-              </div>
+              </PageLayout>
               <div className="bg-gray-50 p-4 rounded-lg">
                 <h4 className="font-semibold text-gray-900 mb-1">Berichtigungsrecht</h4>
                 <p className="text-sm text-gray-600">Sie können die Berichtigung unrichtiger Daten verlangen.</p>
-              </div>
+              </PageLayout>
               <div className="bg-gray-50 p-4 rounded-lg">
                 <h4 className="font-semibold text-gray-900 mb-1">Löschungsrecht</h4>
                 <p className="text-sm text-gray-600">Sie können die Löschung Ihrer Daten verlangen ("Recht auf Vergessenwerden").</p>
-              </div>
+              </PageLayout>
               <div className="bg-gray-50 p-4 rounded-lg">
                 <h4 className="font-semibold text-gray-900 mb-1">Einschränkung</h4>
                 <p className="text-sm text-gray-600">Sie können die Einschränkung der Verarbeitung verlangen.</p>
-              </div>
+              </PageLayout>
               <div className="bg-gray-50 p-4 rounded-lg">
                 <h4 className="font-semibold text-gray-900 mb-1">Datenübertragbarkeit</h4>
                 <p className="text-sm text-gray-600">Sie können Ihre Daten in einem gängigen Format erhalten.</p>
-              </div>
+              </PageLayout>
               <div className="bg-gray-50 p-4 rounded-lg">
                 <h4 className="font-semibold text-gray-900 mb-1">Widerspruchsrecht</h4>
                 <p className="text-sm text-gray-600">Sie können der Verarbeitung Ihrer Daten widersprechen.</p>
-              </div>
-            </div>
+              </PageLayout>
+            </PageLayout>
           </section>
           
           {/* 6. Drittanbieter */}
@@ -206,7 +207,7 @@ export default function DatenschutzPage() {
                 SSL-Verschlüsselung (HTTPS). Dadurch sind Daten, die Sie an uns übermitteln, vor dem 
                 Zugriff Dritter geschützt.
               </p>
-            </div>
+            </PageLayout>
           </section>
           
           {/* 8. Kontakt */}
@@ -225,7 +226,7 @@ export default function DatenschutzPage() {
                 TransferNews Media GmbH<br />
                 E-Mail: <a href="mailto:datenschutz@transfernews.de" className="text-[#79B92A] hover:underline">datenschutz@transfernews.de</a>
               </p>
-            </div>
+            </PageLayout>
           </section>
           
           {/* 9. Beschwerderecht */}
@@ -244,7 +245,7 @@ export default function DatenschutzPage() {
                   www.lda.bayern.de
                 </a>
               </p>
-            </div>
+            </PageLayout>
           </section>
           
           {/* Stand */}
@@ -257,17 +258,17 @@ export default function DatenschutzPage() {
               rechtlichen Anforderungen entspricht.
             </p>
           </section>
-        </div>
+        </PageLayout>
         
         {/* Quick Links */}
         <div className="mt-8 flex flex-wrap justify-center gap-4 text-sm">
           <Link to="/impressum" className="text-[#79B92A] hover:underline">Impressum</Link>
           <span className="text-gray-300">|</span>
           <Link to="/ueber-uns" className="text-[#79B92A] hover:underline">Über uns</Link>
-        </div>
+        </PageLayout>
       </main>
       
       <Footer />
-    </div>
+    </PageLayout>
   );
 }

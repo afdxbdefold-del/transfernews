@@ -1,5 +1,6 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import PageLayout from "@/components/PageLayout";
 import { AdSlot, SidebarAd } from "@/components/AdSlot";
 import { NewsCard } from "@/components/NewsCard";
 import { useEffect, useState } from "react";
@@ -51,13 +52,10 @@ export default function SearchPage() {
     : 0;
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50" data-testid="search-page">
+    <PageLayout>
       <Header />
 
-      {/* Top Ad */}
-      <div className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
-          <AdSlot slotKey="search_results_top" minHeight="90px" />
+      <main className="flex-1 py-3 px-3" data-testid="search-page">
         </div>
       </div>
 
@@ -282,6 +280,6 @@ export default function SearchPage() {
       </main>
 
       <Footer />
-    </div>
+    </PageLayout>
   );
 }

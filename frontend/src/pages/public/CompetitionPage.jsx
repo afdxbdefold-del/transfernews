@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { Trophy, ArrowRight, Clock, TrendingUp, CheckCircle } from 'lucide-react';
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
+import PageLayout from "@/components/PageLayout";
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -86,7 +89,7 @@ export default function CompetitionPage() {
   const { competition, all_news, breaking_news, rumours, confirmed_transfers, seo } = data;
 
   return (
-    <>
+    <PageLayout>
       <Helmet>
         <title>{seo?.title || `${competition.name} Transfer-News`}</title>
         <meta name="description" content={seo?.description} />
@@ -103,7 +106,9 @@ export default function CompetitionPage() {
         }}
       />
 
-      <div className="min-h-screen bg-gray-50" data-testid="competition-page">
+      <Header />
+
+      <main className="flex-1 py-3 px-3" data-testid="competition-page">
         {/* Hero Section */}
         <div className="bg-gradient-to-r from-gray-900 to-gray-800 text-white py-12">
           <div className="container mx-auto px-4">
@@ -279,7 +284,9 @@ export default function CompetitionPage() {
             </div>
           </div>
         </div>
-      </div>
-    </>
+      </main>
+
+      <Footer />
+    </PageLayout>
   );
 }

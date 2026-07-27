@@ -1,5 +1,6 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import PageLayout from "@/components/PageLayout";
 import { NewsCardHorizontal } from "@/components/NewsCard";
 import { TrendingWidget } from "@/components/TrendingWidget";
 import { useEffect, useState } from "react";
@@ -69,7 +70,7 @@ export default function NewsListPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-950" data-testid="news-list-page">
+    <PageLayout>
       <Helmet>
         <title>Transfer-News & Fußball-Meldungen - TransferNews</title>
         <meta name="description" content="Alle aktuellen Transfer-News, Gerüchte und Fußball-Meldungen. Bundesliga, Premier League, La Liga und mehr." />
@@ -77,8 +78,7 @@ export default function NewsListPage() {
       
       <Header />
 
-      <main className="flex-1">
-        <div className="max-w-[1000px] mx-auto px-3 py-4">
+      <main className="flex-1 py-3 px-3" data-testid="news-list-page">
           {/* Page Header with Filter Tabs */}
           <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm mb-4">
             <div className="p-4 border-b border-gray-100 dark:border-gray-800">
@@ -259,10 +259,9 @@ export default function NewsListPage() {
               </div>
             </aside>
           </div>
-        </div>
       </main>
 
       <Footer />
-    </div>
+    </PageLayout>
   );
 }

@@ -1,3 +1,4 @@
+import PageLayout from "@/components/PageLayout";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { NewsCard } from "@/components/NewsCard";
@@ -33,7 +34,7 @@ export default function AuthorPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col bg-gray-50">
+      <PageLayout>
         <Header />
         <main className="flex-1 py-8">
           <div className="max-w-[1000px] mx-auto px-4">
@@ -42,21 +43,21 @@ export default function AuthorPage() {
                 <Skeleton className="h-48 w-full" />
                 <Skeleton className="h-8 w-3/4" />
                 <Skeleton className="h-32 w-full" />
-              </div>
+              </PageLayout>
               <div>
                 <Skeleton className="h-64 w-full" />
-              </div>
-            </div>
-          </div>
+              </PageLayout>
+            </PageLayout>
+          </PageLayout>
         </main>
         <Footer />
-      </div>
+      </PageLayout>
     );
   }
 
   if (!author) {
     return (
-      <div className="min-h-screen flex flex-col bg-gray-50">
+      <PageLayout>
         <Header />
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
@@ -64,10 +65,10 @@ export default function AuthorPage() {
             <Link to="/" className="text-[#79B92A] hover:underline">
               Zur Startseite
             </Link>
-          </div>
+          </PageLayout>
         </main>
         <Footer />
-      </div>
+      </PageLayout>
     );
   }
 
@@ -79,7 +80,7 @@ export default function AuthorPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50" data-testid="author-page">
+    <PageLayout data-testid="author-page">
       <Helmet>
         <title>{`${author.name} - Autor | TransferNews.de`}</title>
         <meta name="description" content={author.bio || `Artikel von ${author.name} auf TransferNews.de`} />
@@ -132,7 +133,7 @@ export default function AuthorPage() {
                     ) : (
                       <User size={48} weight="bold" className="text-white" />
                     )}
-                  </div>
+                  </PageLayout>
                   
                   {/* Info */}
                   <div className="flex-1">
@@ -142,7 +143,7 @@ export default function AuthorPage() {
                         <PencilLine size={12} weight="bold" className="mr-1" />
                         Autor
                       </Badge>
-                    </div>
+                    </PageLayout>
                     
                     {author.bio && (
                       <p className="text-gray-600 mb-4">{author.bio}</p>
@@ -156,7 +157,7 @@ export default function AuthorPage() {
                             {exp}
                           </Badge>
                         ))}
-                      </div>
+                      </PageLayout>
                     )}
                     
                     {/* Social Links */}
@@ -192,10 +193,10 @@ export default function AuthorPage() {
                           <Envelope size={20} weight="fill" />
                         </a>
                       )}
-                    </div>
-                  </div>
-                </div>
-              </div>
+                    </PageLayout>
+                  </PageLayout>
+                </PageLayout>
+              </PageLayout>
 
               {/* Articles */}
               <div>
@@ -205,31 +206,31 @@ export default function AuthorPage() {
                     Artikel von {author.name}
                     <span className="text-gray-400 font-normal ml-2">({author.article_count})</span>
                   </h2>
-                </div>
+                </PageLayout>
 
                 {author.articles && author.articles.length > 0 ? (
                   <div className="space-y-4">
                     {author.articles.map((article) => (
                       <NewsCard key={article.id} article={article} />
                     ))}
-                  </div>
+                  </PageLayout>
                 ) : (
                   <div className="bg-white border border-gray-200 p-8 text-center text-gray-500">
                     Noch keine Artikel veröffentlicht.
-                  </div>
+                  </PageLayout>
                 )}
-              </div>
-            </div>
+              </PageLayout>
+            </PageLayout>
 
             {/* Sidebar */}
             <aside className="space-y-6">
               <TrendingWidget />
             </aside>
-          </div>
-        </div>
+          </PageLayout>
+        </PageLayout>
       </main>
 
       <Footer />
-    </div>
+    </PageLayout>
   );
 }

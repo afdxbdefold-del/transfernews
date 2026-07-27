@@ -1,5 +1,6 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import PageLayout from "@/components/PageLayout";
 import { AdSlot, SidebarAd } from "@/components/AdSlot";
 import { NewsCardCompact } from "@/components/NewsCard";
 import { TrendingWidget } from "@/components/TrendingWidget";
@@ -371,10 +372,9 @@ export default function NewsDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col bg-[#f5f5f5]">
+      <PageLayout>
         <Header />
-        <main className="flex-1">
-          <div className="max-w-[1000px] mx-auto px-3 py-6">
+        <main className="flex-1 py-3 px-3">
             <div className="bg-white p-6">
               <Skeleton className="h-8 w-3/4 mb-4" />
               <Skeleton className="h-64 w-full mb-4" />
@@ -382,18 +382,17 @@ export default function NewsDetailPage() {
               <Skeleton className="h-4 w-full mb-2" />
               <Skeleton className="h-4 w-2/3" />
             </div>
-          </div>
         </main>
         <Footer />
-      </div>
+      </PageLayout>
     );
   }
 
   if (!article) {
     return (
-      <div className="min-h-screen flex flex-col bg-[#f5f5f5]">
+      <PageLayout>
         <Header />
-        <main className="flex-1 flex items-center justify-center">
+        <main className="flex-1 flex items-center justify-center py-3 px-3">
           <div className="text-center bg-white p-8">
             <h1 
               className="text-2xl font-black uppercase mb-4"
@@ -407,7 +406,7 @@ export default function NewsDetailPage() {
           </div>
         </main>
         <Footer />
-      </div>
+      </PageLayout>
     );
   }
 
@@ -416,7 +415,7 @@ export default function NewsDetailPage() {
   const shareTitle = encodeURIComponent(article.title);
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#f5f5f5]" data-testid="news-detail-page">
+    <PageLayout>
       {/* SEO Meta Tags for Google Discover */}
       {article && (
         <Helmet>
@@ -777,6 +776,6 @@ export default function NewsDetailPage() {
       </main>
 
       <Footer />
-    </div>
+    </PageLayout>
   );
 }

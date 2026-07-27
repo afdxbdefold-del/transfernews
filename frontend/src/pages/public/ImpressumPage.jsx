@@ -1,3 +1,4 @@
+import PageLayout from "@/components/PageLayout";
 import React from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -24,7 +25,7 @@ export default function ImpressumPage() {
             <h1 className="text-3xl font-black text-gray-900" style={{ fontFamily: "'Oswald', sans-serif" }}>
               Impressum
             </h1>
-          </div>
+          </PageLayout>
           
           {/* Angaben gemäß § 5 TMG */}
           <section className="mb-10">
@@ -43,13 +44,13 @@ export default function ImpressumPage() {
                 <div>
                   <p className="text-gray-500">Handelsregister:</p>
                   <p className="font-medium">HRB 123456, Amtsgericht München</p>
-                </div>
+                </PageLayout>
                 <div>
                   <p className="text-gray-500">USt-IdNr.:</p>
                   <p className="font-medium">DE123456789</p>
-                </div>
-              </div>
-            </div>
+                </PageLayout>
+              </PageLayout>
+            </PageLayout>
           </section>
           
           {/* Vertreten durch */}
@@ -81,7 +82,7 @@ export default function ImpressumPage() {
                 <MapPin size={18} className="text-gray-400" />
                 München, Deutschland
               </p>
-            </div>
+            </PageLayout>
           </section>
           
           {/* Verantwortlich für den Inhalt */}
@@ -110,7 +111,7 @@ export default function ImpressumPage() {
                 <ShieldCheck size={18} weight="fill" />
                 Alle Artikel werden von ausgebildeten Journalisten verfasst und geprüft.
               </p>
-            </div>
+            </PageLayout>
           </section>
           
           {/* Haftungsausschluss */}
@@ -151,10 +152,10 @@ export default function ImpressumPage() {
               Verbraucherschlichtungsstelle teilzunehmen.
             </p>
           </section>
-        </div>
+        </PageLayout>
       </main>
       
       <Footer />
-    </div>
+    </PageLayout>
   );
 }

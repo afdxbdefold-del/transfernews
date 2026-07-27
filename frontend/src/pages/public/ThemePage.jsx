@@ -1,3 +1,4 @@
+import PageLayout from "@/components/PageLayout";
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
@@ -75,8 +76,8 @@ export default function ThemePage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin w-8 h-8 border-4 border-[#79B92A] border-t-transparent rounded-full"></div>
-      </div>
+        <div className="animate-spin w-8 h-8 border-4 border-[#79B92A] border-t-transparent rounded-full"></PageLayout>
+      </PageLayout>
     );
   }
 
@@ -89,8 +90,8 @@ export default function ThemePage() {
           <Link to="/" className="text-[#79B92A] hover:underline mt-4 inline-block">
             Zurück zur Startseite
           </Link>
-        </div>
-      </div>
+        </PageLayout>
+      </PageLayout>
     );
   }
 
@@ -122,7 +123,7 @@ export default function ThemePage() {
             <div className="flex items-center gap-3 mb-4">
               <span className="text-3xl">{config.icon}</span>
               <Tag className="w-6 h-6 text-[#79B92A]" />
-            </div>
+            </PageLayout>
             <h1 className="text-3xl md:text-4xl font-bold mb-4">{seo?.h1 || theme.name}</h1>
             <p className="text-gray-300 max-w-2xl">{theme.description}</p>
             <div className="mt-6 flex gap-4 text-sm">
@@ -134,9 +135,9 @@ export default function ThemePage() {
                   {breaking_news.length} Breaking
                 </span>
               )}
-            </div>
-          </div>
-        </div>
+            </PageLayout>
+          </PageLayout>
+        </PageLayout>
 
         <div className="container mx-auto px-4 py-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -164,10 +165,10 @@ export default function ThemePage() {
                             <Clock className="w-3 h-3" />
                             {formatDate(article.published_at)}
                           </span>
-                        </div>
+                        </PageLayout>
                       </Link>
                     ))}
-                  </div>
+                  </PageLayout>
                 </section>
               )}
 
@@ -198,7 +199,7 @@ export default function ThemePage() {
                                 {article.transfer_status}
                               </span>
                             )}
-                          </div>
+                          </PageLayout>
                           <h3 className="font-bold">{article.title}</h3>
                           <p className="text-gray-600 text-sm mt-2 line-clamp-2">{article.excerpt}</p>
                           <div className="flex items-center gap-4 mt-3 text-xs text-gray-500">
@@ -206,21 +207,21 @@ export default function ThemePage() {
                             {article.author_name && (
                               <span>von {article.author_name}</span>
                             )}
-                          </div>
-                        </div>
+                          </PageLayout>
+                        </PageLayout>
                         <ArrowRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
-                      </div>
+                      </PageLayout>
                     </Link>
                   ))}
                   
                   {(!all_news || all_news.length === 0) && (
                     <div className="text-center py-12 text-gray-500">
                       <p>Noch keine Artikel zu diesem Thema.</p>
-                    </div>
+                    </PageLayout>
                   )}
-                </div>
+                </PageLayout>
               </section>
-            </div>
+            </PageLayout>
 
             {/* Sidebar */}
             <div className="space-y-6">
@@ -233,8 +234,8 @@ export default function ThemePage() {
                 <p className="text-sm text-gray-600">{theme.description}</p>
                 <div className="mt-4 text-xs text-gray-400">
                   Keywords: {theme.keywords?.join(', ')}
-                </div>
-              </div>
+                </PageLayout>
+              </PageLayout>
 
               {/* Other Themes */}
               <div className="bg-white rounded-lg shadow-sm p-4">
@@ -253,8 +254,8 @@ export default function ThemePage() {
                       </Link>
                     ))
                   }
-                </div>
-              </div>
+                </PageLayout>
+              </PageLayout>
 
               {/* Competitions Link */}
               <div className="bg-white rounded-lg shadow-sm p-4">
@@ -269,12 +270,12 @@ export default function ThemePage() {
                       {compSlug.replace('-', ' ')}
                     </Link>
                   ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+                </PageLayout>
+              </PageLayout>
+            </PageLayout>
+          </PageLayout>
+        </PageLayout>
+      </PageLayout>
     </>
   );
 }
