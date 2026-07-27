@@ -11,6 +11,23 @@ const LEAGUES = [
   { slug: 'ligue-1', name: 'Ligue 1', country: '🇫🇷' },
 ];
 
+// Load TheMonetizer megabanner
+const loadMegabanner = () => {
+  const container = document.getElementById('141912-1');
+  if (container && !container.hasChildNodes()) {
+    const script1 = document.createElement('script');
+    script1.src = '//ads.themoneytizer.com/s/gen.js?type=1';
+    script1.async = true;
+    
+    const script2 = document.createElement('script');
+    script2.src = '//ads.themoneytizer.com/s/requestform.js?siteId=141912&formatId=1';
+    script2.async = true;
+    
+    container.appendChild(script1);
+    container.appendChild(script2);
+  }
+};
+
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [leagueDropdownOpen, setLeagueDropdownOpen] = useState(false);
@@ -24,6 +41,7 @@ export default function Header() {
   useEffect(() => { 
     setMenuOpen(false); 
     setLeagueDropdownOpen(false);
+    loadMegabanner();
   }, [location]);
 
   useEffect(() => {
@@ -79,16 +97,10 @@ export default function Header() {
 
   return (
     <header data-testid="main-header">
-      {/* Top Banner Ad - über Header (nur Desktop) */}
+      {/* TheMonetizer Megabanner - über Header (nur Desktop) */}
       <div className="hidden lg:block py-2 bg-[#f2f2f2]" data-testid="top-banner-container">
         <div className="flex justify-center">
-          <div 
-            className="bg-gray-300 border border-gray-400 flex items-center justify-center"
-            style={{ width: '728px', height: '90px' }}
-            data-testid="top-banner-ad"
-          >
-            <span className="text-[11px] text-gray-500 uppercase tracking-wider">Anzeige</span>
-          </div>
+          <div id="141912-1" data-testid="top-banner-ad"></div>
         </div>
       </div>
       
