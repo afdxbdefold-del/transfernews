@@ -11,6 +11,17 @@
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
         <title>transfernews.de - Transfer-News, Gerüchte & Wechsel</title>
         <script>window.addEventListener("error",function(e){if(e.error instanceof DOMException&&e.error.name==="DataCloneError"&&e.message&&e.message.includes("PerformanceServerTiming")){e.stopImmediatePropagation();e.preventDefault()}},true);</script>
+        <!-- Suppress cross-origin script errors from ad scripts -->
+        <script>
+        window.addEventListener('error', function(e) {
+          // Ignore cross-origin script errors (common with ad scripts)
+          if (e.message === 'Script error.' || (e.filename && e.filename.includes('themoneytizer'))) {
+            e.stopImmediatePropagation();
+            e.preventDefault();
+            return true;
+          }
+        }, true);
+        </script>
         <script src="https://assets.emergent.sh/scripts/emergent-main.js"></script>
         <!-- InMobi Choice. Consent Manager Tag v3.0 (for TCF 2.3) -->
         <script type="text/javascript" async=true>

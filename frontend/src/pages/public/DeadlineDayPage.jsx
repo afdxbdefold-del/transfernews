@@ -1,6 +1,7 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import PageLayout from "@/components/PageLayout";
+import StandardSidebar from "@/components/StandardSidebar";
 import { useEffect, useState, useRef } from "react";
 import { getPublishedArticles, getBreakingArticles } from "@/api";
 import { Clock, Circle, CaretRight, Calendar } from "@phosphor-icons/react";
@@ -125,7 +126,10 @@ export default function DeadlineDayPage() {
       
       <Header />
       
-      <main className="flex-1 py-3 px-3 space-y-3" data-testid="deadline-day-page">
+      <main className="flex-1 py-3 px-3" data-testid="deadline-day-page">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-3">
+          {/* Main Content */}
+          <div className="space-y-3">
           {/* Countdown Box */}
           <div className={`border rounded-sm overflow-hidden ${isDeadlineDay ? 'border-red-500 bg-red-600' : 'border-gray-300 bg-[#79B92A]'}`}>
             <div className="p-4 text-center">
@@ -210,6 +214,11 @@ export default function DeadlineDayPage() {
               </div>
             </div>
           )}
+          </div>
+
+          {/* Sidebar */}
+          <StandardSidebar />
+        </div>
         </main>
       
         <Footer />

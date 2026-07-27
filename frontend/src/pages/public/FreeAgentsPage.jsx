@@ -1,6 +1,7 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import PageLayout from "@/components/PageLayout";
+import StandardSidebar from "@/components/StandardSidebar";
 import { useEffect, useState } from "react";
 import { getFreeTransfers } from "@/api";
 import { CaretRight, Calendar, UserCircle } from "@phosphor-icons/react";
@@ -97,6 +98,9 @@ export default function FreeAgentsPage() {
       <Header />
       
       <main className="flex-1 py-3 px-3" data-testid="free-agents-page">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-3">
+          {/* Main Content */}
+          <div>
         <div className="bg-white border border-gray-300 rounded-sm overflow-hidden">
             <div className="bg-[#79B92A] px-3 py-2 flex items-center gap-2">
               <UserCircle size={16} className="text-white" />
@@ -135,6 +139,11 @@ export default function FreeAgentsPage() {
               </div>
             )}
           </div>
+          </div>
+
+          {/* Sidebar */}
+          <StandardSidebar />
+        </div>
         </main>
       
         <Footer />

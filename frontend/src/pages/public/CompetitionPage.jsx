@@ -5,6 +5,7 @@ import { Trophy, ArrowRight, Clock, TrendingUp, CheckCircle } from 'lucide-react
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import PageLayout from "@/components/PageLayout";
+import StandardSidebar from "@/components/StandardSidebar";
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 

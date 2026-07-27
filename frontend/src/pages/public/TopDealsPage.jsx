@@ -1,6 +1,7 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import PageLayout from "@/components/PageLayout";
+import StandardSidebar from "@/components/StandardSidebar";
 import { useEffect, useState } from "react";
 import { getTopDeals } from "@/api";
 import { CaretRight, TrendUp, ArrowRight, Trophy } from "@phosphor-icons/react";
@@ -125,6 +126,9 @@ export default function TopDealsPage() {
       <Header />
       
       <main className="flex-1 py-3 px-3" data-testid="top-deals-page">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-3">
+          {/* Main Content */}
+          <div>
         <div className="bg-white border border-gray-300 rounded-sm overflow-hidden">
           <div className="bg-[#79B92A] px-3 py-2.5 flex items-center gap-2">
             <Trophy size={18} className="text-white" weight="fill" />
@@ -185,6 +189,11 @@ export default function TopDealsPage() {
               </Link>
             </div>
           )}
+        </div>
+          </div>
+
+          {/* Sidebar */}
+          <StandardSidebar />
         </div>
       </main>
       

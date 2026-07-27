@@ -4,96 +4,128 @@ import { useLocation } from 'react-router-dom';
 // Pages without ads
 const NO_AD_PAGES = ['/impressum', '/datenschutz', '/ueber-uns', '/about'];
 
-// TheMonetizer Ad Loader
-export function useTheMoneytizerAds() {
+// Hook to check if we should show ads
+export function useShouldShowAds() {
   const location = useLocation();
-  const loadedRef = useRef(false);
+  return !NO_AD_PAGES.some(p => location.pathname.startsWith(p));
+}
+
+// Load ad into a container with error handling
+function loadAdIntoContainer(container, formatId) {
+  if (!container) return;
+  
+  // Clear previous content
+  container.innerHTML = '';
+  
+  try {
+    // Create and append scripts with error handling
+    const script1 = document.createElement('script');
+    script1.src = `//ads.themoneytizer.com/s/gen.js?type=${formatId}`;
+    script1.async = true;
+    script1.onerror = () => console.log(`Ad script gen.js type=${formatId} failed to load`);
+    
+    const script2 = document.createElement('script');
+    script2.src = `//ads.themoneytizer.com/s/requestform.js?siteId=141912&formatId=${formatId}`;
+    script2.async = true;
+    script2.onerror = () => console.log(`Ad script requestform.js formatId=${formatId} failed to load`);
+    
+    container.appendChild(script1);
+    container.appendChild(script2);
+  } catch (e) {
+    console.log('Ad loading error:', e);
+  }
+}
+
+// Hook for individual ad loading - loads on mount
+function useAdLoader(formatId) {
+  const location = useLocation();
+  const containerRef = useRef(null);
   
   useEffect(() => {
-    // Skip ads on legal pages
+    const shouldLoad = !NO_AD_PAGES.some(p => location.pathname.startsWith(p));
+    if (!shouldLoad) return;
+    
+    const container = containerRef.current;
+    if (!container) return;
+    
+    // Small delay to ensure DOM is ready
+    const timer = setTimeout(() => {
+      loadAdIntoContainer(container, formatId);
+    }, 100);
+    
+    return () => {
+      clearTimeout(timer);
+      // Cleanup on unmount
+      if (container) {
+        try {
+          container.innerHTML = '';
+        } catch (e) {
+          // Ignore cleanup errors
+        }
+      }
+    };
+  }, [formatId, location.pathname]);
+  
+  return containerRef;
+}
+
+// Hook for PageLayout to load global/sticky ads
+export function useTheMoneytizerAds() {
+  const location = useLocation();
+  
+  useEffect(() => {
     if (NO_AD_PAGES.some(p => location.pathname.startsWith(p))) {
       return;
     }
     
-    // Small delay to ensure DOM is ready
-    const timer = setTimeout(() => {
-      loadAllAds();
-    }, 100);
+    const loadGlobalAds = () => {
+      // Skyscraper (Format 4)
+      const skyscraper = document.getElementById('141912-4');
+      if (skyscraper && skyscraper.childElementCount === 0) {
+        loadAdIntoContainer(skyscraper, 4);
+      }
+      
+      // Global (Format 6)
+      const global = document.getElementById('141912-6');
+      if (global && global.childElementCount === 0) {
+        loadAdIntoContainer(global, 6);
+      }
+    };
     
+    const timer = setTimeout(loadGlobalAds, 200);
     return () => clearTimeout(timer);
   }, [location.pathname]);
 }
 
-// Load a single ad
-function loadAd(containerId, formatId) {
-  const container = document.getElementById(containerId);
-  if (!container) return;
-  
-  // Clear existing scripts to reload
-  container.innerHTML = '';
-  
-  const script1 = document.createElement('script');
-  script1.src = `//ads.themoneytizer.com/s/gen.js?type=${formatId}`;
-  script1.async = true;
-  
-  const script2 = document.createElement('script');
-  script2.src = `//ads.themoneytizer.com/s/requestform.js?siteId=141912&formatId=${formatId}`;
-  script2.async = true;
-  
-  container.appendChild(script1);
-  container.appendChild(script2);
-}
-
-// Load all ads
-export function loadAllAds() {
-  // Format 1: Megabanner
-  loadAd('141912-1', 1);
-  
-  // Format 2: MREC 300x250
-  loadAd('141912-2', 2);
-  
-  // Format 3: Sidebar 300x600
-  loadAd('141912-3', 3);
-  
-  // Format 4: Skyscraper sticky
-  loadAd('141912-4', 4);
-  
-  // Format 6: Global
-  loadAd('141912-6', 6);
-  
-  // Format 19: MREC 2
-  loadAd('141912-19', 19);
-  
-  // Format 28: Above footer
-  loadAd('141912-28', 28);
-  
-  // Format 31: Billboard
-  loadAd('141912-31', 31);
-}
-
-// Ad Container Components
+// Ad Container Components - key attribute should be passed from parent for remounting
 export function MegabannerAd() {
-  return <div id="141912-1" className="flex justify-center"></div>;
+  const containerRef = useAdLoader(1);
+  return <div ref={containerRef} className="flex justify-center min-h-[90px]"></div>;
 }
 
 export function BillboardAd() {
-  return <div id="141912-31" style={{textAlign: 'center'}}></div>;
+  const containerRef = useAdLoader(31);
+  return <div ref={containerRef} style={{textAlign: 'center', minHeight: '250px'}}></div>;
 }
 
 export function SidebarAd300x600() {
-  return <div id="141912-3"></div>;
+  const containerRef = useAdLoader(3);
+  return <div ref={containerRef} className="min-h-[600px]"></div>;
 }
 
 export function MrecAd() {
-  return <div id="141912-2"></div>;
+  const containerRef = useAdLoader(2);
+  return <div ref={containerRef} className="min-h-[250px]"></div>;
 }
 
 export function MrecAd2() {
-  return <div id="141912-19"></div>;
+  const containerRef = useAdLoader(19);
+  return <div ref={containerRef} className="min-h-[250px]"></div>;
 }
 
 export function AboveFooterAd() {
-  return <div id="141912-28"></div>;
+  const containerRef = useAdLoader(28);
+  return <div ref={containerRef} className="min-h-[90px]"></div>;
 }
 
 export function StickySkyscraperAd() {

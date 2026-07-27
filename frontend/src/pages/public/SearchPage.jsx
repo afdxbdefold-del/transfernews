@@ -1,6 +1,7 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import PageLayout from "@/components/PageLayout";
+import StandardSidebar from "@/components/StandardSidebar";
 import { useEffect, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { search } from "@/api";
@@ -53,6 +54,9 @@ export default function SearchPage() {
       <Header />
 
       <main className="flex-1 py-3 px-3" data-testid="search-page">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-3">
+          {/* Main Content */}
+          <div>
         <div className="bg-white rounded-lg shadow-sm p-4 mb-4">
           <h1 className="font-['Oswald'] text-2xl font-bold uppercase flex items-center mb-4">
             <MagnifyingGlass size={24} className="mr-2 text-[#79B92A]" />
@@ -160,6 +164,11 @@ export default function SearchPage() {
             )}
           </div>
         )}
+          </div>
+
+          {/* Sidebar */}
+          <StandardSidebar />
+        </div>
       </main>
 
       <Footer />
