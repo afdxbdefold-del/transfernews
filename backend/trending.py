@@ -426,12 +426,12 @@ async def get_trending_entities(db: AsyncIOMotorDatabase, hours: int = 24) -> di
     # Lookup players in database to get their IDs
     player_results = []
     for p, data in trending_players:
-        slug = p.replace(" ", "-")
-        # Try to find player in database by slug or alias
+        # Try to find player in database by alias match first
         db_player = await db.players.find_one({
             "$or": [
-                {"slug": slug},
-                {"aliases": {"$regex": f"^{p}$", "$options": "i"}}
+                {"aliases": {"$regex": f"^{p}$", "$options": "i"}},
+                {"name": {"$regex": f"^{p}$", "$options": "i"}},
+                {"slug": p.replace(" ", "-")}
             ]
         }, {"_id": 0, "id": 1, "name": 1, "slug": 1, "image": 1})
         
@@ -439,28 +439,23 @@ async def get_trending_entities(db: AsyncIOMotorDatabase, hours: int = 24) -> di
             player_results.append({
                 "id": db_player.get("id"),
                 "name": db_player.get("name", p.title()),
-                "slug": db_player.get("slug", slug),
+                "slug": db_player.get("slug"),  # Use DB slug, not generated
                 "image": db_player.get("image"),
                 **data
             })
         else:
-            # No DB entry - item will be non-clickable
-            player_results.append({
-                "name": p.title(),
-                "slug": slug,
-                **data
-            })
+            # No DB entry - skip (don't show non-clickable items)
+            pass
     
     # Lookup clubs in database
     club_results = []
     for c, data in trending_clubs:
-        slug = c.replace(" ", "-").lower()
         c_lower = c.lower()
         db_club = await db.clubs.find_one({
             "$or": [
-                {"slug": slug},
                 {"name": {"$regex": f"^{c}$", "$options": "i"}},
-                {"aliases": {"$regex": f"^{c_lower}$", "$options": "i"}}
+                {"aliases": {"$regex": f"^{c_lower}$", "$options": "i"}},
+                {"slug": c.replace(" ", "-").lower()}
             ]
         }, {"_id": 0, "id": 1, "name": 1, "slug": 1, "logo": 1})
         
@@ -468,16 +463,13 @@ async def get_trending_entities(db: AsyncIOMotorDatabase, hours: int = 24) -> di
             club_results.append({
                 "id": db_club.get("id"),
                 "name": db_club.get("name", c.title()),
-                "slug": db_club.get("slug", slug),
+                "slug": db_club.get("slug"),
                 "logo": db_club.get("logo"),
                 **data
             })
         else:
-            club_results.append({
-                "name": c.title(),
-                "slug": slug,
-                **data
-            })
+            # No DB entry - skip (don't show non-clickable items)
+            pass
     
     return {
         "trending_players": player_results,
