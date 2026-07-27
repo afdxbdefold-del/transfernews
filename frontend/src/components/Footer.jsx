@@ -18,6 +18,30 @@ export default function Footer() {
 
   return (
     <>
+      {/* Was ist transfernews.de - SEO/Programmatic Section */}
+      <div className="bg-[#f5f5f5] py-6 px-4 border-t border-gray-200">
+        <div className="max-w-[900px] mx-auto">
+          <h2 className="text-lg font-bold text-gray-800 mb-3" style={{ fontFamily: "'Oswald', sans-serif" }}>
+            Was ist transfernews.de?
+          </h2>
+          <p className="text-sm text-gray-600 leading-relaxed mb-3">
+            <strong>transfernews.de</strong> ist Deutschlands führendes Nachrichtenportal für Fußball-Transfers, 
+            Gerüchte und Wechsel-News. Wir berichten täglich über die neuesten Transfermeldungen aus der 
+            Bundesliga, Premier League, La Liga, Serie A und allen großen europäischen Ligen.
+          </p>
+          <p className="text-sm text-gray-600 leading-relaxed mb-3">
+            Unser erfahrenes Redaktionsteam analysiert Quellen aus aller Welt und liefert Ihnen verifizierte 
+            Informationen zu Spielerwechseln, Vertragsverhandlungen, Ablösesummen und Marktwerten. Von 
+            Top-Transfers der größten Stars bis hin zu aufstrebenden Talenten – wir halten Sie auf dem Laufenden.
+          </p>
+          <p className="text-sm text-gray-600 leading-relaxed">
+            <strong>Unsere Themen:</strong> Transfer-News, Wechsel-Gerüchte, Vertragsauflösungen, ablösefreie 
+            Spieler, Deadline-Day-Ticker, Marktwert-Updates, Spieler- und Vereinsprofile sowie exklusive 
+            Hintergrundberichte aus dem Transfermarkt.
+          </p>
+        </div>
+      </div>
+      
       {/* Ad above footer */}
       <div className="bg-[#e8e8e8] py-3 flex justify-center">
         <div id="141912-28"></div>
