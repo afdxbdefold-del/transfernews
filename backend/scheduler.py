@@ -25,15 +25,30 @@ logger = logging.getLogger(__name__)
 # Scheduler Instance
 scheduler = AsyncIOScheduler()
 
-# DB Connection
+# DB Connection - shared with main app
 _db = None
+_client = None
+
+def init_db(mongo_url: str, db_name: str):
+    """Initialize DB connection from main app"""
+    global _db, _client
+    _client = AsyncIOMotorClient(mongo_url, maxPoolSize=10, minPoolSize=1)
+    _db = _client[db_name]
+    return _db
 
 def get_db():
     global _db
     if _db is None:
-        client = AsyncIOMotorClient(os.environ.get('MONGO_URL'))
+        # Fallback - should not happen if init_db was called
+        client = AsyncIOMotorClient(os.environ.get('MONGO_URL'), maxPoolSize=5)
         _db = client[os.environ.get('DB_NAME', 'transfernews')]
     return _db
+
+def close_db():
+    """Close DB connection"""
+    global _client
+    if _client:
+        _client.close()
 
 
 # =============================================================================

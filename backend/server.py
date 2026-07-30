@@ -2062,7 +2062,8 @@ async def get_public_author(slug: str):
 
 from scheduler import (
     start_scheduler, stop_scheduler, get_scheduler_status,
-    trigger_rss_scrape, trigger_speed_pipeline, trigger_prerender
+    trigger_rss_scrape, trigger_speed_pipeline, trigger_prerender,
+    init_db as init_scheduler_db, close_db as close_scheduler_db
 )
 from prerender import (
     prerender_article, prerender_homepage, prerender_all_articles,
@@ -2803,6 +2804,8 @@ async def wikimedia_use_fallback(
 async def startup_event():
     """Start scheduler on app startup"""
     try:
+        # Initialize scheduler with shared DB connection
+        init_scheduler_db(mongo_url, os.environ['DB_NAME'])
         start_scheduler()
         logger.info("Background scheduler started on startup")
         
@@ -2868,4 +2871,6 @@ app.add_middleware(
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
+    stop_scheduler()
+    close_scheduler_db()
     client.close()
