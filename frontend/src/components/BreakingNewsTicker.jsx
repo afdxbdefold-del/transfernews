@@ -44,15 +44,15 @@ export default function BreakingNewsTicker() {
           <div className="ticker-wrap flex-1">
             <div className="ticker">
               {[...breakingNews, ...breakingNews].map((news, idx) => (
-                <Link
+                <a
                   key={idx}
-                  to={`/news/${news.slug}`}
+                  href={`/news/${news.slug}`}
                   className="inline-block text-white text-sm font-medium hover:text-white/80 transition-colors mr-16"
                 >
                   <span className="mr-2">+++</span>
                   {news.title}
                   <span className="ml-2">+++</span>
-                </Link>
+                </a>
               ))}
             </div>
           </div>

@@ -152,9 +152,9 @@ export default function ThemePage() {
                   </h2>
                   <div className="space-y-4">
                     {breaking_news.map((article, idx) => (
-                      <Link 
+                      <a 
                         key={article.id || idx}
-                        to={`/news/${article.slug}`}
+                        href={`/news/${article.slug}`}
                         className="block bg-white border-l-4 border-red-500 p-4 rounded-r-lg shadow-sm hover:shadow-md transition-shadow"
                       >
                         <span className="text-xs text-red-500 font-semibold uppercase">Breaking</span>
@@ -166,7 +166,7 @@ export default function ThemePage() {
                             {formatDate(article.published_at)}
                           </span>
                         </div>
-                      </Link>
+                      </a>
                     ))}
                   </div>
                 </section>
@@ -177,9 +177,9 @@ export default function ThemePage() {
                 <h2 className="text-xl font-bold mb-4">Alle Artikel zu {theme.name}</h2>
                 <div className="space-y-4">
                   {all_news?.map((article, idx) => (
-                    <Link 
+                    <a 
                       key={article.id || idx}
-                      to={`/news/${article.slug}`}
+                      href={`/news/${article.slug}`}
                       className="block bg-white p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow"
                     >
                       <div className="flex items-start gap-4">
@@ -211,7 +211,7 @@ export default function ThemePage() {
                         </div>
                         <ArrowRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
                       </div>
-                    </Link>
+                    </a>
                   ))}
                   
                   {(!all_news || all_news.length === 0) && (

@@ -144,13 +144,13 @@ export default function SearchPage() {
                 </div>
                 <div className="divide-y">
                   {results.articles.map((article) => (
-                    <Link
+                    <a
                       key={article.id}
-                      to={`/news/${article.slug}`}
+                      href={`/news/${article.slug}`}
                       className="block px-3 py-2 hover:bg-gray-50"
                     >
                       <span className="font-medium">{article.title}</span>
-                    </Link>
+                    </a>
                   ))}
                 </div>
               </div>

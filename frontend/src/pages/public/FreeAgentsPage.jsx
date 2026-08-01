@@ -13,8 +13,7 @@ function FreeAgentRow({ article }) {
   const imageUrl = article.hero_image || article.image_url;
   
   return (
-    <Link 
-      to={`/news/${article.slug}`}
+    <a href={`/news/${article.slug}`}
       className="flex items-center gap-3 p-2 hover:bg-[#e8f4e8] border-b border-gray-200 last:border-0 group"
       data-testid={`free-agent-${article.id}`}
     >
@@ -65,7 +64,7 @@ function FreeAgentRow({ article }) {
       )}
       
       <CaretRight size={14} className="text-gray-400 flex-shrink-0" />
-    </Link>
+    </a>
   );
 }
 

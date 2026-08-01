@@ -72,8 +72,8 @@ function NewsRow({ article, showImage = true }) {
   );
   
   return (
-    <Link 
-      to={`/news/${article.slug}`}
+    <a 
+      href={`/news/${article.slug}`}
       className="flex items-start gap-3 p-2 hover:bg-[#e8f4e8] border-b border-gray-200 last:border-0 group"
       data-testid={`news-row-${article.id}`}
     >
@@ -131,7 +131,7 @@ function NewsRow({ article, showImage = true }) {
       </div>
       
       <CaretRight size={14} className="text-gray-400 flex-shrink-0 mt-2" />
-    </Link>
+    </a>
   );
 }
 

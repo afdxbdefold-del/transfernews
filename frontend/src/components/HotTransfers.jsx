@@ -97,8 +97,8 @@ function HotTransferCard({ transfer, rank }) {
   const probability = transfer.transfer_probability || Math.floor(Math.random() * 30) + 40;
   
   return (
-    <Link 
-      to={`/news/${transfer.slug}`}
+    <a 
+      href={`/news/${transfer.slug}`}
       className="bg-white/10 backdrop-blur-sm rounded-lg p-3 hover:bg-white/20 transition-all group"
       data-testid={`hot-transfer-${rank}`}
     >
@@ -141,7 +141,7 @@ function HotTransferCard({ transfer, rank }) {
         <TrendUp size={12} className="text-yellow-300" />
         <span className="text-white/70 text-[10px]">Wahrscheinlichkeit</span>
       </div>
-    </Link>
+    </a>
   );
 }
 

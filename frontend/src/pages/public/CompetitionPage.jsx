@@ -143,9 +143,9 @@ export default function CompetitionPage() {
                   </h2>
                   <div className="space-y-4">
                     {breaking_news.map((article, idx) => (
-                      <Link 
+                      <a 
                         key={article.id || idx}
-                        to={`/news/${article.slug}`}
+                        href={`/news/${article.slug}`}
                         className="block bg-white border-l-4 border-red-500 p-4 rounded-r-lg shadow-sm hover:shadow-md transition-shadow"
                       >
                         <span className="text-xs text-red-500 font-semibold uppercase">Breaking</span>
@@ -157,7 +157,7 @@ export default function CompetitionPage() {
                             {formatDate(article.published_at)}
                           </span>
                         </div>
-                      </Link>
+                      </a>
                     ))}
                   </div>
                 </section>
@@ -168,9 +168,9 @@ export default function CompetitionPage() {
                 <h2 className="text-xl font-bold mb-4">Alle Transfer-News</h2>
                 <div className="space-y-4">
                   {all_news?.map((article, idx) => (
-                    <Link 
+                    <a 
                       key={article.id || idx}
-                      to={`/news/${article.slug}`}
+                      href={`/news/${article.slug}`}
                       className="block bg-white p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow"
                     >
                       <div className="flex items-start gap-4">
@@ -202,7 +202,7 @@ export default function CompetitionPage() {
                         </div>
                         <ArrowRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
                       </div>
-                    </Link>
+                    </a>
                   ))}
                   
                   {(!all_news || all_news.length === 0) && (
@@ -225,16 +225,16 @@ export default function CompetitionPage() {
                   </h3>
                   <div className="space-y-3">
                     {confirmed_transfers.slice(0, 5).map((article, idx) => (
-                      <Link 
+                      <a 
                         key={article.id || idx}
-                        to={`/news/${article.slug}`}
+                        href={`/news/${article.slug}`}
                         className="block text-sm hover:text-[#79B92A] transition-colors"
                       >
                         <span className="line-clamp-2">{article.title}</span>
                         <span className="text-xs text-gray-400 block mt-1">
                           {formatDate(article.published_at)}
                         </span>
-                      </Link>
+                      </a>
                     ))}
                   </div>
                 </div>
@@ -249,16 +249,16 @@ export default function CompetitionPage() {
                   </h3>
                   <div className="space-y-3">
                     {rumours.slice(0, 5).map((article, idx) => (
-                      <Link 
+                      <a 
                         key={article.id || idx}
-                        to={`/news/${article.slug}`}
+                        href={`/news/${article.slug}`}
                         className="block text-sm hover:text-[#79B92A] transition-colors"
                       >
                         <span className="line-clamp-2">{article.title}</span>
                         <span className="text-xs text-gray-400 block mt-1">
                           {formatDate(article.published_at)}
                         </span>
-                      </Link>
+                      </a>
                     ))}
                   </div>
                 </div>

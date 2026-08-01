@@ -35,8 +35,7 @@ function NewsRow({ article }) {
   const type = typeConfig[article.article_type] || typeConfig.news;
   
   return (
-    <Link 
-      to={`/news/${article.slug}`}
+    <a href={`/news/${article.slug}`}
       className="flex items-center gap-3 px-3 py-2 hover:bg-[#e8f4e8] border-b border-gray-200 last:border-0 group"
     >
       <div className="w-[50px] h-[36px] flex-shrink-0 bg-gray-200 overflow-hidden rounded-sm">
@@ -49,7 +48,7 @@ function NewsRow({ article }) {
         <h3 className="text-[12px] font-medium text-gray-900 group-hover:text-[#00a83f] line-clamp-1">{article.title}</h3>
       </div>
       <CaretRight size={12} className="text-gray-400" />
-    </Link>
+    </a>
   );
 }
 

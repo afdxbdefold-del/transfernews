@@ -41,8 +41,7 @@ function NewsRow({ article, isHot }) {
   const type = typeConfig[article.article_type] || typeConfig.news;
   
   return (
-    <Link 
-      to={`/news/${article.slug}`}
+    <a href={`/news/${article.slug}`}
       className={`flex items-start gap-3 p-2 hover:bg-[#e8f4e8] border-b border-gray-200 last:border-0 group ${isHot ? 'bg-red-50' : ''}`}
     >
       <div className="w-[70px] h-[50px] flex-shrink-0 bg-gray-200 overflow-hidden rounded-sm">
@@ -61,7 +60,7 @@ function NewsRow({ article, isHot }) {
         <h3 className="text-[13px] font-semibold text-gray-900 group-hover:text-[#00a83f] line-clamp-2 leading-tight">{article.title}</h3>
       </div>
       <CaretRight size={14} className="text-gray-400 flex-shrink-0 mt-2" />
-    </Link>
+    </a>
   );
 }
 
