@@ -2804,10 +2804,10 @@ async def wikimedia_use_fallback(
 async def startup_event():
     """Start scheduler on app startup"""
     try:
-        # SCHEDULER DISABLED - was causing crashes
-        # init_scheduler_db(mongo_url, os.environ['DB_NAME'])
-        # start_scheduler()
-        logger.info("Backend started (scheduler disabled)")
+        # Re-enable scheduler for news automation
+        init_scheduler_db(mongo_url, os.environ['DB_NAME'])
+        start_scheduler()
+        logger.info("Backend started (scheduler enabled)")
         
         # Create default author if not exists
         default_author = await db.authors.find_one({"slug": "redaktion"})
