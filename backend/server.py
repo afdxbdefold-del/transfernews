@@ -1303,58 +1303,44 @@ async def init_admin():
 
 @api_router.post("/init/ad-slots")
 async def init_ad_slots(current_user: dict = Depends(require_admin)):
-    """Initialize default ad slots"""
+    """Initialize default ad slots with TheMonetizer codes"""
+    
+    # TheMonetizer site ID
+    TM_SITE_ID = "141912"
+    
+    def tm_code(format_id):
+        """Generate TheMonetizer embed code"""
+        return f'''<script type="text/javascript" src="//ads.themoneytizer.com/s/gen.js?type={format_id}"></script>
+<script type="text/javascript" src="//ads.themoneytizer.com/s/requestform.js?siteId={TM_SITE_ID}&formatId={format_id}"></script>'''
+    
     default_slots = [
-        # Global slots
-        {"name": "Top Banner Above Header", "slot_key": "top_banner_above_header", "page_type": "all", "position": "header_above", "device_type": "all"},
-        {"name": "Header Inline", "slot_key": "header_inline", "page_type": "all", "position": "header_inline", "device_type": "all"},
-        {"name": "Below Header", "slot_key": "below_header", "page_type": "all", "position": "header_below", "device_type": "all"},
-        {"name": "Homepage Hero Banner", "slot_key": "homepage_hero_banner", "page_type": "homepage", "position": "hero", "device_type": "all"},
-        {"name": "Homepage Feed Banner 1", "slot_key": "homepage_feed_banner_1", "page_type": "homepage", "position": "feed_1", "device_type": "all"},
-        {"name": "Homepage Feed Banner 2", "slot_key": "homepage_feed_banner_2", "page_type": "homepage", "position": "feed_2", "device_type": "all"},
-        {"name": "Homepage Feed Banner 3", "slot_key": "homepage_feed_banner_3", "page_type": "homepage", "position": "feed_3", "device_type": "all"},
-        {"name": "Sidebar Top", "slot_key": "sidebar_top", "page_type": "all", "position": "sidebar_top", "device_type": "desktop"},
-        {"name": "Sidebar Middle", "slot_key": "sidebar_middle", "page_type": "all", "position": "sidebar_middle", "device_type": "desktop"},
-        {"name": "Sidebar Bottom", "slot_key": "sidebar_bottom", "page_type": "all", "position": "sidebar_bottom", "device_type": "desktop"},
-        {"name": "Footer Top", "slot_key": "footer_top", "page_type": "all", "position": "footer_top", "device_type": "all"},
-        {"name": "Footer Bottom", "slot_key": "footer_bottom", "page_type": "all", "position": "footer_bottom", "device_type": "all"},
-        {"name": "Mobile Sticky Bottom", "slot_key": "mobile_sticky_bottom", "page_type": "all", "position": "sticky_bottom", "device_type": "mobile"},
+        # TheMonetizer Standard Slots
+        {"name": "Megabanner (728x90)", "slot_key": "megabanner", "page_type": "all", "position": "header_below", "device_type": "desktop", "embed_code": tm_code(1), "is_active": True, "priority": 100},
+        {"name": "Billboard (970x250)", "slot_key": "billboard", "page_type": "all", "position": "below_header", "device_type": "desktop", "embed_code": tm_code(31), "is_active": True, "priority": 99},
+        {"name": "Skyscraper (160x600)", "slot_key": "skyscraper", "page_type": "all", "position": "sidebar_left", "device_type": "desktop", "embed_code": tm_code(4), "is_active": True, "priority": 98},
+        {"name": "MREC (300x250)", "slot_key": "mrec", "page_type": "all", "position": "sidebar_top", "device_type": "all", "embed_code": tm_code(2), "is_active": True, "priority": 95},
+        {"name": "MREC 2 (300x250)", "slot_key": "mrec_2", "page_type": "all", "position": "sidebar_middle", "device_type": "all", "embed_code": tm_code(19), "is_active": True, "priority": 94},
+        {"name": "Half Page (300x600)", "slot_key": "sidebar_300x600", "page_type": "all", "position": "sidebar_bottom", "device_type": "desktop", "embed_code": tm_code(3), "is_active": True, "priority": 93},
+        {"name": "Above Footer", "slot_key": "above_footer", "page_type": "all", "position": "footer_top", "device_type": "all", "embed_code": tm_code(28), "is_active": True, "priority": 90},
+        {"name": "Global/Floating", "slot_key": "global", "page_type": "all", "position": "floating", "device_type": "all", "embed_code": tm_code(6), "is_active": True, "priority": 85},
+        
+        # Additional position-based slots
+        {"name": "Header Inline", "slot_key": "header_inline", "page_type": "all", "position": "header_inline", "device_type": "all", "is_active": False, "priority": 80},
+        {"name": "Mobile Sticky Bottom", "slot_key": "mobile_sticky_bottom", "page_type": "all", "position": "sticky_bottom", "device_type": "mobile", "is_active": False, "priority": 70},
         
         # Article slots
-        {"name": "Article Below Title", "slot_key": "article_below_title", "page_type": "news_detail", "position": "below_title", "device_type": "all"},
-        {"name": "Article Below Excerpt", "slot_key": "article_below_excerpt", "page_type": "news_detail", "position": "below_excerpt", "device_type": "all"},
-        {"name": "Article After Paragraph 1", "slot_key": "article_after_paragraph_1", "page_type": "news_detail", "position": "after_p1", "device_type": "all"},
-        {"name": "Article After Paragraph 2", "slot_key": "article_after_paragraph_2", "page_type": "news_detail", "position": "after_p2", "device_type": "all"},
-        {"name": "Article After Paragraph 3", "slot_key": "article_after_paragraph_3", "page_type": "news_detail", "position": "after_p3", "device_type": "all"},
-        {"name": "Article Before Related", "slot_key": "article_before_related", "page_type": "news_detail", "position": "before_related", "device_type": "all"},
-        {"name": "Article After Related", "slot_key": "article_after_related", "page_type": "news_detail", "position": "after_related", "device_type": "all"},
+        {"name": "Article Below Title", "slot_key": "article_below_title", "page_type": "news_detail", "position": "below_title", "device_type": "all", "is_active": False, "priority": 60},
+        {"name": "Article After Paragraph 1", "slot_key": "article_after_p1", "page_type": "news_detail", "position": "after_p1", "device_type": "all", "is_active": False, "priority": 59},
+        {"name": "Article After Paragraph 2", "slot_key": "article_after_p2", "page_type": "news_detail", "position": "after_p2", "device_type": "all", "is_active": False, "priority": 58},
         
-        # Listing slots
-        {"name": "Listing After Card 2", "slot_key": "listing_after_card_2", "page_type": "news_list", "position": "after_card_2", "device_type": "all", "feed_interval": 2},
-        {"name": "Listing After Card 4", "slot_key": "listing_after_card_4", "page_type": "news_list", "position": "after_card_4", "device_type": "all", "feed_interval": 4},
-        {"name": "Listing After Card 6", "slot_key": "listing_after_card_6", "page_type": "news_list", "position": "after_card_6", "device_type": "all", "feed_interval": 6},
-        {"name": "Between Ticker and Feed", "slot_key": "between_ticker_and_feed", "page_type": "homepage", "position": "ticker_feed", "device_type": "all"},
-        
-        # Player page slots
-        {"name": "Player Above Profile", "slot_key": "player_above_profile", "page_type": "player", "position": "above_profile", "device_type": "all"},
-        {"name": "Player Below Profile", "slot_key": "player_below_profile", "page_type": "player", "position": "below_profile", "device_type": "all"},
-        {"name": "Player Between News Blocks", "slot_key": "player_between_news_blocks", "page_type": "player", "position": "between_news", "device_type": "all"},
-        
-        # Club page slots
-        {"name": "Club Above Header", "slot_key": "club_above_header", "page_type": "club", "position": "above_header", "device_type": "all"},
-        {"name": "Club Below Header", "slot_key": "club_below_header", "page_type": "club", "position": "below_header", "device_type": "all"},
-        {"name": "Club Between News Blocks", "slot_key": "club_between_news_blocks", "page_type": "club", "position": "between_news", "device_type": "all"},
-        
-        # Competition page slots
-        {"name": "Competition Above Header", "slot_key": "competition_above_header", "page_type": "competition", "position": "above_header", "device_type": "all"},
-        {"name": "Competition Below Header", "slot_key": "competition_below_header", "page_type": "competition", "position": "below_header", "device_type": "all"},
-        
-        # Search page slots
-        {"name": "Search Results Top", "slot_key": "search_results_top", "page_type": "search", "position": "results_top", "device_type": "all"},
-        {"name": "Search Results Between Items", "slot_key": "search_results_between_items", "page_type": "search", "position": "between_items", "device_type": "all", "feed_interval": 5},
+        # In-Feed slots
+        {"name": "In-Feed Position 3", "slot_key": "infeed_3", "page_type": "news_list", "position": "feed", "device_type": "all", "feed_interval": 3, "is_active": False, "priority": 50},
+        {"name": "In-Feed Position 6", "slot_key": "infeed_6", "page_type": "news_list", "position": "feed", "device_type": "all", "feed_interval": 6, "is_active": False, "priority": 49},
+        {"name": "In-Feed Position 9", "slot_key": "infeed_9", "page_type": "news_list", "position": "feed", "device_type": "all", "feed_interval": 9, "is_active": False, "priority": 48},
     ]
     
     created = 0
+    updated = 0
     for slot_data in default_slots:
         existing = await db.ad_slots.find_one({"slot_key": slot_data["slot_key"]})
         if not existing:
@@ -1362,8 +1348,16 @@ async def init_ad_slots(current_user: dict = Depends(require_admin)):
             doc = serialize_datetime(slot.model_dump())
             await db.ad_slots.insert_one(doc)
             created += 1
+        else:
+            # Update existing slot with new embed_code if provided
+            if slot_data.get("embed_code") and not existing.get("embed_code"):
+                await db.ad_slots.update_one(
+                    {"slot_key": slot_data["slot_key"]},
+                    {"$set": {"embed_code": slot_data["embed_code"]}}
+                )
+                updated += 1
     
-    return {"message": f"{created} Ad-Slots erstellt", "total": len(default_slots)}
+    return {"message": f"{created} Ad-Slots erstellt, {updated} aktualisiert", "total": len(default_slots)}
 
 
 # =============================================================================

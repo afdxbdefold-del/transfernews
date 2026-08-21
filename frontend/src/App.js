@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-route
 import { Toaster } from "@/components/ui/sonner";
 import { HelmetProvider } from "react-helmet-async";
 import { useEffect } from "react";
+import { AdSlotsProvider } from "@/components/DynamicAds";
 
 // Scroll to top on route change
 function ScrollToTop() {
@@ -53,10 +54,11 @@ import AdminGSC from "@/pages/admin/AdminGSC";
 function App() {
   return (
     <HelmetProvider>
-      <div className="App min-h-screen">
-        <BrowserRouter>
-          <ScrollToTop />
-          <Routes>
+      <AdSlotsProvider>
+        <div className="App min-h-screen">
+          <BrowserRouter>
+            <ScrollToTop />
+            <Routes>
             {/* Public Routes */}
             <Route path="/" element={<HomePage />} />
             <Route path="/news" element={<Navigate to="/" replace />} />
@@ -91,9 +93,10 @@ function App() {
             <Route path="/admin/rumours" element={<AdminRumours />} />
             <Route path="/admin/gsc" element={<AdminGSC />} />
           </Routes>
-        </BrowserRouter>
-        <Toaster position="top-right" />
-      </div>
+          </BrowserRouter>
+          <Toaster position="top-right" />
+        </div>
+      </AdSlotsProvider>
     </HelmetProvider>
   );
 }
