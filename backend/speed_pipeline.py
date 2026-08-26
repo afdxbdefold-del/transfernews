@@ -1083,13 +1083,15 @@ NUR OUTPUT: Der Artikel-Text mit H2-Überschriften."""
             from dotenv import load_dotenv
             load_dotenv()
             
-            from emergentintegrations.llm.chat import LlmChat, UserMessage
+            from openai import AsyncOpenAI
             from context_research import get_context_researcher
             
-            api_key = os.environ.get("EMERGENT_LLM_KEY")
+            api_key = os.environ.get("OPENAI_API_KEY") or os.environ.get("EMERGENT_LLM_KEY")
             if not api_key:
-                logger.warning("[GPT] No EMERGENT_LLM_KEY found, skipping rewrite")
+                logger.warning("[GPT] No OPENAI_API_KEY found, skipping rewrite")
                 return False
+            
+            openai_client = AsyncOpenAI(api_key=api_key)
             
             # Artikel laden
             article = await self.db.articles.find_one(
@@ -1131,13 +1133,7 @@ NUR OUTPUT: Der Artikel-Text mit H2-Überschriften."""
                 context_text = context_data.get("context_text", "")
                 has_context = context_data.get("has_context", False)
             
-            # GPT-Rewrite mit Kontext
-            chat = LlmChat(
-                api_key=api_key,
-                session_id=f"rewrite-{article_id}",
-                system_message=self.SYSTEM_PROMPT
-            ).with_model("openai", "gpt-4o")
-            
+            # GPT-Rewrite mit Kontext - OpenAI direkt
             # Prompt mit Kontext
             min_words = max(self.MIN_WORDS, original_words)
             if has_context:
@@ -1164,8 +1160,17 @@ ORIGINAL-TEXT:
 Nutze alle verfügbaren Fakten aus dem Original UND dem Kontext.
 Liefere NUR den Artikel-Text."""
             
-            user_message = UserMessage(text=prompt)
-            response = await chat.send_message(user_message)
+            # OpenAI API Call
+            completion = await openai_client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": self.SYSTEM_PROMPT},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.7,
+                max_tokens=2000
+            )
+            response = completion.choices[0].message.content if completion.choices else None
             
             if not response:
                 logger.warning(f"[GPT] Empty response for {title[:30]}")
@@ -1196,8 +1201,16 @@ ANFORDERUNGEN:
 
 Schreibe jetzt korrekt!"""
                 
-                user_message = UserMessage(text=retry_prompt)
-                response = await chat.send_message(user_message)
+                retry_completion = await openai_client.chat.completions.create(
+                    model="gpt-4o-mini",
+                    messages=[
+                        {"role": "system", "content": self.SYSTEM_PROMPT},
+                        {"role": "user", "content": retry_prompt}
+                    ],
+                    temperature=0.7,
+                    max_tokens=2000
+                )
+                response = retry_completion.choices[0].message.content if retry_completion.choices else None
                 
                 if response:
                     rewrite = self.clean_rewrite(response)
