@@ -546,6 +546,12 @@ class SpeedPipeline:
         import uuid
         
         story = story_result.get("story", {})
+        headline = story_result.get("headline", "")
+        
+        # FILTER: Keine Artikel mit "Unbekannt" im Titel
+        if "Unbekannt" in headline or "unbekannt" in headline:
+            logger.info(f"[PIPELINE] SKIPPED (Unbekannt): {headline[:50]}")
+            return None
         
         # Generiere Artikel mit Story-Daten
         article_data = self.instant_generator.generate_instant_article(event)
