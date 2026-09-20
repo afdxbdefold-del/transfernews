@@ -224,7 +224,9 @@ class StoryEngine:
         text = f"{title} {summary}".lower()
         
         # Stage Detection
-        stage = self._detect_stage(text)
+        # Background in an RSS summary must not turn a speculative headline into
+        # an announcement (e.g. a past signing mentioned alongside new interest).
+        stage = self._detect_stage(title if title.strip() else summary)
         
         # Transfer Type Detection
         transfer_type = self._detect_transfer_type(text)
@@ -241,11 +243,20 @@ class StoryEngine:
     
     def _detect_stage(self, text: str) -> str:
         text = text.lower()
+        uncertain = re.search(
+            r"\b(could|may|might|would|expected|reportedly|rumou?rs?|interest|interested|"
+            r"considering|linked|unlikely|könnte|koennte|möglicherweise|moeglicherweise|"
+            r"angeblich|gerücht|geruecht|interesse|podría|podria|pourrait|potrebbe)\b", text)
         for stage in ["official", "done", "near_done", "advanced", "rumor"]:
             for keyword in STAGE_KEYWORDS.get(stage, []):
                 for match in re.finditer(r"(?<!\w)" + re.escape(keyword) + r"(?!\w)", text):
                     before = text[max(0, match.start() - 35):match.start()]
                     if re.search(r"\b(not|no|nicht|kein|keine|noch nicht|denies|denied)\b[^.!?]{0,25}$", before):
+                        continue
+                    if stage in {"official", "done", "near_done"} and (uncertain or "?" in text):
+                        continue
+                    if stage == "official" and re.search(
+                        r"\b(interest|talks|negotiations|reports?|interesse|gespräche|verhandlungen)\b", text):
                         continue
                     return stage
         return "rumor"
@@ -372,9 +383,28 @@ class StoryEngine:
     # HEADLINE GENERATION
     # =========================================================================
     
-    def generate_headline(self, player_name: str, club_name: str, stage: str) -> str:
+    def generate_headline(self, player_name: str, club_name: str, stage: str,
+                          transfer_type: str = "permanent") -> str:
         """Generiert eine deutsche Headline basierend auf der Stage"""
-        template = HEADLINE_TEMPLATES.get(stage, HEADLINE_TEMPLATES["rumor"])
+        if transfer_type == "extension":
+            templates = {
+                "rumor": "Vertragsverlängerung von {player} bei {club} im Gespräch",
+                "advanced": "{player} und {club} verhandeln über Vertragsverlängerung",
+                "near_done": "{player} vor Vertragsverlängerung bei {club}",
+                "done": "{player} vor Unterschrift unter neuen Vertrag bei {club}",
+                "official": "{player} verlängert Vertrag bei {club}",
+            }
+        elif transfer_type == "loan":
+            templates = {
+                "rumor": "Leihe von {player} zu {club} im Gespräch",
+                "advanced": "{club} arbeitet an Leihe von {player}",
+                "near_done": "{player} vor Leihe zu {club}",
+                "done": "Leihe von {player} zu {club} vor Abschluss",
+                "official": "{player} wechselt auf Leihbasis zu {club}",
+            }
+        else:
+            templates = HEADLINE_TEMPLATES
+        template = templates.get(stage, templates["rumor"])
         return template.format(player=player_name, club=club_name)
     
     def generate_story_slug(self, player_slug: str, club_slug: str, transfer_type: str = "permanent") -> str:
@@ -522,7 +552,7 @@ class StoryEngine:
         identity = "story:" + hashlib.sha256(key.encode()).hexdigest()
         new_source.is_primary = True
         confidence = self.calculate_confidence(stage, [new_source], story_region)
-        headline = self.generate_headline(player_name, target_club, stage)
+        headline = self.generate_headline(player_name, target_club, stage, transfer_type)
         now = utcnow().isoformat()
         doc = {
             "_id": identity, "story_key": key,
@@ -574,7 +604,8 @@ class StoryEngine:
             source["is_primary"] = i == 0
         fields = {
             "last_updated_at": utcnow().isoformat(), "sources": sources, "current_stage": stage,
-            "headline": self.generate_headline(existing_story["player_name"], existing_story["target_club"], stage),
+            "headline": self.generate_headline(existing_story["player_name"], existing_story["target_club"], stage,
+                                               existing_story.get("transfer_type", "permanent")),
             "transfer_fee": new_fee,
             "primary_source": sources[0]["source_name"],
             "secondary_sources": [source["source_name"] for source in sources[1:MAX_SECONDARY_SOURCES_DISPLAYED + 1]],

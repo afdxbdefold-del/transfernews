@@ -43,11 +43,11 @@ class Database:
 
 class Generator:
     def extract_entities(self, title, body=""):
-        return {"player": "Synthetic Player", "club": "Synthetic Club", "from_club": "Former Club"}
+        return {"player": "Florian Wirtz", "club": "FC Liverpool", "from_club": "Former Club"}
     def generate_instant_article(self, event):
         return {"title": "Fixture", "body": event.get("title", "Fixture"),
                 "source_url": event.get("source_url"), "source_name": event.get("source_name"),
-                "player_name": "Synthetic Player", "club_name": "Synthetic Club", "needs_gpt_rewrite": True}
+                "player_name": "Florian Wirtz", "club_name": "FC Liverpool", "needs_gpt_rewrite": True}
 
 
 class PipelineRepairTests(unittest.IsolatedAsyncioTestCase):
@@ -65,7 +65,7 @@ class PipelineRepairTests(unittest.IsolatedAsyncioTestCase):
 
     def event(self, number=0, **overrides):
         return {"id": f"event-{number}", "status": "pending", "created_at": utcnow() + timedelta(microseconds=number),
-                "headline_raw": "Synthetic Player linked with Synthetic Club", "body_raw": "The source reports transfer interest.",
+                "headline_raw": "Florian Wirtz linked with FC Liverpool", "body_raw": "The source reports transfer interest.",
                 "source_name": "Source A", "source_url": f"https://source.invalid/{number}",
                 "source_published_at": utcnow(), **overrides}
 
@@ -79,7 +79,7 @@ class PipelineRepairTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(await self.db.articles.count_documents({}), 1)
 
     async def test_official_title_loan_fee_and_summary_survive(self):
-        result = await self.pipeline.process_event(self.event(headline_raw="Official: Synthetic Player joins Synthetic Club on loan for 20 million euro"))
+        result = await self.pipeline.process_event(self.event(headline_raw="Official: Florian Wirtz joins FC Liverpool on loan for 20 million euro"))
         story = await self.db.transfer_stories.find_one({})
         self.assertEqual(story["current_stage"], "official")
         self.assertEqual(story["transfer_type"], "loan")
@@ -92,15 +92,15 @@ class PipelineRepairTests(unittest.IsolatedAsyncioTestCase):
         self.pipeline.instant_generator.generate_instant_article = lambda event: {
             "title": "Template", "body": "Template", "player_name": "Unbekannter Spieler",
             "club_name": "Unbekannter Verein", "needs_gpt_rewrite": True}
-        await self.pipeline.process_event(self.event(headline_raw="Official transfer announced", body_raw="Synthetic Player joins Synthetic Club"))
+        await self.pipeline.process_event(self.event(headline_raw="Official transfer announced", body_raw="Florian Wirtz joins FC Liverpool"))
         article = await self.db.articles.find_one({})
-        self.assertEqual(article["player_name"], "Synthetic Player")
-        self.assertEqual(article["club_name"], "Synthetic Club")
-        self.assertIn("Synthetic Player joins Synthetic Club", article["body"])
+        self.assertEqual(article["player_name"], "Florian Wirtz")
+        self.assertEqual(article["club_name"], "FC Liverpool")
+        self.assertIn("Florian Wirtz joins FC Liverpool", article["body"])
 
     async def test_same_source_new_url_and_facts_upgrade_existing_article(self):
         first = await self.pipeline.process_event(self.event())
-        second = await self.pipeline.process_event(self.event(1, headline_raw="Official: Synthetic Player has signed for Synthetic Club"))
+        second = await self.pipeline.process_event(self.event(1, headline_raw="Official: Florian Wirtz has signed for FC Liverpool"))
         self.assertEqual(first["article_id"], second["article_id"])
         story = await self.db.transfer_stories.find_one({})
         article = await self.db.articles.find_one({})
@@ -130,8 +130,7 @@ class PipelineRepairTests(unittest.IsolatedAsyncioTestCase):
                               (utcnow() + timedelta(days=1), "future_source_date")]:
             outcome = await self.pipeline.process_event(self.event(source_published_at=value))
             self.assertEqual((outcome["action"], outcome["reason"]), ("review", reason))
-        self.pipeline.instant_generator.extract_entities = lambda *args: {"player": "Unbekannter Spieler", "club": "Known"}
-        await self.db.events.insert_one(self.event())
+        await self.db.events.insert_one(self.event(headline_raw="Unknown footballer linked with FC Liverpool"))
         result = await self.pipeline.process_pending_events()
         self.assertEqual(result["review"], 1)
         self.assertEqual(await self.db.transfer_stories.count_documents({}), 0)
@@ -205,7 +204,7 @@ class PipelineRepairTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_retry_recovers_article_after_story_was_saved(self):
         await self.pipeline.process_event(self.event())
-        update_event = self.event(1, headline_raw="Official: Synthetic Player has signed for Synthetic Club")
+        update_event = self.event(1, headline_raw="Official: Florian Wirtz has signed for FC Liverpool")
         actual = self.pipeline._update_article_from_story
         self.pipeline._update_article_from_story = AsyncMock(side_effect=RuntimeError("interrupted write"))
         with self.assertRaises(RuntimeError):

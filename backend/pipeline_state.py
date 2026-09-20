@@ -1,5 +1,6 @@
 """Persistent pipeline work leases and conservative source freshness rules."""
 import os
+import re
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
@@ -21,7 +22,14 @@ def parse_source_time(value):
             result = datetime.fromisoformat(value.replace("Z", "+00:00"))
         except ValueError:
             try:
-                result = parsedate_to_datetime(value)
+                # RFC feeds use European names not supported by email.utils.
+                # A naive parsed result would otherwise silently shift source age.
+                normalized = re.sub(
+                    r"\b(CET|CEST|BST)\s*$",
+                    lambda match: {"CET": "+0100", "CEST": "+0200", "BST": "+0100"}[match[1].upper()],
+                    value.strip(), flags=re.I,
+                )
+                result = parsedate_to_datetime(normalized)
             except (TypeError, ValueError, OverflowError):
                 return None
     else:

@@ -1017,7 +1017,7 @@ class RSSFeedScraper:
         # 🇬🇧 UK SOURCES (Premier League Dominanz)
         # =============================================
         "sky_sports_uk": {
-            "url": "https://www.skysports.com/rss/12040",
+            "url": "https://www.skysports.com/rss/11095",
             "name": "Sky Sports",
             "category": "tier_1",
             "language": "en",
@@ -1048,7 +1048,8 @@ class RSSFeedScraper:
         # 🇪🇸 SPAIN SOURCES (La Liga + Südamerika)
         # =============================================
         "marca": {
-            "url": "https://e00-marca.uecdn.es/rss/futbol.xml",
+            # Current official LaLiga feed; historical all-football feed is stale.
+            "url": "https://objetos.estaticos-marca.com/rss/futbol/primera-division.xml",
             "name": "Marca",
             "category": "tier_1",
             "language": "es",
@@ -1079,7 +1080,7 @@ class RSSFeedScraper:
         # 🇮🇹 ITALY SOURCES (Serie A Leak Zone)
         # =============================================
         "gazzetta": {
-            "url": "https://www.gazzetta.it/rss/home.xml",
+            "url": "https://www.gazzetta.it/dynamic-feed/rss/section/Calcio.xml",
             "name": "Gazzetta dello Sport",
             "category": "tier_1",
             "language": "it",
@@ -1128,7 +1129,7 @@ class RSSFeedScraper:
             "speed": "fast",
         },
         "foot_mercato": {
-            "url": "https://www.footmercato.net/rss",
+            "url": "https://www.footmercato.net/flux-rss",
             "name": "Foot Mercato",
             "category": "tier_2",
             "language": "fr",
@@ -1141,7 +1142,9 @@ class RSSFeedScraper:
         # 🇩🇪 GERMANY SOURCES (Bundesliga)
         # =============================================
         "bild_fussball": {
-            "url": "https://www.bild.de/rssfeeds/vw-fussball.xml",
+            "url": "https://www.bild.de/feed/sport.xml",
+            "allowed_hosts": ["www.bild.de", "bild.de"],
+            "allowed_path_prefixes": ["/sport/fussball/"],
             "name": "BILD",
             "category": "tier_1",
             "language": "de",
@@ -1169,6 +1172,37 @@ class RSSFeedScraper:
         },
     }
     
+    # Retain source keys/configuration and database history. Disabled sources are
+    # reported separately from transient fetch errors, never silently retried.
+    DISABLED_FEEDS = {
+        "lequipe": {"reason": "blocked_403", "checked_on": "2026-09-20"},
+        "sport1": {"reason": "official_feed_blocked_403", "checked_on": "2026-09-20",
+                   "official_feed_url": "https://www.sport1.de/feed"},
+        "teamtalk": {"reason": "feed_404_no_verified_replacement", "checked_on": "2026-09-20"},
+        "goal_com": {"reason": "feed_404_no_verified_replacement", "checked_on": "2026-09-20"},
+        "footballtransfers": {"reason": "html_instead_of_feed", "checked_on": "2026-09-20"},
+    }
+
+    @classmethod
+    def active_feeds(cls):
+        return {key: info for key, info in cls.FEEDS.items() if key not in cls.DISABLED_FEEDS}
+
+    @staticmethod
+    def _entry_in_scope(info, link):
+        hosts = info.get("allowed_hosts")
+        prefixes = info.get("allowed_path_prefixes")
+        if not hosts and not prefixes:
+            return True
+        try:
+            parsed = urlsplit(link)
+            if parsed.scheme not in {"http", "https"}:
+                return False
+            if hosts and parsed.netloc.casefold() not in hosts:
+                return False
+            return not prefixes or any(parsed.path.startswith(prefix) for prefix in prefixes)
+        except (TypeError, ValueError):
+            return False
+
     # Transfer keywords für verschiedene Sprachen (erweitert)
     TRANSFER_KEYWORDS = {
         "de": [
@@ -1291,7 +1325,7 @@ class RSSFeedScraper:
 
     async def fetch_feed(self, feed_key: str) -> List[dict]:
         info = self.FEEDS.get(feed_key)
-        if not info:
+        if not info or feed_key in self.DISABLED_FEEDS:
             return []
         errors = getattr(self, "feed_errors", {})
         self.feed_errors = errors
@@ -1317,11 +1351,13 @@ class RSSFeedScraper:
                 return []
             events = []
             for entry in feed.entries[:50]:
+                link = entry.get("link", "")
+                if not self._entry_in_scope(info, link):
+                    continue
                 title = BeautifulSoup(entry.get("title", ""), "html.parser").get_text(" ", strip=True)
                 summary = BeautifulSoup(entry.get("summary", ""), "html.parser").get_text(" ", strip=True)[:4000]
                 if not self._is_transfer_related(title, summary, info.get("language", "de")):
                     continue
-                link = entry.get("link", "")
                 source_time = parse_source_time(entry.get("published") or entry.get("updated"))
                 events.append({
                     "headline_raw": title, "summary": summary, "source_url": link,
@@ -1344,7 +1380,7 @@ class RSSFeedScraper:
         async def fetch(key):
             async with semaphore:
                 return await self.fetch_feed(key)
-        feeds = sorted(self.FEEDS, key=lambda key: (self.FEEDS[key].get("category", "tier_3"), -self.FEEDS[key].get("trust_score", 0)))
+        feeds = sorted(self.active_feeds(), key=lambda key: (self.FEEDS[key].get("category", "tier_3"), -self.FEEDS[key].get("trust_score", 0)))
         batches = await asyncio.gather(*(fetch(key) for key in feeds))
         return [event for batch in batches for event in batch]
 
@@ -1366,7 +1402,7 @@ async def import_rss_events(db) -> dict:
     scraper = RSSFeedScraper()
     
     # Ensure sources exist
-    for source_key, source_info in scraper.FEEDS.items():
+    for source_key, source_info in scraper.active_feeds().items():
         existing = await db.sources.find_one({"slug": source_key})
         if not existing:
             source = Source(
@@ -1386,8 +1422,9 @@ async def import_rss_events(db) -> dict:
     events = await scraper.fetch_all_feeds()
     
     result["feed_errors"] = getattr(scraper, "feed_errors", {})
-    result["feeds_checked"] = len(scraper.FEEDS)
-    logger.info("[RSS] events=%s feeds=%s failed=%s", len(events), len(scraper.FEEDS), len(result["feed_errors"]))
+    result["feeds_checked"] = len(scraper.active_feeds())
+    result["disabled_feeds"] = {key: dict(info) for key, info in scraper.DISABLED_FEEDS.items() if key in scraper.FEEDS}
+    logger.info("[RSS] events=%s feeds=%s failed=%s disabled=%s", len(events), result["feeds_checked"], len(result["feed_errors"]), len(result["disabled_feeds"]))
     
     # Import events
     for event_data in events:

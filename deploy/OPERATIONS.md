@@ -7,7 +7,7 @@ This file replaces deployment assumptions in inherited Emergent documentation.
 - Coolify application: `t4iysn7locgn8jdax7xb6s9j` on `167.235.252.152`.
 - Deploy this repository with the existing Coolify Compose application. Do not run a separate Compose project on the host.
 - Existing MongoDB volume: `t4iysn7locgn8jdax7xb6s9j_mongodb-data`; database: `transfernews_db`. Never replace this with an empty volume.
-- Public traffic goes through the external `nginx-proxy`, configured at `/opt/nginx-proxy/nginx.conf`, to Compose aliases `frontend:80` and `backend:8001`. Reload that proxy after replacing containers to refresh upstream DNS.
+- Public traffic goes through the external `nginx-proxy`, configured at `/opt/nginx-proxy/nginx.conf`, to Compose aliases `frontend:80` and `backend:8001`. Its upstreams use Docker DNS (`127.0.0.11`, 5-second validity), shared zones and `resolve`; the frontend uses the same mechanism for its backend connection. This requires nginx 1.27.3 or newer and the existing Docker network aliases. After deployment verify API and actual article HTML; a reload is needed when changing proxy configuration, not for routine address changes. Brief unavailability while an application starts is still possible.
 - Frontend serves standard sitemap/robots paths and routes public article/profile HTML to the backend. Build defaults to same-origin requests.
 
 ## Persistent state and credentials
@@ -19,6 +19,14 @@ Create `/opt/transfernews-runtime/secrets/jwt_secret` server-side with at least 
 Configure `OPENAI_API_KEY` in Coolify, never in Git or build output. The value is used only at runtime. `FOOTBALL_DATA_API_KEY` is optional for manual football-data imports. Signing-key rotation invalidates prior sessions. Admin password rotation additionally increments the account's authentication version.
 
 For isolated checks or the migration deployment, set `SCHEDULER_ENABLED=false` in Coolify. Set it back to true after verified migration and controlled processing. `/api/ready` checks database connectivity and expected scheduler state; `/api/health` is a liveness check.
+
+## Source and publication checks
+
+The source catalogue retains stable source keys, with unavailable feeds recorded separately in `RSSFeedScraper.DISABLED_FEEDS`. Import results expose active feed counts, failures and disabled-source reasons. General BILD sports items are limited to its football URL path. RSS dates with CET, CEST and BST are normalized explicitly.
+
+Before creating a story, processing requires a fresh source timestamp, explicit transfer context, recognized player and club names, and evidence for the destination. Multiple players or an unclear origin/destination remain `review` events. Names are never assigned by popularity. This deliberately favors review over an unsupported transfer claim; review events are terminal and do not block later items. The catalogue and language patterns do not cover every footballer or every phrasing.
+
+Headline stages use the current source headline and do not promote uncertain reporting to an official announcement. Loan and contract-extension headlines retain that distinction. A successful import or processed event count alone is not proof of publication or a successful AI rewrite.
 
 ## Backup and migration
 

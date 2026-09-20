@@ -23,6 +23,7 @@ import os
 from uuid import uuid4, uuid5, NAMESPACE_URL
 from pymongo import ReturnDocument
 from pipeline_state import utcnow, parse_source_time, review_reason, retry_at, due_query, story_lease
+from transfer_evidence import assess_transfer_evidence
 
 logger = logging.getLogger(__name__)
 
@@ -438,7 +439,9 @@ class SpeedPipeline:
         event["title"] = event.get("headline_raw") or event.get("title", "")
         event["headline_raw"] = event["title"]
         event["summary"] = event.get("summary") or event.get("body_raw") or event.get("summary_raw", "")
-        entities = self.instant_generator.extract_entities(event["title"], event["summary"])
+        entities = assess_transfer_evidence(event["title"], event["summary"])
+        if entities.get("reason"):
+            return {"action": "review", "reason": entities["reason"], "article_id": None, "time_ms": 0}
         player, club = entities.get("player", ""), entities.get("club", "")
         if (not player or not club or any("unbekannt" in value.lower() or "unknown" in value.lower()
                                         for value in (player, club))):
