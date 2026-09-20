@@ -12,6 +12,10 @@ import re
 import hashlib
 from typing import List, Dict, Optional
 import logging
+from email.utils import parsedate_to_datetime
+from urllib.parse import urlsplit, urlunsplit, parse_qsl, urlencode
+from pymongo.errors import DuplicateKeyError
+from pipeline_state import parse_source_time
 
 logger = logging.getLogger(__name__)
 
@@ -379,7 +383,10 @@ async def import_scraped_events(scraper: TransferNewsScraper, db) -> dict:
     # Import events
     for event_data in events:
         # Check for duplicate
-        existing = await db.events.find_one({"dedupe_key": event_data["dedupe_key"]})
+        existing = await db.events.find_one({"$or": [
+            {"dedupe_key": event_data["dedupe_key"]},
+            {"dedupe_key": event_data.get("legacy_dedupe_key", event_data["dedupe_key"]), "headline_raw": event_data["headline_raw"]}
+        ]})
         if existing:
             result["duplicates"] += 1
             continue
@@ -404,6 +411,8 @@ async def import_scraped_events(scraper: TransferNewsScraper, db) -> dict:
             event_type=event_type,
             status=EventStatus.PENDING,
             headline_raw=event_data["headline_raw"],
+            body_raw=event_data.get("summary", ""),
+            source_published_at=event_data.get("source_published_at"),
             source_id=source_id,
             source_url=event_data.get("source_url", ""),
             dedupe_key=event_data["dedupe_key"],
@@ -421,7 +430,6 @@ async def import_scraped_events(scraper: TransferNewsScraper, db) -> dict:
 # ============================================================================
 
 import os
-from emergentintegrations.llm.chat import LlmChat, UserMessage
 
 
 def extract_player_names(title: str) -> List[str]:
@@ -844,307 +852,19 @@ async def find_related_events(db, event: dict, limit: int = 5) -> List[dict]:
 
 
 async def generate_article_from_event(event: dict, db) -> dict:
-    """
-    Generate a high-quality article from multiple sources using LLM
-    Suitable for Google Discover
-    """
-    from models import Article, ArticleType, ArticleStatus, generate_uuid
-    
-    api_key = os.environ.get("EMERGENT_LLM_KEY")
-    if not api_key:
-        raise ValueError("EMERGENT_LLM_KEY nicht konfiguriert")
-    
-    # Find related events from different sources
-    related_events = await find_related_events(db, event)
-    
-    # Build source information with language info
-    sources_text = ""
-    has_english_sources = False
-    for i, e in enumerate(related_events, 1):
-        lang = e.get('source_language', 'de')
-        if lang != 'de':
-            has_english_sources = True
-        sources_text += f"""
-QUELLE {i} [{lang.upper()}]:
-- Headline: {e.get('headline_raw', '')}
-- Quelle: {e.get('source_name', e.get('source_key', ''))}
-- URL: {e.get('source_url', '')}
-- Summary: {e.get('summary', '')[:300]}
-"""
-    
-    headline = event.get("headline_raw", "")
-    source_language = event.get("source_language", "de")
-    
-    # Add translation instruction for non-German sources
-    translation_note = ""
-    if has_english_sources or source_language != "de":
-        translation_note = """
-=== WICHTIG: ÜBERSETZUNG ===
-Einige Quellen sind auf Englisch/Spanisch. 
-Übersetze ALLE Inhalte ins perfekte Deutsch.
-Behalte Namen und Vereinsnamen im Original.
-Verwende deutsche Fußball-Terminologie (z.B. "Ablöse" statt "fee").
-"""
-    
-    # Create LLM chat instance with strict instructions
-    chat = LlmChat(
-        api_key=api_key,
-        session_id=f"article-gen-{event.get('id', 'new')}",
-        system_message=f"""Du bist Sportjournalist für transfernews.de. STRIKT FAKTENBASIERT.
-{translation_note}
-
-=== ABSOLUTE REGELN ===
-
-1. ERSTER ABSATZ (PFLICHT):
-- Maximal 2 Sätze
-- NUR harte Fakten
-- KEINE Emotion
-- KEINE Einleitung
-- KEINE Geschichte
-- KEINE Füllwörter
-Beispiel: "Borussia Dortmund prüft eine Rückkehr von Jadon Sancho. Voraussetzung ist laut Vereinsführung eine deutliche Gehaltsreduzierung."
-
-2. VERBOTENE FÜLLSÄTZE:
-- "Fans dürfen sich freuen"
-- "spannend bleibt es"
-- "eine Beziehung die einst"
-- "es könnte"
-- "man darf gespannt sein"
-- "es bleibt abzuwarten"
-- "die Zeit wird zeigen"
-- "zweifellos"
-- "sicherlich"
-- Jede Form von generischem Storytelling
-
-3. ABSATZSTRUKTUR:
-- Kurze Absätze (2-3 Sätze max)
-- KEINE langen Blöcke
-- Klare Trennung: Fakten → Kontext → Einordnung
-
-4. TITEL-REGEL:
-- KEIN Clickbait
-- Klare Information
-- Format: Spieler + Aktion + Verein
-- Beispiel: "Sancho-Rückkehr zum BVB nur bei Gehaltsverzicht"
-
-5. KEINE SPEKULATION ALS FAKT:
-- "soll" statt "wird" bei Gerüchten
-- "laut Berichten" bei unbestätigten Infos
-- Quellenbezug klar machen
-
-6. KEINE ERFUNDENEN DETAILS:
-- NUR Fakten aus den Quellen
-- KEINE Statistiken erfinden
-- KEINE Zitate erfinden"""
-    ).with_model("openai", "gpt-4o")
-    
-    # Generate article with strict structure
-    prompt = f"""Schreibe einen Transfer-Artikel aus diesen Quellen:
-
-{sources_text}
-
-=== STRIKTE STRUKTUR ===
-
-TITEL (max 60 Zeichen):
-Spieler + Aktion + Verein
-KEIN Clickbait, KEINE Frage
-
-TEASER (max 120 Zeichen):
-Ein Satz, Kernfakt
-
-STATUS:
-Wähle: rumour / advanced / confirmed / official
-
-ARTIKEL:
-
-**ABSATZ 1 - FAKTEN (2 Sätze, PFLICHT):**
-Nur harte Fakten. Keine Einleitung. Keine Emotion.
-
-**ABSATZ 2 - DETAILS (2-3 Sätze):**
-Ablöse, Vertragslaufzeit, beteiligte Parteien.
-
-**ABSATZ 3 - KONTEXT (2-3 Sätze):**
-Warum jetzt? Hintergründe.
-
-**ABSATZ 4 - EINORDNUNG (2-3 Sätze):**
-Was bedeutet das für Spieler/Verein?
-
-**ABSATZ 5 - AUSBLICK (1-2 Sätze):**
-Nächste Schritte. Zeitrahmen.
-
-=== FORMAT ===
-TITEL: [titel]
-TEASER: [teaser]
-STATUS: [rumour/advanced/confirmed/official]
-ARTIKEL:
-[artikel]"""
-
-    user_message = UserMessage(text=prompt)
-    response = await chat.send_message(user_message)
-    
-    # Parse response
-    title = headline  # Fallback
-    excerpt = ""
-    body = response
-    transfer_status_raw = "rumour"  # Default
-    
-    lines = response.split("\n")
-    current_section = None
-    body_lines = []
-    
-    for line in lines:
-        if line.startswith("TITEL:"):
-            title = line.replace("TITEL:", "").strip()
-        elif line.startswith("TEASER:"):
-            excerpt = line.replace("TEASER:", "").strip()
-        elif line.startswith("STATUS:"):
-            status_val = line.replace("STATUS:", "").strip().lower()
-            if status_val in ["rumour", "advanced", "confirmed", "official"]:
-                transfer_status_raw = status_val
-        elif line.startswith("ARTIKEL:"):
-            current_section = "body"
-        elif current_section == "body":
-            body_lines.append(line)
-    
-    if body_lines:
-        body = "\n".join(body_lines).strip()
-    
-    # Map status to display values
-    status_map = {
-        "rumour": ("GERÜCHT", 25),
-        "advanced": ("FORTGESCHRITTEN", 60),
-        "confirmed": ("BESTÄTIGT", 90),
-        "official": ("OFFIZIELL", 100)
-    }
-    transfer_status, transfer_probability = status_map.get(transfer_status_raw, ("GERÜCHT", 25))
-    
-    # Generate slug
-    slug = generate_slug(title)
-    
-    # Check if slug exists, append number if needed
-    existing = await db.articles.find_one({"slug": slug})
-    if existing:
-        import random
-        slug = f"{slug}-{random.randint(1000, 9999)}"
-    
-    # Get image from event or search for one
-    source_image_url = event.get("image_url", "")
-    article_id = generate_uuid()
-    
-    # Download original image from source
-    image_url = ""
-    if source_image_url:
-        image_url = await download_and_save_image(source_image_url, article_id)
-        if image_url:
-            logger.info(f"Using original image for article: {title[:30]}")
-    
-    # If no original image, search for player-specific image
-    if not image_url:
-        logger.info(f"Searching player image for: {title[:30]}")
-        image_url = await find_best_player_image(title, article_id)
-        if image_url:
-            logger.info(f"Found player-related image for: {title[:30]}")
-    
-    # Calculate word count and reading time
-    word_count = len(body.split()) if body else 0
-    reading_time = max(1, word_count // 200)
-    
-    # Create article
-    article = Article(
-        id=article_id,
-        title=title,
-        slug=slug,
-        excerpt=excerpt,
-        body=body,
-        article_type=ArticleType.NEWS,
-        status=ArticleStatus.PUBLISHED,
-        category="TRANSFER",
-        source_event_id=event.get("id"),
-        published_at=datetime.now(timezone.utc),
-        feature_image=image_url,
-        transfer_status=transfer_status,
-        transfer_probability=transfer_probability,
-        author_name="Redaktion",
-        author_slug="redaktion",
-        word_count=word_count,
-        reading_time_minutes=reading_time,
-    )
-    
-    return article.model_dump()
+    """Compatibility entry point; all publication goes through the guarded pipeline."""
+    from speed_pipeline import SpeedPipeline
+    outcome = await SpeedPipeline(db).process_event(event)
+    if not outcome.get("article_id"):
+        raise ValueError(outcome.get("reason", "event_requires_review"))
+    return await db.articles.find_one({"id": outcome["article_id"]}, {"_id": 0})
 
 
 async def process_pending_events(db, limit: int = 5) -> dict:
-    """
-    Process pending events and generate articles
-    IMPORTANT: Updates existing articles instead of creating duplicates
-    Returns summary of processed events
-    """
-    from models import EventStatus, ArticleStatus
-    from sitemap import ping_google_news_sitemap, track_article_update
-    
-    result = {"processed": 0, "articles_created": 0, "articles_updated": 0, "errors": []}
-    
-    # Get pending events
-    cursor = db.events.find({"status": "pending"}).limit(limit)
-    events = await cursor.to_list(length=limit)
-    
-    for event in events:
-        try:
-            headline = event.get("headline_raw", "").lower()
-            
-            # ===== UPDATE STATT DUPLIKATE LOGIK =====
-            # Check if we already have an article about this transfer
-            existing_article = await find_existing_article_for_event(db, event)
-            
-            if existing_article:
-                # UPDATE existing article instead of creating new one
-                await update_existing_article(db, existing_article, event)
-                result["articles_updated"] += 1
-                
-                # Track the update
-                await track_article_update(
-                    db,
-                    existing_article["id"],
-                    "content_update",
-                    f"Neue Quelle: {event.get('source_url', '')}"
-                )
-                
-                logger.info(f"Updated existing article: {existing_article['title'][:50]}")
-            else:
-                # Generate NEW article only if no existing one found
-                article_data = await generate_article_from_event(event, db)
-                
-                # Save article
-                await db.articles.insert_one(article_data)
-                result["articles_created"] += 1
-                
-                logger.info(f"Created new article: {article_data['title'][:50]}")
-            
-            # Update event status
-            await db.events.update_one(
-                {"id": event["id"]},
-                {"$set": {
-                    "status": "processed", 
-                    "generated_article_id": existing_article["id"] if existing_article else article_data["id"]
-                }}
-            )
-            result["processed"] += 1
-            
-        except Exception as e:
-            logger.error(f"Error processing event {event.get('id')}: {e}")
-            result["errors"].append(str(e))
-            
-            # Mark as error
-            await db.events.update_one(
-                {"id": event["id"]},
-                {"$set": {"status": "error", "error_message": str(e)}}
-            )
-    
-    # Ping Google after processing
-    if result["articles_created"] > 0 or result["articles_updated"] > 0:
-        await ping_google_news_sitemap()
-    
-    return result
+    """Legacy admin actions share the same lease, freshness and retry protections."""
+    from speed_pipeline import SpeedPipeline
+    result = await SpeedPipeline(db).process_pending_events(limit)
+    return {**result, "articles_created": result.get("created", 0), "articles_updated": result.get("updated", 0)}
 
 
 async def find_existing_article_for_event(db, event: dict) -> dict:
@@ -1495,10 +1215,12 @@ class RSSFeedScraper:
         "medium": 2,      # Priorität 2
     }
     
-    def _generate_dedupe_key(self, title: str, source: str) -> str:
-        """Generate unique key for deduplication"""
-        content = f"{title.lower()[:100]}:{source}"
-        return hashlib.md5(content.encode()).hexdigest()
+    def _generate_dedupe_key(self, title: str, source: str, url: str = "", summary: str = "") -> str:
+        parts = urlsplit(url)
+        canonical = urlunsplit((parts.scheme.lower(), parts.netloc.lower(), parts.path,
+            urlencode(sorted((key, value) for key, value in parse_qsl(parts.query) if not key.lower().startswith("utm_") and key.lower() not in {"fbclid", "gclid"})), ""))
+        content = "\n".join([source, canonical, " ".join(title.casefold().split()), " ".join(summary.split())])
+        return hashlib.sha256(content.encode()).hexdigest()
     
     def _is_transfer_related(self, title: str, summary: str = "", language: str = "de") -> bool:
         """
@@ -1531,7 +1253,8 @@ class RSSFeedScraper:
             "lesión", "tarjeta roja", "tarjeta amarilla", "goles"
         ]
         
-        if any(term in text for term in exclude_terms):
+        other_sports = ["rugby", "cricket", "tennis", "golf", "formula 1", "nfl", "nba", "nhl", "mlb", "boxing", "mma", "ufc"]
+        if any(re.search(r"\b" + re.escape(term) + r"\b", text) for term in other_sports):
             return False
         
         # Get keywords for language (fallback to all languages)
@@ -1567,60 +1290,63 @@ class RSSFeedScraper:
         return ""
 
     async def fetch_feed(self, feed_key: str) -> List[dict]:
-        """Fetch and parse a single RSS feed"""
-        events = []
-        feed_info = self.FEEDS.get(feed_key)
-        if not feed_info:
-            return events
-        
-        language = feed_info.get("language", "de")
-        trust_score = feed_info.get("trust_score", 70)
-        
+        info = self.FEEDS.get(feed_key)
+        if not info:
+            return []
+        errors = getattr(self, "feed_errors", {})
+        self.feed_errors = errors
         try:
-            feed = feedparser.parse(feed_info["url"])
-            
-            for entry in feed.entries[:20]:
-                title = entry.get("title", "")
-                summary = entry.get("summary", "")
+            timeout = aiohttp.ClientTimeout(total=20, connect=5)
+            headers = {"User-Agent": "TransferNewsDe/1.0 (+https://transfernews.de)"}
+            async with aiohttp.ClientSession(timeout=timeout, headers=headers) as session:
+                async with session.get(info["url"], max_redirects=5) as response:
+                    if response.status != 200:
+                        errors[feed_key] = f"http_{response.status}"
+                        return []
+                chunks, size = [], 0
+                async for chunk in response.content.iter_chunked(65536):
+                    size += len(chunk)
+                    if size > 2 * 1024 * 1024:
+                        errors[feed_key] = "feed_too_large"
+                        return []
+                    chunks.append(chunk)
+                content = b"".join(chunks)
+            feed = await asyncio.to_thread(feedparser.parse, content)
+            if not feed.entries and feed.get("bozo"):
+                errors[feed_key] = "invalid_feed"
+                return []
+            events = []
+            for entry in feed.entries[:50]:
+                title = BeautifulSoup(entry.get("title", ""), "html.parser").get_text(" ", strip=True)
+                summary = BeautifulSoup(entry.get("summary", ""), "html.parser").get_text(" ", strip=True)[:4000]
+                if not self._is_transfer_related(title, summary, info.get("language", "de")):
+                    continue
                 link = entry.get("link", "")
-                image_url = self._extract_image(entry)
-                
-                # Filter for transfer-related news (multilingual)
-                if self._is_transfer_related(title, summary, language):
-                    events.append({
-                        "headline_raw": title,
-                        "summary": summary[:500] if summary else "",
-                        "source_url": link,
-                        "source_key": feed_key,
-                        "source_name": feed_info["name"],
-                        "dedupe_key": self._generate_dedupe_key(title, feed_key),
-                        "published": entry.get("published", ""),
-                        "image_url": image_url,
-                        "language": language,
-                        "trust_score": trust_score,
-                        "category": feed_info.get("category", "tier_3"),
-                    })
-        except Exception as e:
-            logger.error(f"RSS feed error for {feed_key}: {e}")
-        
-        return events
+                source_time = parse_source_time(entry.get("published") or entry.get("updated"))
+                events.append({
+                    "headline_raw": title, "summary": summary, "source_url": link,
+                    "source_key": feed_key, "source_name": info["name"],
+                    "dedupe_key": self._generate_dedupe_key(title, feed_key, link, summary),
+                    "legacy_dedupe_key": hashlib.md5(f"{title.lower()[:100]}:{feed_key}".encode()).hexdigest(),
+                    "source_published_at": source_time, "image_url": self._extract_image(entry),
+                    "language": info.get("language", "de"), "trust_score": info.get("trust_score", 70),
+                    "category": info.get("category", "tier_3"),
+                })
+            return events
+        except Exception as exc:
+            errors[feed_key] = type(exc).__name__
+            logger.warning("[RSS] %s fetch failed: %s", feed_key, type(exc).__name__)
+            return []
     
     async def fetch_all_feeds(self) -> List[dict]:
-        """Fetch all RSS feeds, prioritized by tier"""
-        all_events = []
-        
-        # Sort feeds by tier (tier_1 first)
-        sorted_feeds = sorted(
-            self.FEEDS.items(),
-            key=lambda x: (x[1].get("category", "tier_3"), -x[1].get("trust_score", 0))
-        )
-        
-        for feed_key, feed_info in sorted_feeds:
-            events = await self.fetch_feed(feed_key)
-            all_events.extend(events)
-            logger.info(f"[RSS] {feed_info['name']}: {len(events)} transfer events")
-        
-        return all_events
+        self.feed_errors = {}
+        semaphore = asyncio.Semaphore(4)
+        async def fetch(key):
+            async with semaphore:
+                return await self.fetch_feed(key)
+        feeds = sorted(self.FEEDS, key=lambda key: (self.FEEDS[key].get("category", "tier_3"), -self.FEEDS[key].get("trust_score", 0)))
+        batches = await asyncio.gather(*(fetch(key) for key in feeds))
+        return [event for batch in batches for event in batch]
 
 
 async def import_rss_events(db) -> dict:
@@ -1659,12 +1385,17 @@ async def import_rss_events(db) -> dict:
     # Fetch all feeds
     events = await scraper.fetch_all_feeds()
     
-    logger.info(f"[RSS] Total transfer events found: {len(events)}")
+    result["feed_errors"] = getattr(scraper, "feed_errors", {})
+    result["feeds_checked"] = len(scraper.FEEDS)
+    logger.info("[RSS] events=%s feeds=%s failed=%s", len(events), len(scraper.FEEDS), len(result["feed_errors"]))
     
     # Import events
     for event_data in events:
         # Check for duplicate
-        existing = await db.events.find_one({"dedupe_key": event_data["dedupe_key"]})
+        existing = await db.events.find_one({"$or": [
+            {"dedupe_key": event_data["dedupe_key"]},
+            {"dedupe_key": event_data.get("legacy_dedupe_key", event_data["dedupe_key"]), "headline_raw": event_data["headline_raw"]}
+        ]})
         if existing:
             result["duplicates"] += 1
             continue
@@ -1702,6 +1433,8 @@ async def import_rss_events(db) -> dict:
             event_type=event_type,
             status=EventStatus.PENDING,
             headline_raw=event_data["headline_raw"],
+            body_raw=event_data.get("summary", ""),
+            source_published_at=event_data.get("source_published_at"),
             source_id=source_id,
             source_url=event_data.get("source_url", ""),
             dedupe_key=event_data["dedupe_key"],
@@ -1711,11 +1444,18 @@ async def import_rss_events(db) -> dict:
         
         # Add language metadata
         event_dict = event.model_dump()
+        event_dict["_id"] = "rss:" + event_data["dedupe_key"]
+        event_dict["title"] = event_data["headline_raw"]
+        event_dict["summary"] = event_data.get("summary", "")
         event_dict["source_language"] = event_data.get("language", "de")
         event_dict["source_name"] = event_data.get("source_name", "")
         event_dict["source_category"] = event_data.get("category", "tier_3")
         
-        await db.events.insert_one(event_dict)
+        try:
+            await db.events.insert_one(event_dict)
+        except DuplicateKeyError:
+            result["duplicates"] += 1
+            continue
         result["new_events"] += 1
         
         # Track stats
@@ -1736,14 +1476,14 @@ import aiohttp
 import os
 from pathlib import Path
 
-IMAGES_DIR = Path("/app/backend/static/images")
-IMAGES_DIR.mkdir(parents=True, exist_ok=True)
+IMAGES_DIR = Path(os.environ.get("MEDIA_ROOT", str(Path(__file__).resolve().parent / "static"))) / "images"
 
 async def download_and_save_image(image_url: str, article_id: str) -> str:
     """
     Download image from original source URL and save locally
     Returns the local path for the image
     """
+    IMAGES_DIR.mkdir(parents=True, exist_ok=True)
     if not image_url:
         return ""
     

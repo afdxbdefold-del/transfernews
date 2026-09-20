@@ -1,219 +1,98 @@
 import { useEffect, useRef, useState, createContext, useContext } from 'react';
 import { useLocation } from 'react-router-dom';
 import { getActiveAdSlots } from '@/api';
+import { canShowAd, hasAdCode, LEGACY_FORMATS, NO_AD_PAGES } from '@/lib/adPolicy';
 
-// Context for ad slots data
 const AdSlotsContext = createContext({ slots: [], loading: true });
 
-// Pages without ads
-const NO_AD_PAGES = ['/impressum', '/datenschutz', '/ueber-uns', '/about', '/admin'];
-
-// Provider that fetches ad slots once
 export function AdSlotsProvider({ children }) {
   const [slots, setSlots] = useState([]);
   const [loading, setLoading] = useState(true);
-
   useEffect(() => {
-    const fetchSlots = async () => {
+    let cancelled = false;
+    const refresh = async () => {
       try {
         const res = await getActiveAdSlots();
-        setSlots(res.data || []);
-      } catch (e) {
-        console.error('Failed to load ad slots:', e);
-        setSlots([]);
+        if (!cancelled) setSlots(Array.isArray(res.data) ? res.data : []);
+      } catch {
+        if (!cancelled) setSlots([]);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
-    fetchSlots();
+    refresh();
+    window.addEventListener('ad-slots-updated', refresh);
+    return () => { cancelled = true; window.removeEventListener('ad-slots-updated', refresh); };
   }, []);
-
-  return (
-    <AdSlotsContext.Provider value={{ slots, loading }}>
-      {children}
-    </AdSlotsContext.Provider>
-  );
+  return <AdSlotsContext.Provider value={{ slots, loading }}>{children}</AdSlotsContext.Provider>;
 }
 
-// Hook to get a specific ad slot
 export function useAdSlot(slotKey) {
   const { slots, loading } = useContext(AdSlotsContext);
-  const slot = slots.find(s => s.slot_key === slotKey);
-  return { slot, loading };
+  return { slot: slots.find(s => s.slot_key === slotKey), loading };
 }
-
-// Hook to check if we should show ads
 export function useShouldShowAds() {
-  const location = useLocation();
-  return !NO_AD_PAGES.some(p => location.pathname.startsWith(p));
+  const { pathname } = useLocation();
+  return !NO_AD_PAGES.some(p => pathname === p || pathname.startsWith(p + '/'));
 }
 
-// Dynamic ad component that renders code from database
-function DynamicAdSlot({ slotKey, minHeight = '90px', className = '' }) {
-  const location = useLocation();
-  const containerRef = useRef(null);
+function appendCode(container, html) {
+  const wrapper = document.createElement('div');
+  wrapper.innerHTML = html;
+  container.appendChild(wrapper);
+  wrapper.querySelectorAll('script').forEach(oldScript => {
+    const script = document.createElement('script');
+    script.async = false;
+    Array.from(oldScript.attributes).forEach(attr => script.setAttribute(attr.name, attr.value));
+    script.textContent = oldScript.textContent;
+    oldScript.replaceWith(script);
+  });
+}
+
+export default function DynamicAdSlot({ slotKey, minHeight = '90px', className = '' }) {
+  const { pathname } = useLocation();
   const { slot, loading } = useAdSlot(slotKey);
-  const shouldShow = !NO_AD_PAGES.some(p => location.pathname.startsWith(p));
-  const loadedRef = useRef(false);
-
+  const containerRef = useRef(null);
+  const [width, setWidth] = useState(() => window.innerWidth);
   useEffect(() => {
-    if (!shouldShow || !slot || loading || !containerRef.current) return;
-    
+    const resize = () => setWidth(window.innerWidth);
+    window.addEventListener('resize', resize);
+    return () => window.removeEventListener('resize', resize);
+  }, []);
+  const allowed = !loading && canShowAd(slot, pathname, width);
+  const format = LEGACY_FORMATS[slotKey];
+  useEffect(() => {
+    if (!allowed || !containerRef.current) return;
     const container = containerRef.current;
-    
-    // Clear old content on route change
-    container.innerHTML = '';
-    loadedRef.current = false;
-
     const timer = setTimeout(() => {
-      if (loadedRef.current) return;
-      loadedRef.current = true;
-
-      // Add HTML code
-      if (slot.html_code) {
-        const htmlDiv = document.createElement('div');
-        htmlDiv.innerHTML = slot.html_code;
-        container.appendChild(htmlDiv);
-      }
-
-      // Add embed code (can contain scripts)
-      if (slot.embed_code) {
-        const embedDiv = document.createElement('div');
-        embedDiv.innerHTML = slot.embed_code;
-        
-        // Execute any scripts in embed code
-        const scripts = embedDiv.querySelectorAll('script');
-        scripts.forEach(oldScript => {
-          const newScript = document.createElement('script');
-          Array.from(oldScript.attributes).forEach(attr => {
-            newScript.setAttribute(attr.name, attr.value);
-          });
-          newScript.textContent = oldScript.textContent;
-          oldScript.parentNode.replaceChild(newScript, oldScript);
+      // Reject hidden parents and placements narrower than the requested format.
+      const requiredWidth = hasAdCode(slot) ? 1 : format?.width;
+      if (container.getBoundingClientRect().width < requiredWidth) return;
+      container.replaceChildren();
+      if (hasAdCode(slot)) {
+        if (slot.html_code) appendCode(container, slot.html_code);
+        if (slot.embed_code) appendCode(container, slot.embed_code);
+        if (slot.js_code) {
+          const script = document.createElement('script');
+          script.textContent = slot.js_code;
+          container.appendChild(script);
+        }
+      } else if (format) {
+        const placement = document.createElement('div');
+        placement.id = '141912-' + format.id;
+        placement.style.width = format.width + 'px';
+        placement.style.marginInline = 'auto';
+        container.appendChild(placement);
+        ['https://ads.themoneytizer.com/s/gen.js?type=' + format.id, 'https://ads.themoneytizer.com/s/requestform.js?siteId=141912&formatId=' + format.id].forEach(src => {
+          const script = document.createElement('script');
+          script.async = false;
+          script.src = src;
+          placement.appendChild(script);
         });
-        
-        container.appendChild(embedDiv);
-      }
-
-      // Add JS code
-      if (slot.js_code) {
-        const script = document.createElement('script');
-        script.textContent = slot.js_code;
-        container.appendChild(script);
       }
     }, 200);
-
-    return () => clearTimeout(timer);
-  }, [location.pathname, slot, loading, shouldShow]);
-
-  if (!shouldShow || loading) return null;
-  if (!slot) {
-    // Fallback to hardcoded if slot not in DB
-    return null;
-  }
-
-  return (
-    <div
-      ref={containerRef}
-      data-slot={slotKey}
-      data-testid={`ad-slot-${slotKey}`}
-      className={className}
-      style={{ minHeight }}
-    />
-  );
+    return () => { clearTimeout(timer); container.replaceChildren(); };
+  }, [allowed, pathname, slot, format, width]);
+  if (!allowed) return null;
+  return <div ref={containerRef} data-slot={slotKey} data-testid={'ad-slot-' + slotKey} className={'managed-ad-slot max-w-full overflow-hidden ' + className} style={{ minHeight: format?.height || minHeight, width: '100%' }} />;
 }
-
-// Specific ad slot components using database
-export function MegabannerAd() {
-  return <DynamicAdSlot slotKey="megabanner" minHeight="90px" className="flex justify-center" />;
-}
-
-export function BillboardAd() {
-  return <DynamicAdSlot slotKey="billboard" minHeight="250px" className="text-center" />;
-}
-
-export function SidebarAd300x600() {
-  return <DynamicAdSlot slotKey="sidebar_300x600" minHeight="600px" />;
-}
-
-export function MrecAd() {
-  return <DynamicAdSlot slotKey="mrec" minHeight="250px" />;
-}
-
-export function MrecAd2() {
-  return <DynamicAdSlot slotKey="mrec_2" minHeight="250px" />;
-}
-
-export function AboveFooterAd() {
-  return <DynamicAdSlot slotKey="above_footer" minHeight="90px" />;
-}
-
-export function StickySkyscraperAd() {
-  const { slot } = useAdSlot('skyscraper');
-  
-  return (
-    <>
-      <style>{`
-        @media (min-width: 1024px) {
-          [data-slot="skyscraper"] {
-            position: fixed;
-            left: 0px;
-            top: 90px;
-            z-index: 99999999;
-          }
-        }
-      `}</style>
-      <DynamicAdSlot slotKey="skyscraper" minHeight="600px" className="hidden lg:block" />
-    </>
-  );
-}
-
-export function GlobalAd() {
-  return <DynamicAdSlot slotKey="global" minHeight="0" />;
-}
-
-// In-Feed ad component
-export function InFeedAd({ position = 0 }) {
-  return <DynamicAdSlot slotKey={`infeed_${position}`} minHeight="250px" className="my-4" />;
-}
-
-// Generic ad slot by key
-export function AdSlot({ slotKey, minHeight = '90px', className = '' }) {
-  return <DynamicAdSlot slotKey={slotKey} minHeight={minHeight} className={className} />;
-}
-
-// Hook for global ads (skyscraper, floating)
-export function useGlobalAds() {
-  const location = useLocation();
-  const { slots, loading } = useContext(AdSlotsContext);
-  
-  useEffect(() => {
-    if (loading || NO_AD_PAGES.some(p => location.pathname.startsWith(p))) return;
-    
-    // Find global slots
-    const globalSlots = slots.filter(s => 
-      s.slot_key === 'skyscraper' || s.slot_key === 'global'
-    );
-    
-    globalSlots.forEach(slot => {
-      const container = document.getElementById(`global-${slot.slot_key}`);
-      if (!container || container.childElementCount > 0) return;
-      
-      if (slot.embed_code) {
-        container.innerHTML = slot.embed_code;
-        // Execute scripts
-        const scripts = container.querySelectorAll('script');
-        scripts.forEach(oldScript => {
-          const newScript = document.createElement('script');
-          Array.from(oldScript.attributes).forEach(attr => {
-            newScript.setAttribute(attr.name, attr.value);
-          });
-          newScript.textContent = oldScript.textContent;
-          oldScript.parentNode.replaceChild(newScript, oldScript);
-        });
-      }
-    });
-  }, [location.pathname, slots, loading]);
-}
-
-export default DynamicAdSlot;

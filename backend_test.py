@@ -93,7 +93,7 @@ class TransferNewsAPITester:
         # Test login with correct credentials
         login_data = {
             "email": "admin@transfernews.de",
-            "password": "admin123"
+            "password": "REMOVED_LEGACY_PASSWORD"
         }
         
         success, data = self.make_request('POST', '/auth/login', login_data)

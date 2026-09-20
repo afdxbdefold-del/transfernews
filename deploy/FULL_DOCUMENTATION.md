@@ -243,8 +243,8 @@ http {
 ```env
 MONGO_URL=mongodb://mongodb:27017
 DB_NAME=transfernews
-JWT_SECRET_KEY=your_secret_key
-OPENAI_API_KEY=sk-...
+# JWT_SECRET_FILE=/run/secrets/jwt_secret (serverseitig erzeugt; kein Standardwert)
+# OPENAI_API_KEY wird ausschliesslich in Coolify hinterlegt.
 ```
 
 ### Scheduler-Jobs

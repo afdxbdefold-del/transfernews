@@ -408,9 +408,8 @@ Deutschsprachige Fußball-Transfer-News-Plattform auf der Domain transfernews.de
 - [ ] Performance-Optimierung (Redis Caching)
 - [ ] Push-Benachrichtigungen für Breaking News
 
-## Admin Credentials
-- Email: admin@transfernews.de
-- Password: admin123
+## Admin-Zugang
+Zugangsdaten werden nicht in Git dokumentiert. Bestehende oeffentlich dokumentierte Zugaenge muessen ersetzt werden.
 
 ## Key Files
 

@@ -6,6 +6,8 @@ import { useParams, Link } from "react-router-dom";
 import { getPlayerBySlug, getArticlesByPlayer, getPlayerTransfers } from "@/api";
 import { User, MapPin, Calendar, CaretRight, TrendUp, ArrowRight, Buildings, Swap } from "@phosphor-icons/react";
 import { Helmet } from "react-helmet-async";
+import { PersonSchema } from "@/components/SchemaMarkup";
+import { absoluteImageUrl } from "@/lib/articleSeo";
 
 function BoxHeader({ title, icon: Icon }) {
   return (
@@ -193,6 +195,7 @@ export default function PlayerPage() {
         <link rel="canonical" href={`https://transfernews.de/spieler/${slug}`} />
       </Helmet>
       
+      <PersonSchema person={{ name: player.name, url: `https://transfernews.de/spieler/${slug}`, nationality: player.country, birthDate: player.birthdate, image: absoluteImageUrl(player.image) }} />
       <Header />
       
       <main className="flex-1 py-3 px-3" data-testid="player-page">

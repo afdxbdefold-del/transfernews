@@ -14,7 +14,8 @@ from datetime import datetime, timezone, timedelta
 from typing import Optional, Dict, List, Tuple
 from dataclasses import dataclass, field
 from motor.motor_asyncio import AsyncIOMotorDatabase
-import random
+from uuid import uuid5, NAMESPACE_URL
+from pipeline_state import parse_source_time, utcnow
 
 logger = logging.getLogger("story_engine")
 
@@ -22,42 +23,12 @@ logger = logging.getLogger("story_engine")
 # AUTHORS (für E-E-A-T)
 # =============================================================================
 
-AUTHORS = [
-    {"id": "lukas-mueller", "name": "Lukas Müller", "role": "Chefredakteur", "image": "https://images.unsplash.com/photo-1771898343647-bd979ad8cca5?w=400&h=400&fit=crop&crop=face"},
-    {"id": "sarah-koch", "name": "Sarah Koch", "role": "Senior Redakteurin", "image": "https://images.unsplash.com/photo-1689600944138-da3b150d9cb8?w=400&h=400&fit=crop&crop=face"},
-    {"id": "marco-ferrari", "name": "Marco Ferrari", "role": "Italien-Korrespondent", "image": "https://images.unsplash.com/photo-1769636929261-e913ed023c83?w=400&h=400&fit=crop&crop=face"},
-    {"id": "anna-schmidt", "name": "Anna Schmidt", "role": "Transfermarkt-Analystin", "image": "https://images.unsplash.com/photo-1758598304332-94b40ce7c7b4?w=400&h=400&fit=crop&crop=face"},
-    {"id": "carlos-martinez", "name": "Carlos Martínez", "role": "Spanien-Korrespondent", "image": "https://images.unsplash.com/photo-1716749653173-d2e4865ad6de?w=400&h=400&fit=crop&crop=face"},
-    {"id": "julia-weber", "name": "Julia Weber", "role": "Nachwuchs-Expertin", "image": "https://images.unsplash.com/photo-1675186914580-94356f7c012c?w=400&h=400&fit=crop&crop=face"},
-    {"id": "thomas-bauer", "name": "Thomas Bauer", "role": "Bundesliga-Experte", "image": "https://images.unsplash.com/photo-1769636930047-4478f12cf430?w=400&h=400&fit=crop&crop=face"},
-    {"id": "sophie-dubois", "name": "Sophie Dubois", "role": "Frankreich-Korrespondentin", "image": "https://images.unsplash.com/photo-1650213236604-6dd826c965c0?w=400&h=400&fit=crop&crop=face"},
-    {"id": "max-hoffmann", "name": "Max Hoffmann", "role": "Breaking News Editor", "image": "https://images.pexels.com/photos/26872232/pexels-photo-26872232.jpeg?w=400&h=400&fit=crop&crop=face"},
-    {"id": "elena-rossi", "name": "Elena Rossi", "role": "Transfer-Podcast Host", "image": "https://images.unsplash.com/photo-1587189831394-b8b29791508a?w=400&h=400&fit=crop&crop=face"},
-    {"id": "david-klein", "name": "David Klein", "role": "Daten-Analyst", "image": "https://images.pexels.com/photos/14585727/pexels-photo-14585727.jpeg?w=400&h=400&fit=crop&crop=face"},
-    {"id": "lisa-wagner", "name": "Lisa Wagner", "role": "Social Media Redakteurin", "image": "https://images.unsplash.com/photo-1737093859815-bc9de7fe7ab5?w=400&h=400&fit=crop&crop=face"},
-]
+AUTHORS = [{"id": "redaktion", "name": "Redaktion", "role": "Redaktion", "image": ""}]
 
 def get_random_author() -> Dict:
-    """Gibt einen zufälligen Autor zurück"""
-    return random.choice(AUTHORS)
+    return dict(AUTHORS[0])
 
 def get_author_by_region(region: str) -> Dict:
-    """Gibt einen passenden Autor für die Region zurück"""
-    region_authors = {
-        "italy": ["marco-ferrari", "elena-rossi"],
-        "spain": ["carlos-martinez"],
-        "france": ["sophie-dubois"],
-        "germany": ["lukas-mueller", "thomas-bauer", "anna-schmidt", "julia-weber"],
-        "uk": ["sarah-koch", "max-hoffmann"],
-    }
-    
-    preferred_ids = region_authors.get(region, [])
-    if preferred_ids:
-        author_id = random.choice(preferred_ids)
-        for author in AUTHORS:
-            if author["id"] == author_id:
-                return author
-    
     return get_random_author()
 
 # =============================================================================
@@ -153,7 +124,7 @@ TRANSFER_TYPE_KEYWORDS = {
         "parametro zero", "libre", "fin de contrat"
     ],
     "extension": [
-        "extension", "renewal", "verlängerung", "new contract", "rinnovo",
+        "extension", "renewal", "verlängerung", "rinnovo",
         "renovación", "prolongation"
     ]
 }
@@ -269,26 +240,23 @@ class StoryEngine:
         }
     
     def _detect_stage(self, text: str) -> str:
-        """Erkennt die Transfer-Phase"""
-        text_lower = text.lower()
-        
-        # Prüfe von höchster zu niedrigster Stage
+        text = text.lower()
         for stage in ["official", "done", "near_done", "advanced", "rumor"]:
-            keywords = STAGE_KEYWORDS.get(stage, [])
-            if any(kw.lower() in text_lower for kw in keywords):
-                return stage
-        
-        return "rumor"  # Default
+            for keyword in STAGE_KEYWORDS.get(stage, []):
+                for match in re.finditer(r"(?<!\w)" + re.escape(keyword) + r"(?!\w)", text):
+                    before = text[max(0, match.start() - 35):match.start()]
+                    if re.search(r"\b(not|no|nicht|kein|keine|noch nicht|denies|denied)\b[^.!?]{0,25}$", before):
+                        continue
+                    return stage
+        return "rumor"
     
     def _detect_transfer_type(self, text: str) -> str:
-        """Erkennt den Transfer-Typ"""
-        text_lower = text.lower()
-        
-        for ttype, keywords in TRANSFER_TYPE_KEYWORDS.items():
-            if any(kw.lower() in text_lower for kw in keywords):
-                return ttype
-        
-        return "permanent"  # Default
+        # A loan can include a fee; ablösefrei must not match the broad Ablöse token first.
+        for kind in ["extension", "free", "loan", "permanent"]:
+            if any(re.search(r"(?<!\w)" + re.escape(word) + r"(?!\w)", text.lower())
+                   for word in TRANSFER_TYPE_KEYWORDS[kind]):
+                return kind
+        return "permanent"
     
     def _extract_transfer_fee(self, text: str) -> str:
         """Extrahiert Ablösesumme aus dem Text"""
@@ -303,7 +271,8 @@ class StoryEngine:
             match = re.search(pattern, text, re.IGNORECASE)
             if match:
                 amount = match.group(1).replace(",", ".")
-                return f"{amount} Mio. €"
+                currency = "£" if "pounds" in match.group(0).lower() or "£" in match.group(0) else "€"
+                return f"{amount} Mio. {currency}"
         
         return ""
     
@@ -408,52 +377,28 @@ class StoryEngine:
         template = HEADLINE_TEMPLATES.get(stage, HEADLINE_TEMPLATES["rumor"])
         return template.format(player=player_name, club=club_name)
     
-    def generate_story_slug(self, player_slug: str, club_slug: str) -> str:
-        """Generiert den URL-Slug für die Story"""
-        return f"{player_slug}-vor-wechsel-zu-{club_slug}"
+    def generate_story_slug(self, player_slug: str, club_slug: str, transfer_type: str = "permanent") -> str:
+        key = self.generate_story_key(player_slug, club_slug, transfer_type)
+        suffix = hashlib.sha256(key.encode()).hexdigest()[:12]
+        return f"{player_slug}-zu-{club_slug}-{transfer_type}-{suffix}"
     
     # =========================================================================
     # STORY LOOKUP & MATCHING
     # =========================================================================
     
     async def find_existing_story(self, player_slug: str, target_club_slug: str,
-                                   transfer_type: str = "permanent") -> Optional[Dict]:
-        """
-        Sucht nach einer existierenden aktiven Story.
-        """
-        story_key = self.generate_story_key(player_slug, target_club_slug, transfer_type)
-        
-        # Zeitfenster: letzte 96 Stunden
-        cutoff = datetime.now(timezone.utc) - timedelta(hours=STORY_ACTIVE_WINDOW_HOURS)
-        cutoff_str = cutoff.isoformat()
-        
-        story = await self.db.transfer_stories.find_one({
-            "story_key": story_key,
-            "status": "active",
-            "last_updated_at": {"$gte": cutoff_str}
-        }, {"_id": 0})
-        
-        return story
+                                  transfer_type: str = "permanent") -> Optional[Dict]:
+        # Identity does not expire after 96h. Reuse the oldest linked legacy story and URL.
+        key = self.generate_story_key(player_slug, target_club_slug, transfer_type)
+        order = [("first_seen_at", 1), ("_id", 1)]
+        linked = await self.db.transfer_stories.find_one(
+            {"story_key": key, "article_id": {"$nin": [None, ""]}}, sort=order)
+        return linked or await self.db.transfer_stories.find_one({"story_key": key}, sort=order)
     
-    async def find_story_by_player_and_club(self, player_name: str, 
-                                             target_club: str) -> Optional[Dict]:
-        """
-        Alternative Suche nach Spieler + Verein (ohne exakten Slug).
-        """
-        player_slug = self._slugify(player_name)
-        club_slug = self._slugify(target_club)
-        
-        cutoff = datetime.now(timezone.utc) - timedelta(hours=STORY_ACTIVE_WINDOW_HOURS)
-        
-        # Fuzzy Match via Regex
-        story = await self.db.transfer_stories.find_one({
-            "player_slug": {"$regex": f"^{player_slug[:5]}", "$options": "i"},
-            "target_club_slug": {"$regex": f"^{club_slug[:5]}", "$options": "i"},
-            "status": "active",
-            "last_updated_at": {"$gte": cutoff.isoformat()}
-        }, {"_id": 0})
-        
-        return story
+    async def find_story_by_player_and_club(self, player_name: str, target_club: str) -> Optional[Dict]:
+        return await self.db.transfer_stories.find_one(
+            {"player_slug": self._slugify(player_name), "target_club_slug": self._slugify(target_club)},
+            sort=[("first_seen_at", 1), ("_id", 1)])
     
     # =========================================================================
     # DECISION LOGIC
@@ -466,14 +411,16 @@ class StoryEngine:
         Returns:
             Dict mit action ("create_article", "update_article", "merge_only", "skip")
         """
-        title = event.get("title", "")
-        summary = event.get("summary", "")
+        title = event.get("headline_raw") or event.get("title", "")
+        summary = event.get("summary") or event.get("body_raw") or event.get("summary_raw", "")
         source_name = event.get("source_name", "")
         source_url = event.get("source_url", "")
         player_name = event.get("player_name", "")
         target_club = event.get("club_name", "")  # Zielverein
         
-        if not player_name or not target_club:
+        if (not player_name or not target_club or
+                any("unbekannt" in value.lower() or "unknown" in value.lower()
+                    for value in (player_name, target_club))):
             return {"action": "skip", "reason": "missing_entities"}
         
         # 1. Entity Extraction
@@ -499,7 +446,7 @@ class StoryEngine:
         new_source = StorySource(
             source_name=source_name,
             source_url=source_url,
-            published_at=now,
+            published_at=(parse_source_time(event.get("source_published_at")) or utcnow()).isoformat(),
             detected_stage=stage,
             source_score=source_score,
             is_primary=False,
@@ -567,182 +514,80 @@ class StoryEngine:
         return "global"
     
     async def _create_new_story(self, player_name: str, player_slug: str,
-                                 target_club: str, club_slug: str,
-                                 transfer_type: str, stage: str,
-                                 new_source: StorySource, transfer_fee: str,
-                                 story_region: str, event: Dict) -> Dict:
-        """Erstellt eine neue Story und einen neuen Artikel"""
-        
-        story_key = self.generate_story_key(player_slug, club_slug, transfer_type)
-        now = datetime.now(timezone.utc).isoformat()
-        
-        # Primary Source setzen
+                                target_club: str, club_slug: str,
+                                transfer_type: str, stage: str,
+                                new_source: StorySource, transfer_fee: str,
+                                story_region: str, event: Dict) -> Dict:
+        key = self.generate_story_key(player_slug, club_slug, transfer_type)
+        identity = "story:" + hashlib.sha256(key.encode()).hexdigest()
         new_source.is_primary = True
-        
-        # Confidence berechnen
         confidence = self.calculate_confidence(stage, [new_source], story_region)
-        
-        # Headline generieren
         headline = self.generate_headline(player_name, target_club, stage)
-        
-        # Slug generieren
-        slug = self.generate_story_slug(player_slug, club_slug)
-        
-        # Story-Dokument
-        story_doc = {
-            "story_key": story_key,
-            "player_name": player_name,
-            "player_slug": player_slug,
+        now = utcnow().isoformat()
+        doc = {
+            "_id": identity, "story_key": key,
+            "player_name": player_name, "player_slug": player_slug,
             "current_club": event.get("from_club", ""),
-            "target_club": target_club,
-            "target_club_slug": club_slug,
-            "transfer_type": transfer_type,
-            "current_stage": stage,
-            "confidence_score": confidence,
-            "primary_source": new_source.source_name,
-            "secondary_sources": [],
-            "sources": [self._source_to_dict(new_source)],
+            "target_club": target_club, "target_club_slug": club_slug,
+            "transfer_type": transfer_type, "current_stage": stage,
+            "confidence_score": confidence, "primary_source": new_source.source_name,
+            "secondary_sources": [], "sources": [self._source_to_dict(new_source)],
             "headline": headline,
-            "slug": slug,
-            "article_id": "",  # Wird nach Artikel-Erstellung gesetzt
-            "first_seen_at": now,
-            "last_updated_at": now,
-            "status": "active",
-            "transfer_fee": transfer_fee,
-            "contract_length": "",
-            "story_region": story_region,
+            "slug": self.generate_story_slug(player_slug, club_slug, transfer_type),
+            "article_id": str(uuid5(NAMESPACE_URL, "transfernews:" + identity)),
+            "first_seen_at": now, "last_updated_at": now, "status": "active",
+            "transfer_fee": transfer_fee, "contract_length": "", "story_region": story_region,
             "update_count": 0,
         }
-        
-        # In DB speichern
-        await self.db.transfer_stories.insert_one(story_doc)
-        
-        logger.info(f"[STORY] NEW: {player_name} → {target_club} ({stage}) "
-                   f"[{new_source.source_name}] Confidence: {confidence}")
-        
-        return {
-            "action": "create_article",
-            "story_key": story_key,
-            "story": story_doc,
-            "headline": headline,
-            "slug": slug,
-            "confidence": confidence,
-            "stage": stage,
-            "should_publish": confidence >= PUBLISH_THRESHOLD_CONFIDENCE,
-            "is_prominent": confidence >= PROMINENT_THRESHOLD_CONFIDENCE
-        }
+        await self.db.transfer_stories.update_one({"_id": identity}, {"$setOnInsert": doc}, upsert=True)
+        saved = await self.db.transfer_stories.find_one({"_id": identity})
+        return {"action": "create_article", "story_key": key, "story": saved,
+                "article_id": saved["article_id"], "headline": saved["headline"], "slug": saved["slug"],
+                "confidence": saved["confidence_score"], "stage": saved["current_stage"],
+                "should_publish": saved["confidence_score"] >= PUBLISH_THRESHOLD_CONFIDENCE,
+                "is_prominent": saved["confidence_score"] >= PROMINENT_THRESHOLD_CONFIDENCE}
     
-    async def _update_existing_story(self, existing_story: Dict,
-                                      new_source: StorySource,
-                                      new_stage: str,
-                                      transfer_fee: str,
-                                      event: Dict) -> Dict:
-        """Aktualisiert eine existierende Story"""
-        
-        story_key = existing_story["story_key"]
-        current_stage = existing_story["current_stage"]
-        current_stage_rank = STAGE_RANK.get(current_stage, 1)
-        new_stage_rank = STAGE_RANK.get(new_stage, 1)
-        
-        sources = existing_story.get("sources", [])
-        
-        # Prüfe ob Quelle schon vorhanden
-        source_names = [s.get("source_name") for s in sources]
-        if new_source.source_name in source_names:
-            logger.debug(f"[STORY] Source already exists: {new_source.source_name}")
-            return {"action": "skip", "reason": "source_already_exists"}
-        
-        # Source hinzufügen (max 10)
-        if len(sources) < MAX_SOURCES_PER_STORY:
-            sources.append(self._source_to_dict(new_source))
-        
-        update_fields = {
-            "last_updated_at": datetime.now(timezone.utc).isoformat(),
-            "sources": sources,
-        }
-        
-        # Entscheidungslogik
-        action = "merge_only"
-        should_update_article = False
-        
-        # Check 1: Stage Upgrade?
-        if new_stage_rank > current_stage_rank:
-            logger.info(f"[STORY] STAGE UPGRADE: {current_stage} → {new_stage}")
-            update_fields["current_stage"] = new_stage
-            update_fields["headline"] = self.generate_headline(
-                existing_story["player_name"],
-                existing_story["target_club"],
-                new_stage
-            )
-            should_update_article = True
-            action = "update_article"
-        
-        # Check 2: Stärkere Quelle?
-        primary_source = existing_story.get("primary_source", "")
-        primary_score = self.calculate_source_score(
-            primary_source, existing_story.get("story_region", "global")
-        )
-        
-        if new_source.source_score > primary_score:
-            logger.info(f"[STORY] STRONGER SOURCE: {new_source.source_name} "
-                       f"({new_source.source_score}) > {primary_source} ({primary_score})")
-            update_fields["primary_source"] = new_source.source_name
-            # Alte Primary zu Secondary
-            secondary = existing_story.get("secondary_sources", [])
-            if primary_source and primary_source not in secondary:
-                secondary.append(primary_source)
-            update_fields["secondary_sources"] = secondary[:MAX_SECONDARY_SOURCES_DISPLAYED]
-            
-            # Bei stärkerer Quelle + neue Fakten: Update
-            if transfer_fee and not existing_story.get("transfer_fee"):
-                update_fields["transfer_fee"] = transfer_fee
-                should_update_article = True
-                action = "update_article"
+    async def _update_existing_story(self, existing_story: Dict, new_source: StorySource,
+                                     new_stage: str, transfer_fee: str, event: Dict) -> Dict:
+        sources = list(existing_story.get("sources", []))
+        incoming = self._source_to_dict(new_source)
+        previous = next((source for source in sources if source.get("source_name") == new_source.source_name), None)
+        exact_duplicate = bool(previous and all(previous.get(field, "") == incoming.get(field, "")
+            for field in ("source_url", "raw_title", "raw_summary", "detected_stage")))
+        current_stage = existing_story.get("current_stage", "rumor")
+        stage = new_stage if STAGE_RANK.get(new_stage, 1) > STAGE_RANK.get(current_stage, 1) else current_stage
+        new_fee = transfer_fee or existing_story.get("transfer_fee", "")
+        if exact_duplicate and stage == current_stage and new_fee == existing_story.get("transfer_fee", ""):
+            return {"action": "skip", "reason": "duplicate_source_event", "story": existing_story,
+                    "story_key": existing_story["story_key"], "article_id": existing_story.get("article_id"),
+                    "headline": existing_story.get("headline"), "slug": existing_story.get("slug"),
+                    "confidence": existing_story.get("confidence_score", 0), "stage": current_stage,
+                    "should_publish": existing_story.get("confidence_score", 0) >= PUBLISH_THRESHOLD_CONFIDENCE}
+        # Keep one latest report per publisher: updates count, but never inflate source diversity.
+        if previous:
+            sources[sources.index(previous)] = incoming
         else:
-            # Schwächere Quelle → nur als Secondary
-            secondary = existing_story.get("secondary_sources", [])
-            if new_source.source_name not in secondary:
-                secondary.append(new_source.source_name)
-            update_fields["secondary_sources"] = secondary[:MAX_SECONDARY_SOURCES_DISPLAYED]
-        
-        # Check 3: Neue Fakten (Fee, Medical, etc.)?
-        if transfer_fee and not existing_story.get("transfer_fee"):
-            update_fields["transfer_fee"] = transfer_fee
-            should_update_article = True
-            action = "update_article"
-        
-        # Confidence neu berechnen
-        story_sources = [StorySource(**s) if isinstance(s, dict) else s for s in sources]
-        new_confidence = self.calculate_confidence(
-            update_fields.get("current_stage", current_stage),
-            story_sources,
-            existing_story.get("story_region", "global")
-        )
-        update_fields["confidence_score"] = new_confidence
-        
-        # Update Count
-        if should_update_article:
-            update_fields["update_count"] = existing_story.get("update_count", 0) + 1
-        
-        # DB Update
-        await self.db.transfer_stories.update_one(
-            {"story_key": story_key},
-            {"$set": update_fields}
-        )
-        
-        logger.info(f"[STORY] {action.upper()}: {existing_story['player_name']} "
-                   f"[{new_source.source_name}] Stage: {new_stage} Confidence: {new_confidence}")
-        
-        return {
-            "action": action,
-            "story_key": story_key,
-            "story": {**existing_story, **update_fields},
-            "article_id": existing_story.get("article_id"),
-            "should_update_article": should_update_article,
-            "confidence": new_confidence,
-            "stage": update_fields.get("current_stage", current_stage),
-            "headline": update_fields.get("headline", existing_story.get("headline")),
+            sources.append(incoming)
+        sources.sort(key=lambda source: source.get("source_score", 0), reverse=True)
+        sources = sources[:MAX_SOURCES_PER_STORY]
+        for i, source in enumerate(sources):
+            source["is_primary"] = i == 0
+        fields = {
+            "last_updated_at": utcnow().isoformat(), "sources": sources, "current_stage": stage,
+            "headline": self.generate_headline(existing_story["player_name"], existing_story["target_club"], stage),
+            "transfer_fee": new_fee,
+            "primary_source": sources[0]["source_name"],
+            "secondary_sources": [source["source_name"] for source in sources[1:MAX_SECONDARY_SOURCES_DISPLAYED + 1]],
+            "confidence_score": self.calculate_confidence(stage, [StorySource(**source) for source in sources], existing_story.get("story_region", "global")),
+            "update_count": existing_story.get("update_count", 0) + 1,
         }
+        # Always address the chosen document, never an ambiguous legacy story_key.
+        await self.db.transfer_stories.update_one({"_id": existing_story["_id"]}, {"$set": fields})
+        updated = {**existing_story, **fields}
+        return {"action": "update_article", "story_key": updated["story_key"], "story": updated,
+                "article_id": updated.get("article_id"), "headline": updated["headline"], "slug": updated["slug"],
+                "confidence": updated["confidence_score"], "stage": stage, "should_update_article": True,
+                "should_publish": updated["confidence_score"] >= PUBLISH_THRESHOLD_CONFIDENCE}
     
     def _source_to_dict(self, source: StorySource) -> Dict:
         """Konvertiert StorySource zu Dict für MongoDB"""
@@ -785,7 +630,4 @@ class StoryEngine:
 _story_engine: Optional[StoryEngine] = None
 
 def get_story_engine(db: AsyncIOMotorDatabase) -> StoryEngine:
-    global _story_engine
-    if _story_engine is None:
-        _story_engine = StoryEngine(db)
-    return _story_engine
+    return StoryEngine(db)

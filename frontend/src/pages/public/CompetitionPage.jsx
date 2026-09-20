@@ -7,7 +7,7 @@ import Footer from "@/components/Footer";
 import PageLayout from "@/components/PageLayout";
 import StandardSidebar from "@/components/StandardSidebar";
 
-const API_URL = process.env.REACT_APP_BACKEND_URL;
+import { BACKEND_URL as API_URL } from '@/api';
 
 // Schema.org CollectionPage
 function CollectionPageSchema({ data }) {
@@ -24,7 +24,7 @@ function CollectionPageSchema({ data }) {
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema).replace(/</g, '\\u003c') }}
     />
   );
 }

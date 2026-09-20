@@ -1,331 +1,128 @@
-"""
-TransferNews.de - Sitemap Generator
-- Standard Sitemap für alle Seiten
-- News Sitemap für Google News (letzte 48h)
-- Automatische Updates bei neuen Artikeln
-"""
-
+"""Escaped public sitemap output. Publication timestamps support BSON and ISO dates."""
 from datetime import datetime, timezone, timedelta
-from typing import List, Optional
-from motor.motor_asyncio import AsyncIOMotorDatabase
-import logging
-import aiohttp
+import os
+from urllib.parse import quote, urlsplit
+from xml.etree import ElementTree as ET
 
-logger = logging.getLogger(__name__)
-
-# ========================
-# CONFIGURATION
-# ========================
-
-SITE_URL = "https://transfernews.de"
+SITE_URL = os.environ.get("SITE_URL", "https://transfernews.de").rstrip("/")
+if urlsplit(SITE_URL).scheme not in {"https", "http"} or not urlsplit(SITE_URL).hostname:
+    raise RuntimeError("SITE_URL must be an absolute HTTP(S) origin")
 PUBLICATION_NAME = "TransferNews.de"
 PUBLICATION_LANGUAGE = "de"
+NS = "http://www.sitemaps.org/schemas/sitemap/0.9"
+NEWS_NS = "http://www.google.com/schemas/sitemap-news/0.9"
+ET.register_namespace("", NS)
+ET.register_namespace("news", NEWS_NS)
 
-# ========================
-# NEWS SITEMAP (Google News)
-# ========================
 
-async def generate_news_sitemap(db: AsyncIOMotorDatabase) -> str:
-    """
-    Generate Google News Sitemap XML
-    - Only articles from last 48 hours
-    - Max 1000 URLs
-    - Required fields: publication_date, title, publication name
-    """
-    cutoff = datetime.now(timezone.utc) - timedelta(hours=48)
-    
-    articles = await db.articles.find(
-        {
-            "status": "published",
-            "published_at": {"$gte": cutoff.isoformat()}
-        },
-        {"_id": 0, "slug": 1, "title": 1, "published_at": 1, "updated_at": 1}
-    ).sort("published_at", -1).limit(1000).to_list(1000)
-    
-    xml_parts = [
-        '<?xml version="1.0" encoding="UTF-8"?>',
-        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"',
-        '        xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">'
-    ]
-    
+def parse_publication_date(value):
+    if isinstance(value, str):
+        try:
+            value = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        except ValueError:
+            return None
+    if not isinstance(value, datetime):
+        return None
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
+
+
+def canonical_url(path):
+    return SITE_URL + "/" + path.lstrip("/")
+
+
+def _field(parent, name, text, namespace=NS):
+    ET.SubElement(parent, "{" + namespace + "}" + name).text = str(text)
+
+
+def _xml(root):
+    return '<?xml version="1.0" encoding="UTF-8"?>\n' + ET.tostring(root, encoding="unicode")
+
+
+async def generate_news_sitemap(db):
+    now = datetime.now(timezone.utc)
+    cutoff = now - timedelta(hours=48)
+    articles = await db.articles.find({
+        "status": "published",
+        "$or": [{"published_at": {"$gte": cutoff}}, {"published_at": {"$gte": cutoff.isoformat()}}],
+    }, {"_id": 0, "slug": 1, "title": 1, "published_at": 1}).sort("published_at", -1).limit(1000).to_list(1000)
+    root = ET.Element("{" + NS + "}urlset")
+    seen = set()
     for article in articles:
-        pub_date = article.get("published_at", "")
-        if isinstance(pub_date, str):
-            # Parse ISO string to datetime for formatting
-            try:
-                pub_dt = datetime.fromisoformat(pub_date.replace("Z", "+00:00"))
-                pub_date_formatted = pub_dt.strftime("%Y-%m-%dT%H:%M:%S+00:00")
-            except:
-                pub_date_formatted = pub_date
-        else:
-            pub_date_formatted = pub_date.strftime("%Y-%m-%dT%H:%M:%S+00:00")
-        
-        title = article.get("title", "").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-        
-        xml_parts.append(f'''  <url>
-    <loc>{SITE_URL}/news/{article.get("slug")}</loc>
-    <news:news>
-      <news:publication>
-        <news:name>{PUBLICATION_NAME}</news:name>
-        <news:language>{PUBLICATION_LANGUAGE}</news:language>
-      </news:publication>
-      <news:publication_date>{pub_date_formatted}</news:publication_date>
-      <news:title>{title}</news:title>
-    </news:news>
-  </url>''')
-    
-    xml_parts.append('</urlset>')
-    
-    return '\n'.join(xml_parts)
+        published = parse_publication_date(article.get("published_at"))
+        if not article.get("slug") or not published or not cutoff <= published <= now:
+            continue
+        url = canonical_url("news/" + quote(article["slug"], safe=""))
+        if url in seen: continue
+        seen.add(url)
+        node = ET.SubElement(root, "{" + NS + "}url")
+        _field(node, "loc", url)
+        news = ET.SubElement(node, "{" + NEWS_NS + "}news")
+        publication = ET.SubElement(news, "{" + NEWS_NS + "}publication")
+        _field(publication, "name", PUBLICATION_NAME, NEWS_NS)
+        _field(publication, "language", PUBLICATION_LANGUAGE, NEWS_NS)
+        _field(news, "publication_date", published.isoformat(), NEWS_NS)
+        _field(news, "title", article.get("title", ""), NEWS_NS)
+    return _xml(root)
 
 
-# ========================
-# STANDARD SITEMAP
-# ========================
-
-async def generate_sitemap(db: AsyncIOMotorDatabase) -> str:
-    """
-    Generate standard sitemap.xml
-    - All published articles
-    - All players
-    - All clubs
-    - All competitions
-    - Static pages
-    """
-    xml_parts = [
-        '<?xml version="1.0" encoding="UTF-8"?>',
-        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
-    ]
-    
-    now = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    
-    # Static pages
-    static_pages = [
-        ("", "daily", "1.0"),
-        ("/news", "hourly", "0.9"),
-        ("/transfers", "daily", "0.8"),
-        ("/geruechte", "daily", "0.8"),
-        ("/suche", "weekly", "0.5"),
-    ]
-    
-    for path, freq, priority in static_pages:
-        xml_parts.append(f'''  <url>
-    <loc>{SITE_URL}{path}</loc>
-    <lastmod>{now}</lastmod>
-    <changefreq>{freq}</changefreq>
-    <priority>{priority}</priority>
-  </url>''')
-    
-    # Articles (last 1000)
-    articles = await db.articles.find(
-        {"status": "published"},
-        {"_id": 0, "slug": 1, "updated_at": 1, "published_at": 1}
-    ).sort("published_at", -1).limit(1000).to_list(1000)
-    
-    for article in articles:
-        lastmod = article.get("updated_at") or article.get("published_at") or now
-        if isinstance(lastmod, datetime):
-            lastmod = lastmod.strftime("%Y-%m-%d")
-        elif isinstance(lastmod, str):
-            lastmod = lastmod[:10]  # Just date part
-        
-        xml_parts.append(f'''  <url>
-    <loc>{SITE_URL}/news/{article.get("slug")}</loc>
-    <lastmod>{lastmod}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>''')
-    
-    # Players
-    players = await db.players.find(
-        {},
-        {"_id": 0, "slug": 1, "updated_at": 1}
-    ).limit(500).to_list(500)
-    
-    for player in players:
-        lastmod = player.get("updated_at")
-        if isinstance(lastmod, datetime):
-            lastmod = lastmod.strftime("%Y-%m-%d")
-        elif isinstance(lastmod, str):
-            lastmod = lastmod[:10]
-        else:
-            lastmod = now
-        
-        xml_parts.append(f'''  <url>
-    <loc>{SITE_URL}/spieler/{player.get("slug")}</loc>
-    <lastmod>{lastmod}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>''')
-    
-    # Clubs
-    clubs = await db.clubs.find(
-        {},
-        {"_id": 0, "slug": 1, "updated_at": 1}
-    ).limit(200).to_list(200)
-    
-    for club in clubs:
-        lastmod = club.get("updated_at")
-        if isinstance(lastmod, datetime):
-            lastmod = lastmod.strftime("%Y-%m-%d")
-        elif isinstance(lastmod, str):
-            lastmod = lastmod[:10]
-        else:
-            lastmod = now
-        
-        xml_parts.append(f'''  <url>
-    <loc>{SITE_URL}/verein/{club.get("slug")}</loc>
-    <lastmod>{lastmod}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>''')
-    
-    # Competitions
-    competitions = await db.competitions.find(
-        {},
-        {"_id": 0, "slug": 1, "updated_at": 1}
-    ).limit(50).to_list(50)
-    
-    for comp in competitions:
-        lastmod = comp.get("updated_at")
-        if isinstance(lastmod, datetime):
-            lastmod = lastmod.strftime("%Y-%m-%d")
-        elif isinstance(lastmod, str):
-            lastmod = lastmod[:10]
-        else:
-            lastmod = now
-        
-        xml_parts.append(f'''  <url>
-    <loc>{SITE_URL}/wettbewerb/{comp.get("slug")}</loc>
-    <lastmod>{lastmod}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>''')
-    
-    xml_parts.append('</urlset>')
-    
-    return '\n'.join(xml_parts)
+async def generate_sitemap(db):
+    root = ET.Element("{" + NS + "}urlset")
+    seen = set()
+    def add(path, date=None):
+        url = canonical_url(path)
+        if url in seen: return
+        seen.add(url)
+        node = ET.SubElement(root, "{" + NS + "}url")
+        _field(node, "loc", url)
+        parsed = parse_publication_date(date)
+        if parsed:
+            _field(node, "lastmod", parsed.isoformat())
+    for path in ("", "transfers", "geruechte", "ticker", "top-deals", "abloesefrei", "deadline-day", "redaktion", "impressum", "datenschutz", "ueber-uns"):
+        add(path)
+    for collection, prefix, query, maximum in (
+        (db.articles, "news", {"status": "published"}, 45000),
+        (db.players, "spieler", {}, 3500),
+        (db.clubs, "verein", {}, 1000),
+        (db.competitions, "wettbewerb", {}, 400),
+    ):
+        docs = await collection.find(query, {"_id": 0, "slug": 1, "updated_at": 1, "published_at": 1}).limit(maximum).to_list(maximum)
+        for item in docs:
+            if item.get("slug"):
+                add(prefix + "/" + quote(item["slug"], safe=""), item.get("updated_at") or item.get("published_at"))
+    return _xml(root)
 
 
-# ========================
-# SITEMAP INDEX
-# ========================
-
-async def generate_sitemap_index() -> str:
-    """
-    Generate sitemap index pointing to all sitemaps
-    """
-    now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S+00:00")
-    
-    return f'''<?xml version="1.0" encoding="UTF-8"?>
-<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <sitemap>
-    <loc>{SITE_URL}/sitemap.xml</loc>
-    <lastmod>{now}</lastmod>
-  </sitemap>
-  <sitemap>
-    <loc>{SITE_URL}/news-sitemap.xml</loc>
-    <lastmod>{now}</lastmod>
-  </sitemap>
-</sitemapindex>'''
+async def generate_sitemap_index():
+    root = ET.Element("{" + NS + "}sitemapindex")
+    for filename in ("sitemap.xml", "news-sitemap.xml"):
+        node = ET.SubElement(root, "{" + NS + "}sitemap")
+        _field(node, "loc", canonical_url(filename))
+    return _xml(root)
 
 
-# ========================
-# GOOGLE PING (Crawl Trigger)
-# ========================
-
-async def ping_google_sitemap(sitemap_url: str = None) -> bool:
-    """
-    Ping Google to inform about sitemap update
-    This triggers faster crawling
-    """
-    if not sitemap_url:
-        sitemap_url = f"{SITE_URL}/sitemap.xml"
-    
-    ping_url = f"https://www.google.com/ping?sitemap={sitemap_url}"
-    
-    try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(ping_url, timeout=10) as response:
-                if response.status == 200:
-                    logger.info(f"Google sitemap ping successful: {sitemap_url}")
-                    return True
-                else:
-                    logger.warning(f"Google ping returned status {response.status}")
-                    return False
-    except Exception as e:
-        logger.error(f"Google sitemap ping failed: {e}")
-        return False
+def generate_robots_txt():
+    return ("User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /api/\n"
+            f"Sitemap: {SITE_URL}/sitemap-index.xml\n")
 
 
-async def ping_google_news_sitemap() -> bool:
-    """Ping Google specifically for news sitemap"""
-    return await ping_google_sitemap(f"{SITE_URL}/news-sitemap.xml")
+async def ping_google_sitemap(sitemap_url=None):
+    """Compatibility shim: Google retired the sitemap ping endpoint."""
+    return False
 
 
-async def ping_google_sitemaps() -> dict:
-    """Ping Google for both sitemaps"""
-    results = {
-        "main_sitemap": await ping_google_sitemap(f"{SITE_URL}/api/sitemap.xml"),
-        "news_sitemap": await ping_google_sitemap(f"{SITE_URL}/api/news-sitemap.xml"),
-    }
-    logger.info(f"[SITEMAP] Google ping results: {results}")
-    return results
+async def ping_google_news_sitemap():
+    return False
 
 
-# ========================
-# ARTICLE UPDATE TRACKER
-# ========================
-
-async def track_article_update(db: AsyncIOMotorDatabase, article_id: str, update_type: str, details: str = None):
-    """
-    Track article updates for transparency
-    Helps Google understand article evolution
-    """
-    update_entry = {
-        "article_id": article_id,
-        "update_type": update_type,  # "status_change", "content_update", "correction"
-        "details": details,
-        "timestamp": datetime.now(timezone.utc).isoformat()
-    }
-    
-    # Add to article's update history
-    await db.articles.update_one(
-        {"id": article_id},
-        {
-            "$push": {"update_history": update_entry},
-            "$set": {"updated_at": datetime.now(timezone.utc).isoformat()}
-        }
-    )
-    
-    logger.info(f"Tracked article update: {article_id} - {update_type}")
+async def ping_google_sitemaps():
+    return {"main_sitemap": False, "news_sitemap": False, "reason": "deprecated_endpoint"}
 
 
-# ========================
-# ROBOTS.TXT GENERATOR
-# ========================
-
-def generate_robots_txt() -> str:
-    """
-    Generate optimized robots.txt for Google News
-    """
-    return f'''# TransferNews.de Robots.txt
-# Optimized for Google News & Discover
-
-User-agent: *
-Allow: /
-
-# Sitemaps (via /api/ prefix for backend routing)
-Sitemap: {SITE_URL}/api/sitemap.xml
-Sitemap: {SITE_URL}/api/news-sitemap.xml
-
-# Allow all crawlers full access
-User-agent: Googlebot
-Allow: /
-
-User-agent: Googlebot-News
-Allow: /
-
-# No crawl delays - we want fast indexing
-# Crawl-delay: 0
-'''
+async def track_article_update(db, article_id, update_type, details=None):
+    now = datetime.now(timezone.utc).isoformat()
+    await db.articles.update_one({"id": article_id}, {
+        "$push": {"update_history": {"article_id": article_id, "update_type": update_type, "details": details, "timestamp": now}},
+        "$set": {"updated_at": now},
+    })

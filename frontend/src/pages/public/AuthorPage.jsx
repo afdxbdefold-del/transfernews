@@ -5,7 +5,7 @@ import { NewsCard } from "@/components/NewsCard";
 import { TrendingWidget } from "@/components/TrendingWidget";
 import { PersonSchema } from "@/components/SchemaMarkup";
 import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { User, Envelope, TwitterLogo, LinkedinLogo, ArrowLeft, Newspaper, PencilLine } from "@phosphor-icons/react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -14,6 +14,7 @@ import api from "@/api";
 
 export default function AuthorPage() {
   const { slug } = useParams();
+  const navigate = useNavigate();
   const [author, setAuthor] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -21,16 +22,18 @@ export default function AuthorPage() {
     const fetchAuthor = async () => {
       try {
         setLoading(true);
+        setAuthor(null);
         const res = await api.get(`/public/authors/${slug}`);
         setAuthor(res.data);
       } catch (e) {
+        if (e.response?.status === 404 && slug !== "redaktion") navigate("/autor/redaktion", { replace: true });
         console.error("Author load error:", e);
       } finally {
         setLoading(false);
       }
     };
     fetchAuthor();
-  }, [slug]);
+  }, [slug, navigate]);
 
   if (loading) {
     return (

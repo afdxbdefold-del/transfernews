@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import AdminLayout from "@/components/AdminLayout";
 import { getAdSlots, createAdSlot, updateAdSlot, deleteAdSlot } from "@/api";
 import { toast } from "sonner";
+import { LEGACY_FORMATS } from "@/lib/adPolicy";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -291,6 +292,7 @@ export default function AdminAdSlots() {
                 </div>
 
                 <div>
+                  {LEGACY_FORMATS[formData.slot_key] && <p className="text-sm text-gray-600 mb-3">Ohne eigenen Code verwendet dieser aktive Desktop-Platz das vorhandene TheMoneytizer-Format. Deaktivieren schaltet die Anzeige vollständig ab.</p>}
                   <label className="block text-sm font-medium mb-1">HTML-Code</label>
                   <Textarea
                     value={formData.html_code}
@@ -422,7 +424,7 @@ export default function AdminAdSlots() {
                               {(slot.html_code || slot.js_code || slot.embed_code) ? (
                                 <Badge className="bg-blue-100 text-blue-800">Code hinterlegt</Badge>
                               ) : (
-                                <Badge variant="outline" className="text-gray-400">Leer</Badge>
+                                <Badge variant="outline" className="text-gray-400">{LEGACY_FORMATS[slot.slot_key] ? "TheMoneytizer" : "Leer"}</Badge>
                               )}
                             </td>
                             <td className="text-right">

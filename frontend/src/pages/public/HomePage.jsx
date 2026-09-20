@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { getPublishedArticles, getAllTrending } from "@/api";
 import { Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
+import { WebsiteSchema } from "@/components/SchemaMarkup";
 import { CaretRight, TrendUp, Clock, Fire, Image } from "@phosphor-icons/react";
 
 // Optimize Wikimedia URLs to load smaller thumbnails
@@ -187,6 +188,7 @@ export default function HomePage() {
   const [articles, setArticles] = useState([]);
   const [filteredArticles, setFilteredArticles] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
   const [trending, setTrending] = useState({ players: [], clubs: [] });
   const [hasMore, setHasMore] = useState(true);
@@ -205,25 +207,19 @@ export default function HomePage() {
   }, [activeFilter, articles]);
 
   const fetchData = async () => {
+    setLoading(true);
+    setLoadError('');
+    // The optional sidebar must never hide successfully loaded news.
+    getAllTrending(24).then(({ data }) => {
+      setTrending({ players: data?.trending_players || [], clubs: data?.trending_clubs || [] });
+    }).catch(() => setTrending({ players: [], clubs: [] }));
     try {
-      setLoading(true);
-      const [articlesRes, trendingRes] = await Promise.all([
-        getPublishedArticles({ limit }),
-        getAllTrending(24)
-      ]);
-      
-      const data = Array.isArray(articlesRes.data) ? articlesRes.data : [];
+      const response = await getPublishedArticles({ limit });
+      const data = Array.isArray(response.data) ? response.data : [];
       setArticles(data);
       setHasMore(data.length === limit);
-      
-      if (trendingRes.data) {
-        setTrending({
-          players: trendingRes.data.trending_players || [],
-          clubs: trendingRes.data.trending_clubs || []
-        });
-      }
-    } catch (e) {
-      console.error("Fetch error:", e);
+    } catch {
+      setLoadError('Die Nachrichten konnten gerade nicht geladen werden.');
     } finally {
       setLoading(false);
     }
@@ -248,9 +244,11 @@ export default function HomePage() {
         <link rel="canonical" href="https://transfernews.de" />
       </Helmet>
       
+      <WebsiteSchema />
       <Header />
       
       <main className="flex-1 py-3 px-3" data-testid="homepage">
+        <h1 className="sr-only">Aktuelle Fußball-Transfer-News</h1>
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-3">
           {/* Main Content */}
           <div className="space-y-3">
@@ -262,7 +260,7 @@ export default function HomePage() {
                   <button
                     key={filter.id}
                     onClick={() => setActiveFilter(filter.id)}
-                    className={`px-4 py-1.5 text-[11px] font-medium rounded-full transition-all duration-200 ${
+                    className={`px-3 md:px-4 whitespace-nowrap py-1.5 text-[11px] font-medium rounded-full transition-all duration-200 ${
                       activeFilter === filter.id 
                         ? 'bg-[#79B92A] text-white shadow-sm' 
                         : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
@@ -287,6 +285,11 @@ export default function HomePage() {
                       </div>
                     </div>
                   ))
+                ) : loadError ? (
+                  <div role="alert" className="p-8 text-center text-gray-700 text-sm">
+                    <p>{loadError}</p>
+                    <button onClick={fetchData} className="mt-3 text-[#79B92A] underline">Erneut versuchen</button>
+                  </div>
                 ) : filteredArticles.length > 0 ? (
                   filteredArticles.map((article) => (
                     <NewsRow key={article.id} article={article} />

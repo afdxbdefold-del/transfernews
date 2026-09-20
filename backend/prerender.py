@@ -14,6 +14,12 @@ import asyncio
 import logging
 import os
 import hashlib
+import json
+import re
+import time
+from html import escape
+from urllib.parse import urlsplit, urljoin, quote
+import httpx
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Optional, List, Dict
@@ -22,13 +28,126 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 logger = logging.getLogger(__name__)
 
 # Pre-Render Cache Directory
-CACHE_DIR = Path("/app/backend/prerender_cache")
+CACHE_DIR = Path(os.environ.get("PRERENDER_CACHE_DIR", str(Path(__file__).resolve().parent / "prerender_cache")))
 CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
 # Configuration
 SITE_URL = os.environ.get("SITE_URL", "https://transfernews.de")
-INTERNAL_URL = "http://localhost:3000"  # Internal frontend URL
+INTERNAL_URL = os.environ.get("FRONTEND_INTERNAL_URL", "http://frontend:80").rstrip("/")
+_internal_parts = urlsplit(INTERNAL_URL)
+if (_internal_parts.scheme not in {"http", "https"} or not _internal_parts.hostname
+        or _internal_parts.username or _internal_parts.password
+        or _internal_parts.query or _internal_parts.fragment or _internal_parts.path not in {"", "/"}):
+    raise RuntimeError("FRONTEND_INTERNAL_URL must be a trusted HTTP(S) origin")
 CACHE_TTL_HOURS = 24  # Cache validity in hours
+
+
+def validate_public_path(path: str) -> str:
+    if path == "/":
+        return path
+    if not re.fullmatch(r"/(?:news|spieler|verein|wettbewerb|thema|autor)/[A-Za-z0-9_-]{1,240}", path):
+        raise ValueError("Unsupported public path")
+    return path
+
+
+def safe_json_ld(value):
+    return json.dumps(value, ensure_ascii=False, default=str).replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
+
+
+_shell_cache = {"html": None, "expires": 0.0}
+_shell_lock = asyncio.Lock()
+
+
+async def get_frontend_shell():
+    """Fetch only the configured frontend root, never a user-provided URL/path."""
+    if _shell_cache["expires"] > time.monotonic():
+        return _shell_cache["html"]
+    async with _shell_lock:
+        if _shell_cache["expires"] > time.monotonic():
+            return _shell_cache["html"]
+        html = None
+        try:
+            async with httpx.AsyncClient(timeout=3.0, follow_redirects=False) as client:
+                response = await client.get(INTERNAL_URL + "/")
+                if response.status_code == 200 and "text/html" in response.headers.get("content-type", "") and len(response.content) < 2_000_000:
+                    candidate = response.text
+                    if re.search(r'<div\b[^>]*\bid=["\']root["\'][^>]*>\s*</div>', candidate, re.I):
+                        html = candidate
+        except (httpx.HTTPError, UnicodeError):
+            logger.warning("Frontend shell unavailable; serving standalone article HTML")
+        _shell_cache.update(html=html, expires=time.monotonic() + (30 if html else 5))
+        return html
+
+
+def article_html_parts(article):
+    """Render only escaped public fields; article text is never treated as HTML."""
+    slug = article.get("slug", "")
+    validate_public_path("/news/" + slug)
+    canonical = SITE_URL.rstrip("/") + "/news/" + quote(slug, safe="")
+    title = str(article.get("title") or "Transfernews")
+    description = str(article.get("excerpt") or article.get("meta_description") or title)
+    author_slug = str(article.get("author_slug") or "redaktion")
+    author_name = "Redaktion" if author_slug == "redaktion" else str(article.get("author_name") or "Redaktion")
+    author_url = SITE_URL.rstrip("/") + "/autor/" + quote(author_slug, safe="")
+    image = article.get("hero_image") or article.get("feature_image") or article.get("image_url") or ""
+    image = urljoin(SITE_URL + "/", str(image)) if image else ""
+    if image and urlsplit(image).scheme not in {"http", "https"}:
+        image = ""
+    published = article.get("published_at")
+    modified = article.get("updated_at") or published
+    if isinstance(published, datetime): published = published.isoformat()
+    if isinstance(modified, datetime): modified = modified.isoformat()
+    schema = {"@context": "https://schema.org", "@type": "NewsArticle", "headline": title,
+              "description": description, "mainEntityOfPage": canonical,
+              "author": {"@type": "Organization" if author_slug == "redaktion" else "Person", "name": author_name, "url": author_url},
+              "publisher": {"@type": "Organization", "name": "TransferNews.de", "logo": {"@type": "ImageObject", "url": SITE_URL + "/logo.svg"}}}
+    if published: schema["datePublished"] = published
+    if modified: schema["dateModified"] = modified
+    if image: schema["image"] = [image]
+    head = (f'<title>{escape(title)} | transfernews.de</title>'
+            f'<meta name="description" content="{escape(description, quote=True)}">'
+            '<meta name="robots" content="index,follow,max-image-preview:large">'
+            f'<link rel="canonical" href="{escape(canonical, quote=True)}">'
+            f'<meta property="og:type" content="article"><meta property="og:title" content="{escape(title, quote=True)}">'
+            f'<meta property="og:description" content="{escape(description, quote=True)}">'
+            f'<meta property="og:url" content="{escape(canonical, quote=True)}">'
+            '<meta name="twitter:card" content="summary_large_image">')
+    if image: head += f'<meta property="og:image" content="{escape(image, quote=True)}">'
+    # Helmet owns these nodes after the SPA starts and replaces them on navigation.
+    head = re.sub(r"<(title|meta|link)\b", r'<\1 data-rh="true"', head)
+    structured_data = '<script type="application/ld+json">' + safe_json_ld(schema) + '</script>'
+    paragraphs = []
+    for block in re.split(r"\n\s*\n", str(article.get("body") or "")):
+        if not block.strip(): continue
+        if block.lstrip().startswith("## "):
+            paragraphs.append("<h2>" + escape(block.strip()[3:]) + "</h2>")
+        else:
+            paragraphs.append("<p>" + escape(block).replace("\n", "<br>") + "</p>")
+    body = '<main id="server-article"><article><a href="/">transfernews.de</a>'
+    body += f'<h1>{escape(title)}</h1><p>{escape(description)}</p><p>Von <a href="{escape(author_url, quote=True)}">{escape(author_name)}</a></p>'
+    if published: body += f'<time datetime="{escape(str(published), quote=True)}">{escape(str(published))}</time>'
+    if image: body += f'<figure><img src="{escape(image, quote=True)}" alt="{escape(str(article.get("hero_image_alt") or title), quote=True)}" style="max-width:100%;height:auto"></figure>'
+    # React replaces root contents; keeping JSON-LD here avoids stale duplicate schema.
+    body += "".join(paragraphs) + structured_data + "</article></main>"
+    return head, body
+
+
+async def render_article_document(article):
+    head, body = article_html_parts(article)
+    return await compose_public_document(head, body)
+
+
+async def compose_public_document(head, body):
+    """Combine escaped metadata/content with the trusted frontend shell."""
+    shell = await get_frontend_shell()
+    if shell:
+        # Preserve built CSS/scripts and root ID; React replaces the accessible initial content.
+        shell = re.sub(r"<title\b[^>]*>.*?</title>", "", shell, flags=re.I | re.S)
+        shell = re.sub(r'<meta\b[^>]*(?:name=["\'](?:description|robots|twitter:[^"\']*)["\']|property=["\']og:[^"\']*["\'])[^>]*>', "", shell, flags=re.I)
+        shell = re.sub(r'<link\b[^>]*rel=["\']canonical["\'][^>]*>', "", shell, flags=re.I)
+        shell = re.sub(r"</head>", lambda _: head + "</head>", shell, count=1, flags=re.I)
+        return re.sub(r'<div\b[^>]*\bid=["\']root["\'][^>]*>\s*</div>', lambda _: '<div id="root">' + body + '</div>', shell, count=1, flags=re.I)
+    return '<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">' + head + '</head><body>' + body + '</body></html>'
 
 # ========================
 # PRE-RENDER ENGINE
@@ -97,6 +216,9 @@ class PreRenderEngine:
         Returns:
             Full HTML string or None on error
         """
+        path = validate_public_path(path)
+        if os.environ.get("PRERENDER_BROWSER_ENABLED", "false").lower() not in {"1", "true", "yes"}:
+            return None
         await self.init_browser()
         
         page = None
@@ -123,7 +245,7 @@ class PreRenderEngine:
             
             # Inject canonical URL with production domain
             canonical_path = path.rstrip('/')
-            canonical_url = f"{SITE_URL}{canonical_path}"
+            canonical_url = escape(f"{SITE_URL}{canonical_path}", quote=True)
             
             # Ensure canonical is in HTML
             if '<link rel="canonical"' not in html:
@@ -160,7 +282,7 @@ class PreRenderEngine:
     def get_cache_path(self, path: str) -> Path:
         """Get cache file path for a URL"""
         # Create hash of path for filename
-        path_hash = hashlib.md5(path.encode()).hexdigest()
+        path_hash = hashlib.md5(validate_public_path(path).encode()).hexdigest()
         return CACHE_DIR / f"{path_hash}.html"
     
     def get_cache_meta_path(self, path: str) -> Path:

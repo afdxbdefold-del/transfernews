@@ -7,10 +7,12 @@ import { TrendingWidget } from "@/components/TrendingWidget";
 import { RelatedLinks } from "@/components/RelatedLinks";
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { getArticleBySlug, getPublishedArticles, getPlayer, getClub, getPublicNewsDetail } from "@/api";
-import { Clock, CaretLeft, ShareNetwork, User, Buildings, FacebookLogo, XLogo, WhatsappLogo, EnvelopeSimple, CurrencyEur, Calendar, MapPin, SoccerBall, ShieldCheck, Newspaper, CheckCircle, Info } from "@phosphor-icons/react";
+import { getPublishedArticles, getPlayer, getClub, getPublicNewsDetail } from "@/api";
+import { Clock, CaretLeft, ShareNetwork, User, Buildings, FacebookLogo, XLogo, WhatsappLogo, EnvelopeSimple, CurrencyEur, Calendar, MapPin, SoccerBall, ShieldCheck, Newspaper, Info } from "@phosphor-icons/react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Helmet } from "react-helmet-async";
+import { SITE_URL, articleImage, articleAuthorPath, articleCanonical, articleAuthorName, articleHasNamedAuthor } from "@/lib/articleSeo";
+import NotFoundPage from "./NotFoundPage";
 
 // Source Trust Badge Komponente
 function SourceBadge({ article }) {
@@ -82,42 +84,6 @@ function SourceBadge({ article }) {
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-// Fact-Check Badge
-function FactCheckBadge({ article }) {
-  if (!article.author_name) return null;
-  
-  const updateDate = article.updated_at || article.gpt_rewritten_at || article.published_at;
-  const formattedDate = updateDate ? new Date(updateDate).toLocaleDateString('de-DE', {
-    day: '2-digit',
-    month: 'long',
-    year: 'numeric'
-  }) : null;
-  
-  return (
-    <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
-      <div className="flex items-start gap-3">
-        <div className="flex-shrink-0 w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-          <CheckCircle size={20} className="text-green-600" weight="fill" />
-        </div>
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="font-semibold text-green-800">Geprüfter Artikel</span>
-          </div>
-          <p className="text-sm text-green-700">
-            Dieser Artikel wurde von <strong>{article.author_name}</strong> 
-            {article.author_role && <span className="text-green-600"> ({article.author_role})</span>} verfasst und redaktionell geprüft.
-          </p>
-          {formattedDate && (
-            <p className="text-xs text-green-600 mt-1">
-              Zuletzt aktualisiert: {formattedDate}
-            </p>
-          )}
-        </div>
-      </div>
     </div>
   );
 }
@@ -225,37 +191,35 @@ function ArticleSchema({ article }) {
     "@type": "NewsArticle",
     "headline": article.title,
     "description": article.excerpt || article.title,
-    "image": article.feature_image ? [
-      window.location.origin + article.feature_image
-    ] : [],
+    "image": articleImage(article) ? [articleImage(article)] : [],
     "datePublished": article.published_at,
     "dateModified": article.updated_at || article.published_at,
     "author": {
-      "@type": "Person",
-      "name": article.author_name || "Redaktion",
-      "url": `https://transfernews.de/autor/${article.author_slug || 'redaktion'}`
+      "@type": articleHasNamedAuthor(article) ? "Person" : "Organization",
+      "name": articleAuthorName(article),
+      "url": SITE_URL + articleAuthorPath(article)
     },
     "publisher": {
       "@type": "Organization",
       "name": "transfernews.de",
       "logo": {
         "@type": "ImageObject",
-        "url": window.location.origin + "/logo.svg"
+        "url": SITE_URL + "/logo.svg"
       }
     },
     "mainEntityOfPage": {
       "@type": "WebPage",
-      "@id": window.location.href
+      "@id": articleCanonical(article.slug)
     },
     "articleSection": "Transfer News",
-    "wordCount": article.word_count || 0,
+    ...(article.word_count > 0 ? { "wordCount": article.word_count } : {}),
     "keywords": ["Fußball", "Transfer", "Bundesliga", article.category || "Transfer"].join(", ")
   };
 
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema).replace(/</g, '\\u003c') }}
     />
   );
 }
@@ -268,51 +232,44 @@ export default function NewsDetailPage() {
   const [linkedClubs, setLinkedClubs] = useState([]);
   const [relatedLinks, setRelatedLinks] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
     const fetchData = async () => {
+      setLoading(true);
+      setLoadError(false);
+      setArticle(null);
+      setRelatedNews([]);
+      setLinkedPlayers([]);
+      setLinkedClubs([]);
+      setRelatedLinks([]);
       try {
-        setLoading(true);
-        
-        // Try to get article with related links first
-        let articleData;
-        try {
-          const publicRes = await getPublicNewsDetail(slug);
-          articleData = publicRes.data;
-          setRelatedLinks(articleData.related_links || []);
-        } catch {
-          // Fallback to regular endpoint
-          const res = await getArticleBySlug(slug);
-          articleData = res.data;
-        }
-        
+        // Public pages use the published-only endpoint even for signed-in editors.
+        const { data: articleData } = await getPublicNewsDetail(slug);
+        if (cancelled) return;
         setArticle(articleData);
-
-        // Fetch related news
-        const relatedRes = await getPublishedArticles({ limit: 5 });
-        setRelatedNews(relatedRes.data.filter((a) => a.slug !== slug).slice(0, 4));
-
-        // Fetch linked entities
-        if (articleData.linked_player_ids?.length > 0) {
-          const players = await Promise.all(
-            articleData.linked_player_ids.slice(0, 3).map((id) => getPlayer(id).catch(() => null))
-          );
-          setLinkedPlayers(players.filter(Boolean).map((r) => r.data));
-        }
-
-        if (articleData.linked_club_ids?.length > 0) {
-          const clubs = await Promise.all(
-            articleData.linked_club_ids.slice(0, 3).map((id) => getClub(id).catch(() => null))
-          );
-          setLinkedClubs(clubs.filter(Boolean).map((r) => r.data));
-        }
-      } catch (e) {
-        console.error("Article load error:", e);
-      } finally {
+        setRelatedLinks(articleData.related_links || []);
         setLoading(false);
+        getPublishedArticles({ limit: 5 }).then(({ data }) => {
+          if (!cancelled) setRelatedNews(data.filter(a => a.slug !== slug).slice(0, 4));
+        }).catch(() => {});
+        if (articleData.linked_player_ids?.length) {
+          const players = await Promise.all(articleData.linked_player_ids.slice(0, 3).map(id => getPlayer(id).catch(() => null)));
+          if (!cancelled) setLinkedPlayers(players.filter(Boolean).map(r => r.data));
+        }
+        if (articleData.linked_club_ids?.length) {
+          const clubs = await Promise.all(articleData.linked_club_ids.slice(0, 3).map(id => getClub(id).catch(() => null)));
+          if (!cancelled) setLinkedClubs(clubs.filter(Boolean).map(r => r.data));
+        }
+      } catch (error) {
+        if (!cancelled) setLoadError(error.response?.status !== 404);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
     };
     fetchData();
+    return () => { cancelled = true; };
   }, [slug]);
 
   const formatDate = (dateString) => {
@@ -388,27 +345,13 @@ export default function NewsDetailPage() {
     );
   }
 
-  if (!article) {
-    return (
-      <PageLayout>
-        <Header />
-        <main className="flex-1 flex items-center justify-center py-3 px-3">
-          <div className="text-center bg-white p-8">
-            <h1 
-              className="text-2xl font-black uppercase mb-4"
-              style={{ fontFamily: "'Oswald', sans-serif" }}
-            >
-              Artikel nicht gefunden
-            </h1>
-            <Link to="/" className="text-[#79B92A] hover:underline font-bold">
-              Zurück zur Startseite
-            </Link>
-          </div>
-        </main>
-        <Footer />
-      </PageLayout>
-    );
-  }
+  if (loadError && !article) return <PageLayout>
+    <Helmet><title>Artikel nicht verfügbar | TransferNews.de</title><meta name="robots" content="noindex, follow" /></Helmet>
+    <Header />
+    <main className="p-12 text-center" role="alert"><h1 className="text-2xl font-bold mb-3">Artikel konnte nicht geladen werden</h1><button className="text-[#79B92A] underline" onClick={() => window.location.reload()}>Erneut versuchen</button></main>
+    <Footer />
+  </PageLayout>;
+  if (!article) return <NotFoundPage title="Artikel nicht gefunden" />;
 
   const badge = getTypeBadge(article.article_type);
   const shareUrl = encodeURIComponent(window.location.href);
@@ -420,11 +363,13 @@ export default function NewsDetailPage() {
       {article && (
         <Helmet>
           <title>{`${article.title || 'Transfer News'} | transfernews.de`}</title>
+          <link rel="canonical" href={articleCanonical(article.slug || slug)} />
+          <meta property="og:url" content={articleCanonical(article.slug || slug)} />
           <meta name="description" content={article.excerpt || article.title || ''} />
           <meta property="og:title" content={article.title || 'Transfer News'} />
           <meta property="og:description" content={article.excerpt || article.title || ''} />
           {/* Google Discover optimiertes Bild (min 1200px) */}
-          <meta property="og:image" content={article.og_image || article.hero_image || (article.feature_image ? window.location.origin + article.feature_image : '')} />
+          <meta property="og:image" content={articleImage(article)} />
           <meta property="og:image:width" content={article.hero_image_width || "1200"} />
           <meta property="og:image:height" content={article.hero_image_height || "675"} />
           <meta property="og:type" content="article" />
@@ -434,7 +379,7 @@ export default function NewsDetailPage() {
           <meta name="twitter:card" content="summary_large_image" />
           <meta name="twitter:title" content={article.title || 'Transfer News'} />
           <meta name="twitter:description" content={article.excerpt || article.title || ''} />
-          <meta name="twitter:image" content={article.og_image || article.hero_image || ''} />
+          <meta name="twitter:image" content={articleImage(article)} />
           <meta name="robots" content="max-image-preview:large" />
         </Helmet>
       )}
@@ -443,13 +388,6 @@ export default function NewsDetailPage() {
       <ArticleSchema article={article} />
       
       <Header />
-
-      {/* Top Ad */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-[1000px] mx-auto px-3 py-2">
-          <AdSlot slotKey="below_header" minHeight="90px" />
-        </div>
-      </div>
 
       <main className="flex-1">
         <div className="max-w-[1000px] mx-auto px-3 py-6">
@@ -553,23 +491,23 @@ export default function NewsDetailPage() {
                   {/* Author & Reading Time */}
                   <div className="flex items-center gap-4 mb-4 text-sm">
                     <Link 
-                      to={`/autor/${article.author_id || 'redaktion'}`}
+                      to={articleAuthorPath(article)}
                       className="flex items-center gap-2 hover:opacity-80 transition-opacity"
                     >
-                      {article.author_image ? (
+                      {articleHasNamedAuthor(article) && article.author_image ? (
                         <img 
                           src={article.author_image} 
-                          alt={article.author_name}
+                          alt={articleAuthorName(article)}
                           className="w-10 h-10 rounded-full object-cover object-top"
                         />
                       ) : (
                         <div className="w-10 h-10 rounded-full bg-[#79B92A] flex items-center justify-center text-white font-bold text-sm">
-                          {article.author_name?.charAt(0) || 'R'}
+                          {articleAuthorName(article).charAt(0)}
                         </div>
                       )}
                       <div>
-                        <span className="font-medium text-gray-900 hover:text-[#79B92A] transition-colors">{article.author_name || 'Redaktion'}</span>
-                        {article.author_role && (
+                        <span className="font-medium text-gray-900 hover:text-[#79B92A] transition-colors">{articleAuthorName(article)}</span>
+                        {articleHasNamedAuthor(article) && article.author_role && (
                           <span className="text-gray-400 text-xs block">{article.author_role}</span>
                         )}
                       </div>
@@ -673,9 +611,9 @@ export default function NewsDetailPage() {
                           {paragraph}
                         </p>
                         {/* Insert ad after every 3rd paragraph */}
-                        {(idx + 1) % 3 === 0 && idx < paragraphs.length - 1 && (
+                        {(idx + 1) % 3 === 0 && idx < 9 && idx < paragraphs.length - 1 && (
                           <div className="my-6">
-                            <AdSlot slotKey={`article_after_paragraph_${Math.min(idx + 1, 3)}`} minHeight="90px" />
+                            <AdSlot slotKey={`article_after_paragraph_${Math.ceil((idx + 1) / 3)}`} minHeight="90px" />
                           </div>
                         )}
                       </div>
@@ -690,7 +628,7 @@ export default function NewsDetailPage() {
                 {/* Source Badge & Fact-Check (E-E-A-T) */}
                 <div className="mt-8 grid md:grid-cols-2 gap-4">
                   <SourceBadge article={article} />
-                  <FactCheckBadge article={article} />
+
                 </div>
 
                 {/* Auto-generated Related Links from Trending System */}

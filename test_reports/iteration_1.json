@@ -18,7 +18,7 @@
   },
   "passed_tests": [
     "Backend API health check (100% success rate - 28/28 tests passed)",
-    "Admin authentication with credentials admin@transfernews.de/admin123",
+    "Admin authentication with credentials admin@transfernews.de/REMOVED_LEGACY_PASSWORD",
     "Players CRUD operations (create, read, update, delete)",
     "Clubs CRUD operations",
     "Competitions CRUD operations", 

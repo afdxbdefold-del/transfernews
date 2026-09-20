@@ -1,10 +1,11 @@
 import axios from 'axios';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+export const BACKEND_URL = (process.env.REACT_APP_BACKEND_URL || '').replace(/\/+$/, '');
 const API_BASE = `${BACKEND_URL}/api`;
 
 const api = axios.create({
   baseURL: API_BASE,
+  timeout: 15000,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -36,6 +37,7 @@ api.interceptors.response.use(
 // Auth
 export const login = (email, password) => api.post('/auth/login', { email, password });
 export const getMe = () => api.get('/auth/me');
+export const changePassword = (current_password, new_password) => api.post('/auth/change-password', { current_password, new_password });
 
 // Players
 export const getPlayers = (params) => api.get('/players', { params });
@@ -107,14 +109,19 @@ export const createArticle = (data) => api.post('/articles', data);
 export const updateArticle = (id, data) => api.put(`/articles/${id}`, data);
 export const deleteArticle = (id) => api.delete(`/articles/${id}`);
 
+function adSlotsChanged(response) {
+  window.dispatchEvent(new Event('ad-slots-updated'));
+  return response;
+}
+
 // Ad Slots
 export const getAdSlots = (params) => api.get('/ad-slots', { params });
 export const getActiveAdSlots = (params) => api.get('/ad-slots/active', { params });
 export const getAdSlot = (id) => api.get(`/ad-slots/${id}`);
 export const getAdSlotByKey = (key) => api.get(`/ad-slots/key/${key}`);
-export const createAdSlot = (data) => api.post('/ad-slots', data);
-export const updateAdSlot = (id, data) => api.put(`/ad-slots/${id}`, data);
-export const deleteAdSlot = (id) => api.delete(`/ad-slots/${id}`);
+export const createAdSlot = (data) => api.post('/ad-slots', data).then(adSlotsChanged);
+export const updateAdSlot = (id, data) => api.put(`/ad-slots/${id}`, data).then(adSlotsChanged);
+export const deleteAdSlot = (id) => api.delete(`/ad-slots/${id}`).then(adSlotsChanged);
 
 // Settings
 export const getSettings = () => api.get('/settings');
@@ -129,7 +136,6 @@ export const autosuggest = (q, limit) => api.get('/search/autosuggest', { params
 export const getDashboardStats = () => api.get('/stats/dashboard');
 
 // Init
-export const initAdmin = () => api.post('/init/admin');
 export const initAdSlots = () => api.post('/init/ad-slots');
 
 // Users

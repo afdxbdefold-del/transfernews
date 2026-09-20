@@ -7,7 +7,7 @@ import { Input } from '../../components/ui/input';
 import { ArrowUp, ArrowDown, Search, Globe, Smartphone, Monitor, Tablet, CheckCircle, XCircle, Clock, AlertTriangle, RefreshCw, Send } from 'lucide-react';
 import api from '../../api';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL;
+import { BACKEND_URL as API_URL } from '@/api';
 
 export default function AdminGSC() {
   const navigate = useNavigate();

@@ -4,6 +4,11 @@ services:
     volumes:
       - mongodb_data:/data/db
     restart: always
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand({ping:1}).ok"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     networks:
       - app-network
 
@@ -13,9 +18,28 @@ services:
       - MONGO_URL=mongodb://mongodb:27017
       - DB_NAME=transfernews_db
       - CORS_ORIGINS=https://transfernews.de,https://www.transfernews.de
+      - JWT_SECRET_FILE=/run/secrets/jwt_secret
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - FOOTBALL_DATA_API_KEY=${FOOTBALL_DATA_API_KEY:-}
+      - SCHEDULER_ENABLED=${SCHEDULER_ENABLED:-true}
+      - FRONTEND_INTERNAL_URL=http://frontend:80
+      - SITE_URL=https://transfernews.de
+      - MEDIA_ROOT=/app/static
+      - PRERENDER_CACHE_DIR=/app/prerender_cache
+    volumes:
+      - /opt/transfernews-runtime/static:/app/static
+      - /opt/transfernews-runtime/prerender_cache:/app/prerender_cache
+      - /opt/transfernews-runtime/secrets/jwt_secret:/run/secrets/jwt_secret:ro
     depends_on:
-      - mongodb
+      mongodb:
+        condition: service_healthy
     restart: always
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8001/api/ready', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
     expose:
       - "8001"
     networks:
@@ -24,6 +48,11 @@ services:
   frontend:
     build: ./frontend
     restart: always
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     expose:
       - "80"
     networks:

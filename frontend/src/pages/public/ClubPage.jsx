@@ -6,6 +6,8 @@ import { useParams, Link } from "react-router-dom";
 import { getClubBySlug, getArticlesByClub, getTransfers, getPlayers } from "@/api";
 import { Buildings, MapPin, CaretRight, ArrowRight, ArrowLeft, User, Trophy, TrendUp, TrendDown, Equals } from "@phosphor-icons/react";
 import { Helmet } from "react-helmet-async";
+import { SportsTeamSchema } from "@/components/SchemaMarkup";
+import { absoluteImageUrl } from "@/lib/articleSeo";
 
 function BoxHeader({ title, icon: Icon, action }) {
   return (
@@ -201,6 +203,7 @@ export default function ClubPage() {
         <link rel="canonical" href={`https://transfernews.de/verein/${slug}`} />
       </Helmet>
       
+      <SportsTeamSchema team={{ name: club.name, url: `https://transfernews.de/verein/${slug}`, location: club.country, logo: absoluteImageUrl(club.logo) }} />
       <Header />
       
       <main className="flex-1 py-3 px-3" data-testid="club-page">

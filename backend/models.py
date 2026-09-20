@@ -36,6 +36,10 @@ class EventType(str, Enum):
 
 
 class EventStatus(str, Enum):
+    PROCESSING = "processing"
+    RETRY = "retry"
+    REVIEW = "review"
+    ERROR = "error"
     PENDING = "pending"
     PROCESSED = "processed"
     REJECTED = "rejected"

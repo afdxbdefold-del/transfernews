@@ -84,7 +84,7 @@ async def task_speed_pipeline():
         pipeline = SpeedPipeline(db)
         result = await pipeline.process_pending_events(limit=20)
         
-        if result.get("created", 0) > 0 or result.get("updated", 0) > 0:
+        if result.get("processed", 0) > 0:
             logger.info(f"[CRON:SPEED] Created: {result.get('created', 0)}, Updated: {result.get('updated', 0)}, Avg: {result.get('total_time_ms', 0) // max(1, result.get('processed', 1))}ms")
         
         return result
@@ -108,9 +108,11 @@ async def task_gpt_rewrite():
         if result.get("rewritten", 0) > 0:
             logger.info(f"[CRON:GPT] {result.get('rewritten', 0)} Artikel verbessert")
         
+        if result.get("blocked"):
+            logger.warning("[CRON:GPT] Blocked: %s", result["blocked"])
         return result
     except Exception as e:
-        logger.error(f"[CRON:GPT] Error: {e}")
+        logger.error("[CRON:GPT] Error: %s", type(e).__name__)
         return {"error": str(e)}
 
 
@@ -119,24 +121,16 @@ async def task_gpt_rewrite():
 # =============================================================================
 
 async def task_sitemap_update():
-    """Aktualisiert news-sitemap.xml"""
+    """Validate generated sitemap contents; submission is managed through Search Console."""
     try:
-        from sitemap import generate_news_sitemap, ping_google_sitemaps
-        db = get_db()
-        
-        # Sitemap generieren
-        sitemap = await generate_news_sitemap(db)
-        
-        # Google pingen (nur wenn neue Artikel)
-        article_count = sitemap.count("<url>")
-        if article_count > 0:
-            await ping_google_sitemaps()
-            logger.info(f"[CRON:SITEMAP] {article_count} URLs, Google gepingt")
-        
-        return {"articles": article_count}
-    except Exception as e:
-        logger.error(f"[CRON:SITEMAP] Error: {e}")
-        return {"error": str(e)}
+        from sitemap import generate_news_sitemap
+        sitemap = await generate_news_sitemap(get_db())
+        count = sitemap.count("<url>")
+        logger.info("[CRON:SITEMAP] Generated news sitemap: %s URLs", count)
+        return {"articles": count, "google_ping": "disabled"}
+    except Exception as exc:
+        logger.error("[CRON:SITEMAP] Error: %s", type(exc).__name__)
+        return {"error": type(exc).__name__}
 
 
 # =============================================================================

@@ -9,6 +9,7 @@ import { MagnifyingGlass, User, Buildings, Trophy, Newspaper } from "@phosphor-i
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Helmet } from "react-helmet-async";
 
 export default function SearchPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -51,6 +52,7 @@ export default function SearchPage() {
 
   return (
     <PageLayout>
+      <Helmet><title>Suche | TransferNews.de</title><meta name="robots" content="noindex, follow" /></Helmet>
       <Header />
 
       <main className="flex-1 py-3 px-3" data-testid="search-page">

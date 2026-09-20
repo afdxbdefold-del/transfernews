@@ -36,6 +36,7 @@ export default function AdminLayout({ children, title }) {
     { path: "/admin/sources", icon: LinkIcon, label: "Quellen" },
     { path: "/admin/ad-slots", icon: Megaphone, label: "Ad-Slots" },
     { path: "/admin/gsc", icon: ChartLine, label: "Search Console" },
+    { path: "/admin/passwort", icon: Gear, label: "Passwort ändern" },
   ];
 
   return (

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { login, initAdmin } from "@/api";
+import { login } from "@/api";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -19,8 +19,6 @@ export default function AdminLogin() {
       navigate("/admin");
     }
     
-    // Initialize admin user on first load
-    initAdmin().catch(() => {});
   }, [navigate]);
 
   const handleSubmit = async (e) => {
@@ -59,7 +57,8 @@ export default function AdminLogin() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@transfernews.de"
+                placeholder="Deine E-Mail-Adresse"
+                autoComplete="username"
                 className="pl-10"
                 required
                 data-testid="email-input"
@@ -73,6 +72,7 @@ export default function AdminLogin() {
               <Lock size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <Input
                 type="password"
+                autoComplete="current-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
@@ -93,11 +93,6 @@ export default function AdminLogin() {
           </Button>
         </form>
 
-        <div className="mt-6 p-4 bg-gray-50 border text-sm">
-          <p className="font-medium mb-1">Demo-Zugangsdaten:</p>
-          <p className="text-gray-600">E-Mail: admin@transfernews.de</p>
-          <p className="text-gray-600">Passwort: admin123</p>
-        </div>
       </div>
     </div>
   );

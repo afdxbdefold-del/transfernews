@@ -1,0 +1,3 @@
+# Runtime requirements are installed separately; no live integration target is required.
+mongomock==4.3.0
+pytest==9.0.2

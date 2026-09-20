@@ -18,7 +18,7 @@ function ScrollToTop() {
 
 // Public Pages
 import HomePage from "@/pages/public/HomePage";
-import NewsListPage from "@/pages/public/NewsListPage";
+import NotFoundPage from "@/pages/public/NotFoundPage";
 import NewsDetailPage from "@/pages/public/NewsDetailPage";
 import PlayerPage from "@/pages/public/PlayerPage";
 import ClubPage from "@/pages/public/ClubPage";
@@ -28,7 +28,6 @@ import TransfersPage from "@/pages/public/TransfersPage";
 import SearchPage from "@/pages/public/SearchPage";
 import AuthorPage from "@/pages/public/AuthorPage";
 import ThemePage from "@/pages/public/ThemePage";
-import AuthorsPage from "@/pages/public/AuthorsPage";
 import ImpressumPage from "@/pages/public/ImpressumPage";
 import AboutPage from "@/pages/public/AboutPage";
 import DatenschutzPage from "@/pages/public/DatenschutzPage";
@@ -39,6 +38,7 @@ import DeadlineDayPage from "@/pages/public/DeadlineDayPage";
 
 // Admin Pages
 import AdminLogin from "@/pages/admin/AdminLogin";
+import AdminPassword from "@/pages/admin/AdminPassword";
 import AdminDashboard from "@/pages/admin/AdminDashboard";
 import AdminPlayers from "@/pages/admin/AdminPlayers";
 import AdminClubs from "@/pages/admin/AdminClubs";
@@ -75,12 +75,14 @@ function App() {
             <Route path="/transfers" element={<TransfersPage />} />
             <Route path="/suche" element={<SearchPage />} />
             <Route path="/autor/:slug" element={<AuthorPage />} />
+            <Route path="/redaktion" element={<Navigate to="/autor/redaktion" replace />} />
             <Route path="/impressum" element={<ImpressumPage />} />
             <Route path="/ueber-uns" element={<AboutPage />} />
             <Route path="/datenschutz" element={<DatenschutzPage />} />
             
             {/* Admin Routes */}
             <Route path="/admin/login" element={<AdminLogin />} />
+            <Route path="/admin/passwort" element={<AdminPassword />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/players" element={<AdminPlayers />} />
             <Route path="/admin/clubs" element={<AdminClubs />} />
@@ -92,6 +94,7 @@ function App() {
             <Route path="/admin/transfers" element={<AdminTransfers />} />
             <Route path="/admin/rumours" element={<AdminRumours />} />
             <Route path="/admin/gsc" element={<AdminGSC />} />
+            <Route path="*" element={<NotFoundPage />} />
           </Routes>
           </BrowserRouter>
           <Toaster position="top-right" />

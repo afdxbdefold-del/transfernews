@@ -1,5 +1,5 @@
 import { useLocation } from 'react-router-dom';
-import { useTheMoneytizerAds, StickySkyscraperAd, GlobalAd, MegabannerAd } from './TheMoneytizerAds';
+import { MegabannerAd } from './TheMoneytizerAds';
 
 // Pages without ads
 const NO_AD_PAGES = ['/impressum', '/datenschutz', '/ueber-uns', '/about'];
@@ -8,19 +8,9 @@ export default function PageLayout({ children }) {
   const location = useLocation();
   const showAds = !NO_AD_PAGES.some(p => location.pathname.startsWith(p));
   
-  // Load global ads
-  useTheMoneytizerAds();
 
   return (
     <div className="min-h-screen bg-[#f2f2f2] dark:bg-[#1a1a1a] relative" data-testid="page-layout">
-      {/* TheMonetizer Global Ads */}
-      {showAds && (
-        <>
-          <StickySkyscraperAd />
-          <GlobalAd />
-        </>
-      )}
-
       {/* Megabanner über Header */}
       {showAds && (
         <div className="hidden lg:block py-2 bg-[#f2f2f2]" data-testid="top-banner-container">

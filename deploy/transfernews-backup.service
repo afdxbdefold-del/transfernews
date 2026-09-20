@@ -1,0 +1,10 @@
+[Unit]
+Description=Transfernews database, media and configuration backup
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+UMask=0077
+ExecStart=/usr/bin/python3 /opt/transfernews-ops/backup.py
+Nice=10

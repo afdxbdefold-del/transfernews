@@ -1,11 +1,14 @@
 import { Link } from "react-router-dom";
 import { User, Buildings, ArrowRight } from "@phosphor-icons/react";
+import { safeRelatedLink } from '@/lib/relatedLink';
 
 export function RelatedLinks({ links = [], className = "" }) {
   if (!links || links.length === 0) return null;
 
-  const playerLinks = links.filter(l => l.type === 'player');
-  const clubLinks = links.filter(l => l.type === 'club');
+  const validLinks = links.map(link => ({ ...link, url: safeRelatedLink(link) })).filter(link => link.url);
+  if (!validLinks.length) return null;
+  const playerLinks = validLinks.filter(l => l.type === 'player');
+  const clubLinks = validLinks.filter(l => l.type === 'club');
 
   return (
     <div className={`bg-gray-50 border border-gray-200 p-4 ${className}`} data-testid="related-links">

@@ -6,11 +6,12 @@ FastAPI Backend für die Fußball-Transfer-News-Plattform
 from fastapi import FastAPI, APIRouter, HTTPException, Depends, Query, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
+from pymongo.errors import DuplicateKeyError
 import os
 import logging
 from pathlib import Path
@@ -20,6 +21,7 @@ import jwt
 from passlib.context import CryptContext
 import re
 import asyncio
+from security import load_jwt_secret, issue_token, authenticate_token, LoginAttemptLimiter, PasswordChangeRequest
 
 from models import (
     Player, PlayerCreate, PlayerUpdate,
@@ -48,20 +50,26 @@ client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
 # JWT Configuration
-JWT_SECRET = os.environ.get('JWT_SECRET_KEY', 'default_secret_key_change_me')
+JWT_SECRET = load_jwt_secret()
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRATION_HOURS = 24
 
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-security = HTTPBearer()
+security = HTTPBearer(auto_error=False)
+login_limiter = LoginAttemptLimiter()
 
 # Create the main app
 app = FastAPI(title="TransferNews.de API", version="1.0.0")
 
+
+@app.exception_handler(DuplicateKeyError)
+async def duplicate_identity_handler(request: Request, exc: DuplicateKeyError):
+    return JSONResponse(status_code=409, content={"detail": "Dieser Eintrag oder diese URL existiert bereits."})
+
 # Mount static files directory for images under /api/static
-STATIC_DIR = ROOT_DIR / "static"
-STATIC_DIR.mkdir(exist_ok=True)
+STATIC_DIR = Path(os.environ.get("MEDIA_ROOT", str(ROOT_DIR / "static")))
+STATIC_DIR.mkdir(parents=True, exist_ok=True)
 (STATIC_DIR / "images").mkdir(exist_ok=True)
 app.mount("/api/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
@@ -162,26 +170,26 @@ def deserialize_datetime(doc: dict, fields: List[str]) -> dict:
     return doc
 
 
-def create_token(user_id: str, email: str, role: str) -> str:
-    """Create JWT token"""
-    payload = {
-        "sub": user_id,
-        "email": email,
-        "role": role,
-        "exp": datetime.now(timezone.utc) + timedelta(hours=JWT_EXPIRATION_HOURS)
-    }
-    return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+def create_token(user_id: str, email: str, role: str, auth_version: int = 0) -> str:
+    return issue_token(JWT_SECRET, user_id, email, role, JWT_EXPIRATION_HOURS, auth_version)
 
 
-async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> dict:
-    """Validate JWT token and return user info"""
-    try:
-        payload = jwt.decode(credentials.credentials, JWT_SECRET, algorithms=[JWT_ALGORITHM])
-        return payload
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail="Token abgelaufen")
-    except jwt.InvalidTokenError:
-        raise HTTPException(status_code=401, detail="Ungültiger Token")
+async def get_optional_user(credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)) -> Optional[dict]:
+    if credentials is None:
+        return None
+    return await authenticate_token(credentials.credentials, JWT_SECRET, db)
+
+
+async def get_current_user(current_user: Optional[dict] = Depends(get_optional_user)) -> dict:
+    if current_user is None:
+        raise HTTPException(401, "Anmeldung erforderlich", headers={"WWW-Authenticate": "Bearer"})
+    return current_user
+
+
+async def require_editor(current_user: dict = Depends(get_current_user)) -> dict:
+    if current_user["role"] not in {"admin", "editor"}:
+        raise HTTPException(403, "Redakteursrechte erforderlich")
+    return current_user
 
 
 async def require_admin(current_user: dict = Depends(get_current_user)) -> dict:
@@ -196,17 +204,50 @@ async def require_admin(current_user: dict = Depends(get_current_user)) -> dict:
 # =============================================================================
 
 @api_router.post("/auth/login", response_model=TokenResponse)
-async def login(request: LoginRequest):
+async def login(request: LoginRequest, http_request: Request):
     """Admin login"""
+    login_limiter.check(request.email, http_request.client.host if http_request.client else "unknown")
     user = await db.users.find_one({"email": request.email}, {"_id": 0})
-    if not user or not pwd_context.verify(request.password, user.get("password_hash", "")):
+    try:
+        valid = bool(user) and pwd_context.verify(request.password, user.get("password_hash", ""))
+    except (ValueError, TypeError):
+        valid = False
+    if not valid:
         raise HTTPException(status_code=401, detail="Ungültige Anmeldedaten")
     
     if not user.get("is_active", True):
         raise HTTPException(status_code=403, detail="Konto deaktiviert")
+
+    login_limiter.success(request.email)
     
-    token = create_token(user["id"], user["email"], user["role"])
+    token = create_token(user["id"], user["email"], user["role"], user.get("auth_version", 0))
     return TokenResponse(access_token=token)
+
+
+@api_router.post("/auth/change-password", response_model=TokenResponse)
+async def change_password(request: PasswordChangeRequest, http_request: Request, current_user: dict = Depends(get_current_user)):
+    login_limiter.check(current_user["email"], http_request.client.host if http_request.client else "unknown")
+    user = await db.users.find_one({"id": current_user["sub"], "is_active": True}, {"_id": 0})
+    if not user:
+        raise HTTPException(401, "Sitzung nicht mehr gültig")
+    try:
+        valid = pwd_context.verify(request.current_password, user.get("password_hash", ""))
+    except (ValueError, TypeError):
+        valid = False
+    if not valid:
+        raise HTTPException(400, "Aktuelles Passwort ist nicht korrekt")
+    if request.current_password == request.new_password:
+        raise HTTPException(400, "Bitte ein neues Passwort wählen")
+    # Compare-and-swap prevents two simultaneous password changes from racing.
+    version = user.get("auth_version", 0)
+    updated = await db.users.update_one(
+        {"id": user["id"], "password_hash": user["password_hash"], "is_active": True},
+        {"$set": {"password_hash": pwd_context.hash(request.new_password), "auth_version": version + 1,
+                  "must_change_password": False, "updated_at": datetime.now(timezone.utc).isoformat()}})
+    if updated.modified_count != 1:
+        raise HTTPException(409, "Sitzung wurde geändert. Bitte erneut anmelden.")
+    login_limiter.success(user["email"])
+    return TokenResponse(access_token=create_token(user["id"], user["email"], user["role"], version + 1))
 
 
 @api_router.get("/auth/me", response_model=UserPublic)
@@ -292,8 +333,25 @@ async def get_player_by_slug(slug: str):
     """Get player by slug"""
     player = await db.players.find_one({"slug": slug}, {"_id": 0})
     if not player:
+        canonical_slug = await resolve_player_alias_slug(slug)
+        if canonical_slug:
+            return RedirectResponse("/api/players/slug/" + canonical_slug, status_code=301)
         raise HTTPException(status_code=404, detail="Spieler nicht gefunden")
     return player
+
+
+async def resolve_player_alias_slug(slug: str):
+    """A database alias may redirect only to an existing player with a safe slug."""
+    if not re.fullmatch(r"[A-Za-z0-9_-]{1,240}", slug):
+        return None
+    alias = await db.aliases.find_one({"entity_type": "player", "normalized_alias": slug}, {"_id": 0, "entity_id": 1})
+    if not alias or not alias.get("entity_id"):
+        return None
+    target = await db.players.find_one({"id": alias["entity_id"]}, {"_id": 0, "slug": 1})
+    canonical = target.get("slug") if target else None
+    if isinstance(canonical, str) and canonical != slug and re.fullmatch(r"[A-Za-z0-9_-]{1,240}", canonical):
+        return canonical
+    return None
 
 
 @api_router.put("/players/{player_id}", response_model=Player)
@@ -331,6 +389,9 @@ async def get_player_transfers_by_slug(slug: str):
     """Get transfer history for a player by slug"""
     player = await db.players.find_one({"slug": slug}, {"_id": 0, "id": 1})
     if not player:
+        canonical_slug = await resolve_player_alias_slug(slug)
+        if canonical_slug:
+            return RedirectResponse("/api/players/slug/" + canonical_slug + "/transfers", status_code=301)
         raise HTTPException(status_code=404, detail="Spieler nicht gefunden")
     
     transfers = await db.transfers.find(
@@ -355,7 +416,8 @@ async def get_top_deals(
 @api_router.post("/players/enrich-images")
 async def enrich_player_images(
     limit: int = Query(50, ge=1, le=200),
-    force: bool = Query(False, description="Auch bereits vorhandene Bilder aktualisieren")
+    force: bool = Query(False, description="Auch bereits vorhandene Bilder aktualisieren"),
+    current_user: dict = Depends(require_editor)
 ):
     """
     Batch-Anreicherung von Spielerbildern über Wikimedia Commons.
@@ -453,7 +515,7 @@ async def enrich_player_images(
 
 
 @api_router.post("/players/{player_id}/update-image")
-async def update_single_player_image(player_id: str):
+async def update_single_player_image(player_id: str, current_user: dict = Depends(require_editor)):
     """
     Aktualisiert das Bild eines einzelnen Spielers über Wikimedia Commons.
     """
@@ -909,9 +971,10 @@ async def get_articles(
     status: Optional[str] = None,
     article_type: Optional[str] = None,
     is_breaking: Optional[bool] = None,
-    is_featured: Optional[bool] = None
+    is_featured: Optional[bool] = None,
+    current_user: Optional[dict] = Depends(get_optional_user)
 ):
-    """Get all articles"""
+    """Published articles publicly; editorial lists require a valid session."""
     query = {}
     if status:
         query["status"] = status
@@ -921,6 +984,8 @@ async def get_articles(
         query["is_breaking"] = is_breaking
     if is_featured is not None:
         query["is_featured"] = is_featured
+    if current_user is None:
+        query["status"] = "published"
     articles = await db.articles.find(query, {"_id": 0}).sort("published_at", -1).skip(skip).limit(limit).to_list(limit)
     return articles
 
@@ -948,20 +1013,24 @@ async def get_breaking_news(limit: int = Query(10, ge=1, le=20)):
 
 
 @api_router.get("/articles/{article_id}", response_model=Article)
-async def get_article(article_id: str):
-    """Get article by ID"""
-    article = await db.articles.find_one({"id": article_id}, {"_id": 0})
+async def get_article(article_id: str, current_user: Optional[dict] = Depends(get_optional_user)):
+    query = {"id": article_id}
+    if current_user is None:
+        query["status"] = "published"
+    article = await db.articles.find_one(query, {"_id": 0})
     if not article:
-        raise HTTPException(status_code=404, detail="Artikel nicht gefunden")
+        raise HTTPException(404, "Artikel nicht gefunden")
     return article
 
 
 @api_router.get("/articles/slug/{slug}", response_model=Article)
-async def get_article_by_slug(slug: str):
-    """Get article by slug"""
-    article = await db.articles.find_one({"slug": slug}, {"_id": 0})
+async def get_article_by_slug(slug: str, current_user: Optional[dict] = Depends(get_optional_user)):
+    query = {"slug": slug}
+    if current_user is None:
+        query["status"] = "published"
+    article = await db.articles.find_one(query, {"_id": 0})
     if not article:
-        raise HTTPException(status_code=404, detail="Artikel nicht gefunden")
+        raise HTTPException(404, "Artikel nicht gefunden")
     return article
 
 
@@ -1145,14 +1214,14 @@ async def delete_ad_slot(slot_id: str, current_user: dict = Depends(require_admi
 # =============================================================================
 
 @api_router.get("/settings", response_model=List[Setting])
-async def get_settings(current_user: dict = Depends(get_current_user)):
+async def get_settings(current_user: dict = Depends(require_admin)):
     """Get all settings"""
     settings = await db.settings.find({}, {"_id": 0}).to_list(100)
     return settings
 
 
 @api_router.get("/settings/{key}")
-async def get_setting(key: str):
+async def get_setting(key: str, current_user: dict = Depends(require_admin)):
     """Get setting by key"""
     setting = await db.settings.find_one({"key": key}, {"_id": 0})
     if not setting:
@@ -1194,7 +1263,7 @@ async def search(
         "articles": []
     }
     
-    search_regex = {"$regex": q, "$options": "i"}
+    search_regex = {"$regex": re.escape(q), "$options": "i"}
     
     # Search players
     players = await db.players.find(
@@ -1234,7 +1303,7 @@ async def autosuggest(
 ):
     """Quick autosuggest for search box"""
     suggestions = []
-    search_regex = {"$regex": q, "$options": "i"}
+    search_regex = {"$regex": re.escape(q), "$options": "i"}
     
     # Get players
     players = await db.players.find(
@@ -1283,22 +1352,7 @@ async def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
 # SEEDING / INITIALIZATION
 # =============================================================================
 
-@api_router.post("/init/admin")
-async def init_admin():
-    """Initialize default admin user if none exists"""
-    admin_count = await db.users.count_documents({"role": "admin"})
-    if admin_count > 0:
-        return {"message": "Admin bereits vorhanden"}
-    
-    admin = User(
-        email="admin@transfernews.de",
-        name="Administrator",
-        role=UserRole.ADMIN,
-        password_hash=pwd_context.hash("admin123")
-    )
-    doc = serialize_datetime(admin.model_dump())
-    await db.users.insert_one(doc)
-    return {"message": "Admin erstellt", "email": "admin@transfernews.de", "password": "admin123"}
+
 
 
 @api_router.post("/init/ad-slots")
@@ -1516,7 +1570,25 @@ async def root():
 
 @api_router.get("/health")
 async def health_check():
-    return {"status": "healthy", "timestamp": datetime.now(timezone.utc).isoformat()}
+    """Liveness only. Dependency readiness is reported by /api/ready."""
+    return {"status": "alive", "timestamp": datetime.now(timezone.utc).isoformat()}
+
+
+@api_router.get("/ready")
+async def readiness_check():
+    database_ok = False
+    try:
+        await asyncio.wait_for(db.command("ping"), timeout=2.0)
+        database_ok = True
+    except Exception:
+        pass
+    scheduler_expected = os.environ.get("SCHEDULER_ENABLED", "true").lower() in {"true", "1", "yes"}
+    scheduler_running = bool(get_scheduler_status().get("running"))
+    ready = database_ok and (scheduler_running or not scheduler_expected)
+    return JSONResponse(status_code=200 if ready else 503, content={
+        "status": "ready" if ready else "not_ready", "database": database_ok,
+        "scheduler": {"enabled": scheduler_expected, "running": scheduler_running},
+    })
 
 
 # =============================================================================
@@ -1886,7 +1958,7 @@ async def update_article_status(
         "old_status": old_status,
         "new_status": new_status,
         "updated_at": now,
-        "google_pinged": True
+        "google_pinged": False
     }
 
 
@@ -2148,66 +2220,34 @@ async def check_prerender_status(path: str):
 
 @api_router.get("/render/{path:path}", response_class=HTMLResponse)
 async def serve_prerendered_html(path: str, request: Request):
-    """
-    Serve pre-rendered HTML for crawlers.
-    This endpoint is called by nginx/ingress when a crawler is detected.
-    
-    Returns:
-    - Pre-rendered HTML if available
-    - 404 if not pre-rendered (frontend should handle this via SPA)
-    """
-    full_path = f"/{path}" if not path.startswith("/") else path
-    
-    # Check User-Agent
-    user_agent = request.headers.get("user-agent", "")
-    
-    # Log crawler access
-    if is_crawler(user_agent):
-        logger.info(f"[CRAWLER] Serving pre-rendered HTML for: {full_path} (UA: {user_agent[:50]})")
-    
-    # Get pre-rendered HTML
-    html = await get_prerendered_html(full_path)
-    
-    if html:
-        return HTMLResponse(content=html, status_code=200)
-    
-    # No pre-rendered version available
-    raise HTTPException(
-        status_code=404, 
-        detail=f"No pre-rendered content for {full_path}"
-    )
+    return await serve_ssr_html(path, request)
 
 
 @api_router.get("/ssr/{path:path}", response_class=HTMLResponse)
 async def serve_ssr_html(path: str, request: Request):
-    """
-    Alternative endpoint for SSR/pre-rendered content.
-    Can be used for testing or direct access to pre-rendered pages.
-    """
-    full_path = f"/{path}" if not path.startswith("/") else path
-    html = await get_prerendered_html(full_path)
-    
-    if html:
-        return HTMLResponse(content=html, status_code=200)
-    
-    # Fallback: try to pre-render on demand
+    """Public article HTML: DB publication state is checked on every request."""
+    from prerender import validate_public_path, render_article_document
     try:
-        from prerender import PreRenderEngine, get_prerender_engine
-        
-        engine = await get_prerender_engine()
-        html = await engine.render_page(full_path)
-        
-        if html:
-            await engine.cache_html(full_path, html)
-            logger.info(f"[SSR] On-demand rendered: {full_path}")
-            return HTMLResponse(content=html, status_code=200)
-    except Exception as e:
-        logger.error(f"[SSR] On-demand render failed for {full_path}: {e}")
-    
-    raise HTTPException(
-        status_code=404,
-        detail=f"Could not render {full_path}"
-    )
+        full_path = validate_public_path("/" + path.strip("/"))
+    except ValueError:
+        raise HTTPException(404, "Seite nicht gefunden") from None
+    if not full_path.startswith("/news/"):
+        if full_path.startswith("/spieler/"):
+            slug = full_path.split("/", 2)[2]
+            if not await db.players.find_one({"slug": slug}, {"_id": 0, "id": 1}):
+                canonical_slug = await resolve_player_alias_slug(slug)
+                if canonical_slug:
+                    return RedirectResponse("/spieler/" + canonical_slug, status_code=301)
+        from public_pages import render_public_profile
+        html, status_code = await render_public_profile(db, full_path)
+        return HTMLResponse(html, status_code=status_code, headers={"Cache-Control": "public, max-age=60" if status_code == 200 else "no-store", "X-Content-Type-Options": "nosniff"})
+    slug = full_path.split("/", 2)[2]
+    article = await db.articles.find_one({"slug": slug, "status": "published"}, {"_id": 0})
+    if not article:
+        return HTMLResponse("<!doctype html><html lang=de><head><meta name=robots content=noindex><title>Artikel nicht gefunden</title></head><body><h1>Artikel nicht gefunden</h1><a href='/'>Zur Startseite</a></body></html>", status_code=404,
+                            headers={"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"})
+    html = await render_article_document(article)
+    return HTMLResponse(html, headers={"Cache-Control": "public, max-age=60", "X-Content-Type-Options": "nosniff"})
 
 
 # =============================================================================
@@ -2796,40 +2836,16 @@ async def wikimedia_use_fallback(
 
 @app.on_event("startup")
 async def startup_event():
-    """Start scheduler on app startup"""
-    try:
-        # Re-enable scheduler for news automation
+    """Start the configured scheduler; readiness reports failed dependencies."""
+    enabled = os.environ.get("SCHEDULER_ENABLED", "true").lower() in {"true", "1", "yes"}
+    if enabled:
         init_scheduler_db(mongo_url, os.environ['DB_NAME'])
         start_scheduler()
-        logger.info("Backend started (scheduler enabled)")
-        
-        # Create default author if not exists
-        default_author = await db.authors.find_one({"slug": "redaktion"})
-        if not default_author:
-            author = Author(
-                name="Redaktion",
-                slug="redaktion",
-                bio="Die Redaktion von TransferNews.de berichtet täglich über aktuelle Transfers und Gerüchte aus der Welt des Fußballs.",
-                expertise=["Bundesliga", "Premier League", "La Liga", "Champions League"],
-                avatar_url="/api/static/images/author-redaktion.jpg"
-            )
-            await db.authors.insert_one(serialize_datetime(author.model_dump()))
-            logger.info("Default author 'Redaktion' created")
-            
-    except Exception as e:
-        logger.error(f"Startup error: {e}")
+    logger.info("Backend started; scheduler %s", "enabled" if enabled else "disabled")
 
 
 # Temporary endpoint to download database export
-@api_router.get("/download-db-export")
-async def download_db_export():
-    import base64
-    file_path = "/tmp/dbexport.tar.gz"
-    if os.path.exists(file_path):
-        with open(file_path, "rb") as f:
-            content = base64.b64encode(f.read()).decode()
-        return {"data": content}
-    return {"error": "File not found"}
+
 
 # Include the router in the main app
 # ads.txt endpoint for TheMonetizer + Primis
@@ -2899,8 +2915,8 @@ app.include_router(api_router)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_credentials=True,
-    allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
+    allow_credentials=False,
+    allow_origins=[origin.strip() for origin in os.environ.get('CORS_ORIGINS', 'https://transfernews.de,https://www.transfernews.de').split(',') if origin.strip() and origin.strip() != '*'],
     allow_methods=["*"],
     allow_headers=["*"],
 )
