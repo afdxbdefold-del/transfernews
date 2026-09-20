@@ -45,6 +45,20 @@ class EvidenceTests(unittest.TestCase):
         self.assertIn("Statistiken", reason)
         self.assertFalse(rewriter.validate_rewrite(BBC_TITLE, text * 4, evidence_scope="headline")[0])
 
+    def test_headline_rewrite_rejects_actual_live_biographical_addition(self):
+        rewriter = GPTRewriter(None)
+        safe = ("## Endrick im Gespräch\nLaut BBC Sport könnte der FC Arsenal im Januar einen Transfer für "
+                "den Spieler Endrick ins Auge fassen. Die Quellenüberschrift beschreibt einen möglichen Wechsel.")
+        self.assertTrue(rewriter.validate_rewrite(BBC_TITLE, safe, evidence_scope="headline")[0])
+        for detail in ["brasilianischen Spieler", "jungen Spieler", "Stürmer", "Spieler von Real Madrid", "Spieler aus der Akademie"]:
+            with self.subTest(detail=detail):
+                valid, reason = rewriter.validate_rewrite(BBC_TITLE, safe.replace("Spieler", detail), evidence_scope="headline")
+                self.assertFalse(valid)
+                self.assertIn("Unbelegte", reason)
+        supported = BBC_TITLE.replace("Endrick", "Brazilian forward Endrick")
+        translated = safe.replace("Spieler", "brasilianischen Stürmer")
+        self.assertTrue(rewriter.validate_rewrite(supported, translated, evidence_scope="headline")[0])
+
     def test_single_player_explicit_transfer_interest_and_contract(self):
         cases = [
             ("Official: Florian Wirtz joins Liverpool", "FC Liverpool"),

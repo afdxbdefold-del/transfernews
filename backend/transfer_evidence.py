@@ -27,6 +27,42 @@ NEGATED_MOVE = re.compile(
     r"\b(?:not|never|kein\w*|nicht|no|non|pas|denies|denied|dismissed)\b.{0,35}"
     r"\b(?:join\w*|sign\w*|transfer\w*|wechsel\w*|verpflicht\w*|fich\w*|moves?)\b", re.I)
 
+# A headline-only rewrite has no permission to fill gaps from model knowledge.
+# Equivalent English/German forms share a group so a supported translation passes.
+HEADLINE_DETAILS = (
+    r"brasilian\w*|brazil\w*", r"deutsch\w*|german\w*", r"französ\w*|french",
+    r"engländ\w*|englisch\w*|english", r"brit\w*", r"spani\w*|spanish",
+    r"portug\w*", r"italien\w*|italian\w*", r"argentini\w*|argentin\w*",
+    r"niederländ\w*|holländ\w*|dutch", r"belg\w*", r"schweiz\w*|swiss",
+    r"österreich\w*|austrian\w*", r"dän\w*|danish", r"schwed\w*|swedish",
+    r"norweg\w*|norwegian\w*", r"poln\w*|pole|polish", r"kroat\w*|croatian\w*",
+    r"türk\w*|turkish", r"japan\w*", r"korea\w*", r"nigerian\w*",
+    r"senegales\w*|senegalese", r"marokkan\w*|moroccan\w*", r"uruguay\w*",
+    r"kolumbian\w*|colombian\w*", r"ägypt\w*|egyptian\w*",
+    r"\d+[- ]?(?:jährig\w*|jahre alt|years?[- ]old)|aged \d+",
+    r"jung\w*|young|talent\w*|veteran\w*|routinier\w*",
+    r"stürmer\w*|striker\w*|forward\w*", r"mittelfeld\w*|midfielder\w*",
+    r"verteidiger\w*|defender\w*|fullback\w*", r"torwart\w*|torhüter\w*|goalkeeper\w*",
+    r"flügel\w*|winger\w*", r"nationalspieler\w*|international player",
+    r"geboren|born|aufgewachsen|grew up|karriere\w*|career|jugend\w*|academy|akademie\w*",
+    r"tore|goals?|einsätze|appearances|assists?|marktwert|market value",
+)
+
+
+def unsupported_headline_detail(rewrite, evidence):
+    """Reject common biographical additions, including translated football facts."""
+    for pattern in HEADLINE_DETAILS:
+        expression = r"\b(?:" + pattern + r")\b"
+        if re.search(expression, rewrite, re.I) and not re.search(expression, evidence, re.I):
+            return "Unbelegte biografische Angabe in Überschriftenmeldung"
+    # Do not add a former/current club just because it exists in the name catalogue.
+    for catalogue in (PLAYERS_DB, CLUBS_DB):
+        reported = {item[2] for item in _mentions(evidence, catalogue)}
+        added = {item[2] for item in _mentions(rewrite, catalogue)} - reported
+        if added:
+            return "Unbelegte Person oder Verein in Überschriftenmeldung"
+    return None
+
 
 def _mentions(text, catalogue):
     """Longest non-overlapping aliases, with every distinct entity retained."""

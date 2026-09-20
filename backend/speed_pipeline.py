@@ -23,7 +23,7 @@ import os
 from uuid import uuid4, uuid5, NAMESPACE_URL
 from pymongo import ReturnDocument
 from pipeline_state import utcnow, parse_source_time, review_reason, retry_at, due_query, story_lease
-from transfer_evidence import assess_transfer_evidence
+from transfer_evidence import assess_transfer_evidence, unsupported_headline_detail
 
 logger = logging.getLogger(__name__)
 
@@ -777,6 +777,8 @@ class GPTRewriter:
 Schreibe eine kurze deutsche Meldung ausschließlich aus der angegebenen Quellenüberschrift.
 Bewahre deren Unsicherheit und nenne die Quelle. Keine Vermutungen, zusätzlichen Details,
 Karrierefakten, Motive, Statistiken oder Angaben aus Vorwissen ergänzen.
+Insbesondere keine Nationalität, kein Alter, keine Spielposition, keinen Herkunftsverein
+und keine biografischen Angaben nennen, sofern diese nicht in der Quellenüberschrift stehen.
 15 bis 80 Wörter, zwei bis vier kurze Sätze, eine H2-Überschrift mit ##.
 Vermeide Fülltext; liefere nur die Meldung."""
     
@@ -839,6 +841,10 @@ NUR OUTPUT: Der Artikel-Text mit H2-Überschriften."""
             return (False, f"Zu kurz: {rewrite_words} < {minimum} Wörter")
         if headline_only and rewrite_words > 80:
             return (False, "Quellenüberschrift erlaubt höchstens 80 Wörter")
+        if headline_only:
+            detail_error = unsupported_headline_detail(rewrite, evidence or original)
+            if detail_error:
+                return (False, detail_error)
         
         # Regel 2: Nicht kürzer als Original (nur bei langen Originalen >100 Wörter)
         if not headline_only and original_words > 100:
@@ -989,7 +995,7 @@ Liefere NUR den Artikel-Text."""
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": prompt}
                 ],
-                temperature=0.7,
+                temperature=0.1 if headline_only else 0.7,
                 max_tokens=2000
             )
             response = completion.choices[0].message.content if completion.choices else None
@@ -1035,7 +1041,7 @@ Bewahre Unsicherheit und Quellenangabe. Keine weiteren Fakten oder Hintergründe
                         {"role": "system", "content": system_prompt},
                         {"role": "user", "content": retry_prompt}
                     ],
-                    temperature=0.7,
+                    temperature=0.1 if headline_only else 0.7,
                     max_tokens=2000
                 )
                 response = retry_completion.choices[0].message.content if retry_completion.choices else None
