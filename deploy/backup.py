@@ -16,6 +16,12 @@ import tarfile
 
 APP = "t4iysn7locgn8jdax7xb6s9j"
 ROOT = Path("/opt/transfernews-backups")
+FILE_DIRECTORIES = (
+    Path("/opt/transfernews-runtime"),
+    Path("/opt/nginx-proxy"),
+    Path("/data/coolify/applications") / APP,
+    Path("/etc/letsencrypt"),
+)
 
 
 def backup():
@@ -27,13 +33,24 @@ def backup():
     matches = [name for name in containers if name.startswith("mongodb-" + APP)]
     if len(matches) != 1:
         raise RuntimeError("Expected exactly one running MongoDB for this application")
+    if "nginx-proxy" not in containers:
+        raise RuntimeError("Expected the external nginx-proxy; its unmounted webroot must be backed up")
     mongo = matches[0]
     with (output / "database.archive.gz").open("wb") as stream:
         subprocess.run(["docker", "exec", mongo, "mongodump", "--db=transfernews_db", "--archive", "--gzip"], stdout=stream, stderr=subprocess.PIPE, check=True)
     with tarfile.open(output / "files.tar.gz", "w:gz") as archive:
-        for directory in [Path("/opt/transfernews-runtime"), Path("/opt/nginx-proxy"), Path("/data/coolify/applications") / APP]:
+        for directory in FILE_DIRECTORIES:
             if directory.exists():
                 archive.add(directory, arcname=str(directory).lstrip("/"))
+    # The external proxy's ads.txt is currently in its writable container layer.
+    # Keep Docker's tar stream intact: it contains the original modes, ownership
+    # and symlinks. No extraction, proxy restart or host mount change is needed.
+    with (output / "nginx-html.tar").open("wb") as stream:
+        subprocess.run(["docker", "cp", "--archive", "nginx-proxy:/usr/share/nginx/html", "-"],
+                       stdout=stream, stderr=subprocess.PIPE, check=True)
+    with tarfile.open(output / "nginx-html.tar", "r:") as archive:
+        if not any(item.name.rstrip("/") == "html/ads.txt" and item.isfile() for item in archive.getmembers()):
+            raise RuntimeError("Proxy webroot backup is missing its existing ads.txt; previous backups retained")
     manifest = {}
     for path in output.iterdir():
         if path.is_file():

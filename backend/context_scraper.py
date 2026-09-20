@@ -493,7 +493,8 @@ class TransfermarktScraper:
         cache_key = f"tm:{name}"
         if cache_key in self.cache:
             return self.cache[cache_key]
-        
+
+        page = None
         try:
             context = await self._get_browser()
             page = await context.new_page()
@@ -509,7 +510,6 @@ class TransfermarktScraper:
             player_link = await page.query_selector('td.hauptlink a[href*="/profil/spieler/"]')
             
             if not player_link:
-                await page.close()
                 self.cache[cache_key] = ctx
                 return ctx
             
@@ -528,7 +528,6 @@ class TransfermarktScraper:
             if value_el:
                 value_text = await value_el.text_content()
                 # Extrahiere nur den Wert (z.B. "110,00 Mio. €")
-                import re
                 match = re.search(r'([\d,]+(?:\s*(?:Mio|Tsd)\.?\s*)?€)', value_text)
                 if match:
                     ctx.market_value = match.group(1).strip()
@@ -584,11 +583,17 @@ class TransfermarktScraper:
                 if goals_match:
                     ctx.national_team_goals = int(goals_match.group(1))
             
-            await page.close()
             logger.info(f"[TM] {name}: Marktwert={ctx.market_value}, Vertrag={ctx.contract_until}")
             
         except Exception as e:
             logger.warning(f"[TM] Error for {name}: {e}")
+        finally:
+            # The shared browser outlives this lookup, including failed/cancelled lookups.
+            if page is not None:
+                try:
+                    await asyncio.wait_for(page.close(), timeout=5)
+                except Exception as exc:
+                    logger.warning("[TM] Page cleanup failed: %s", type(exc).__name__)
         
         self.cache[cache_key] = ctx
         return ctx

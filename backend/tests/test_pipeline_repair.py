@@ -314,17 +314,28 @@ class PipelineRepairTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(saved["title"], fixture["headline_raw"])
         self.assertLess(abs((saved["source_published_at"] - now).total_seconds()), 0.001)
 
-    async def test_rss_fetch_parses_bytes_with_timeout_and_limits(self):
+    async def test_rss_stream_is_consumed_before_response_closes(self):
         rss = RSSFeedScraper()
         now = utcnow().strftime("%a, %d %b %Y %H:%M:%S +0000")
         xml = f'<rss version="2.0"><channel><title>Fixture</title><item><title>Player signs transfer</title><description>&lt;p&gt;Loan details&lt;/p&gt;</description><link>https://source.invalid/item</link><pubDate>{now}</pubDate></item></channel></rss>'.encode()
+        state = {"closed": True, "chunks_read": 0}
         async def chunks(size):
             for start in range(0, len(xml), 40):
+                # aiohttp releases/closes the response on __aexit__; unread streams
+                # cannot be consumed afterward. Yield between chunks like network I/O.
+                await asyncio.sleep(0)
+                if state["closed"]:
+                    from aiohttp import ClientConnectionError
+                    raise ClientConnectionError("Connection closed")
+                state["chunks_read"] += 1
                 yield xml[start:start + 40]
         response = types.SimpleNamespace(status=200, content=types.SimpleNamespace(iter_chunked=chunks))
         class Context:
-            async def __aenter__(self): return response
-            async def __aexit__(self, *args): pass
+            async def __aenter__(self):
+                state["closed"] = False
+                return response
+            async def __aexit__(self, *args):
+                state["closed"] = True
         class Session:
             def __init__(self, **kwargs):
                 self.timeout = kwargs["timeout"]
@@ -335,6 +346,9 @@ class PipelineRepairTests(unittest.IsolatedAsyncioTestCase):
         with patch("data_import.aiohttp.ClientSession", Session):
             events = await rss.fetch_feed(next(iter(rss.FEEDS)))
         self.assertEqual(len(events), 1)
+        self.assertGreater(state["chunks_read"], 1)
+        self.assertTrue(state["closed"])
+        self.assertEqual(rss.feed_errors, {})
         self.assertEqual(events[0]["summary"], "Loan details")
         self.assertIsNotNone(events[0]["source_published_at"])
 

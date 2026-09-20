@@ -1303,14 +1303,14 @@ class RSSFeedScraper:
                     if response.status != 200:
                         errors[feed_key] = f"http_{response.status}"
                         return []
-                chunks, size = [], 0
-                async for chunk in response.content.iter_chunked(65536):
-                    size += len(chunk)
-                    if size > 2 * 1024 * 1024:
-                        errors[feed_key] = "feed_too_large"
-                        return []
-                    chunks.append(chunk)
-                content = b"".join(chunks)
+                    chunks, size = [], 0
+                    async for chunk in response.content.iter_chunked(65536):
+                        size += len(chunk)
+                        if size > 2 * 1024 * 1024:
+                            errors[feed_key] = "feed_too_large"
+                            return []
+                        chunks.append(chunk)
+                    content = b"".join(chunks)
             feed = await asyncio.to_thread(feedparser.parse, content)
             if not feed.entries and feed.get("bozo"):
                 errors[feed_key] = "invalid_feed"
