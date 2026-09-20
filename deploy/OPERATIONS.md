@@ -90,7 +90,7 @@ curl --fail --silent --show-error https://transfernews.de/api/ready
 
 The final plan must report `already_completed: true`. The CLI checks that the restore-check file contains an archive hash and article collection result; it does **not** revalidate the archive hash or rerun the restore. Verify that evidence independently before applying. Migration source fingerprints and identity checks abort on conflicts before changes; the sequence is not a multi-document transaction. Keep the pre-repair backup and `repair_archive` until the outcome is verified. On an interrupted run, inspect the result before retrying; do not delete the archive or completion markers. Restore a full database backup only with writers stopped and an explicitly reviewed rollback plan.
 
-Reloading the external proxy refreshes upstream container addresses while preserving its current TLS configuration and temporary admin access gate. Keep the scheduler disabled until migration and public checks pass, then change the existing Coolify variable to `true`, redeploy, reload the proxy and verify `/api/ready` again.
+With the configured Docker resolver, shared zones and `resolve`, both proxies refresh upstream container addresses automatically. Routine application redeployments do not require a proxy reload: verify `/api/ready` and actual article HTML after deployment and the DNS refresh interval. Reload the external proxy only when its configuration changes, after `nginx -t`, preserving its TLS configuration and temporary admin access gate. Keep the scheduler disabled until migration and public checks pass, then change the existing Coolify variable to `true`, redeploy and repeat the readiness and article checks.
 
 ## Verification
 

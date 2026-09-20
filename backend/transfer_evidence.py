@@ -15,7 +15,7 @@ CONTEXT = re.compile(
     r"vertragsverlängerung|vertragsverlaengerung|vertrag|contract|contrat|contratto|contrato|"
     r"joins?|signed for|signs for|rejoint|firma por|interested in|interest in|"
     r"interesse an|interessiert sich für|interessiert an|intéressé par|s'intéresse à|"
-    r"interessato a|interesado en|linked (?:with|to)|wants? to sign|keen on)\b", re.I)
+    r"interessato a|interesado en|linked (?:with|to)|wants? to sign|moves? for|keen on)\b", re.I)
 OFF_TOPIC = re.compile(
     r"\b(?:darts?|golf|tennis|snooker|cricket|charity|benefiz\w*|wohltätig\w*|"
     r"benéfico|beneficenza|caritatif|solidario)\b", re.I)
@@ -24,8 +24,8 @@ NON_TRANSFER_HEADLINE = re.compile(
     r"match report|spielbericht|spieltag|matchday|scores?|scored|scoring|"
     r"gewinnt|besiegt|sieg|niederlage|defeats?|beats?|medical update)\b", re.I)
 NEGATED_MOVE = re.compile(
-    r"\b(?:not|never|kein\w*|nicht|no|non|pas)\b.{0,35}"
-    r"\b(?:join\w*|sign\w*|transfer\w*|wechsel\w*|verpflicht\w*|fich\w*)\b", re.I)
+    r"\b(?:not|never|kein\w*|nicht|no|non|pas|denies|denied|dismissed)\b.{0,35}"
+    r"\b(?:join\w*|sign\w*|transfer\w*|wechsel\w*|verpflicht\w*|fich\w*|moves?)\b", re.I)
 
 
 def _mentions(text, catalogue):
@@ -41,7 +41,40 @@ def _mentions(text, catalogue):
     return accepted
 
 
+def _mark_mentions(text, players, clubs, tokens):
+    for start, end, name in sorted(players + clubs, reverse=True):
+        text = text[:start] + (tokens[name] if name in tokens else "PLAYER") + text[end:]
+    return re.sub(r"\s+", " ", text).lower().strip()
+
+
 def assess_transfer_evidence(title, summary=""):
+    """An explicit standalone headline may be isolated from a mixed roundup.
+
+    This exception uses a complete grammatical claim, not the most popular entity
+    or the first sentence of a summary. Its excluded summary is never evidence.
+    """
+    result = _assess_evidence(title, summary)
+    if not result.get("reason"):
+        return {**result, "evidence_scope": "full" if summary else "headline"}
+    if result["reason"] not in {"ambiguous_players", "ambiguous_clubs", "ambiguous_transfer_direction"}:
+        return result  # Topic and negation checks also apply to the excluded summary.
+    headline = _assess_evidence(title, "")
+    if headline.get("reason"):
+        return result
+    players, clubs = _mentions(title, PLAYERS_DB), _mentions(title, CLUBS_DB)
+    if len({item[2] for item in clubs}) != 1:
+        return result
+    marked = _mark_mentions(title, players, clubs, {headline["club"]: "CLUB"})
+    standalone = re.fullmatch(
+        r"club\s+(?:(?:may|could|might)\s+)?moves? for player"
+        r"(?: in (?:january|february|march|april|may|june|july|august|september|october|november|december))?"
+        r"(?:\s*[-–—]\s*(?:(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday)['’]s )?gossip)?[.!?]?",
+        marked,
+    )
+    return {**headline, "evidence_scope": "headline"} if standalone else result
+
+
+def _assess_evidence(title, summary=""):
     """Return verified names/direction or a stable review reason; never writes."""
     text = f"{title}\n{summary}"
     def reject(reason):
@@ -66,10 +99,7 @@ def assess_transfer_evidence(title, summary=""):
 
     # Replace actual mentions so all aliases have identical direction semantics.
     tokens = {name: f"CLUB{i}" for i, name in enumerate(club_names)}
-    marked = text
-    for start, end, name in sorted(players + clubs, reverse=True):
-        marked = marked[:start] + (tokens[name] if name in tokens else "PLAYER") + marked[end:]
-    marked = re.sub(r"\s+", " ", marked).lower()
+    marked = _mark_mentions(text, players, clubs, tokens)
     targets, origins = set(), set()
     for name, token in tokens.items():
         club = token.lower()
@@ -79,6 +109,7 @@ def assess_transfer_evidence(title, summary=""):
             rf"\b(?:joins?|joined|rejoint|signed for|signs for|firma por|ficha por|linked with|linked to|loan at|leihe bei)\s+{club}\b",
             rf"\b{club}\b[^.!?;]{{0,65}}\b(?:interested in|interest in|keen on|wants? to sign|interesse an|interessiert sich für|interessiert an|intéressé par|s'intéresse à|interessato a|interesado en)\s+(?:signing )?player\b",
             rf"\b{club}\s+(?:(?:has|have|hat|haben|officially|offiziell)\s+){{0,2}}(?:signs?|signed|verpflichtet|leiht|recrute|recruté|ficha)\s+player\b",
+            rf"\b{club}\s+(?:(?:may|could|might)\s+)?moves? for player\b",
         ]
         if any(re.search(pattern, marked) for pattern in target_patterns):
             targets.add(name)
