@@ -1,6 +1,7 @@
 import PageLayout from "@/components/PageLayout";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import { SidebarAdSlots } from "@/components/StandardSidebar";
 import { NewsCard } from "@/components/NewsCard";
 import { TrendingWidget } from "@/components/TrendingWidget";
 import { PersonSchema } from "@/components/SchemaMarkup";
@@ -41,8 +42,8 @@ export default function AuthorPage() {
         <Header />
         <main className="flex-1 py-8">
           <div className="max-w-[1000px] mx-auto px-4">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              <div className="lg:col-span-2 space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_300px] gap-8">
+              <div className="min-w-0 space-y-6">
                 <Skeleton className="h-48 w-full" />
                 <Skeleton className="h-8 w-3/4" />
                 <Skeleton className="h-32 w-full" />
@@ -119,9 +120,9 @@ export default function AuthorPage() {
             <span>Zurück zur Startseite</span>
           </Link>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_300px] gap-8">
             {/* Main Content */}
-            <div className="lg:col-span-2">
+            <div className="min-w-0">
               {/* Author Card */}
               <div className="bg-white border border-gray-200 p-6 mb-8">
                 <div className="flex items-start gap-6">
@@ -228,6 +229,7 @@ export default function AuthorPage() {
             {/* Sidebar */}
             <aside className="space-y-6">
               <TrendingWidget />
+              <SidebarAdSlots />
             </aside>
           </div>
         </div>

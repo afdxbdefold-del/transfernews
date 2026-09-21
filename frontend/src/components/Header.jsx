@@ -270,7 +270,7 @@ export default function Header() {
 
       {/* Billboard unter dem Navigationsmenü */}
       {showAds && (
-        <div className="hidden lg:block bg-[#d9d9d9] py-2" data-testid="billboard-container">
+        <div className="bg-[#d9d9d9] py-2" data-testid="billboard-container">
           <div className="flex justify-center">
             <BillboardAd />
           </div>

@@ -5,7 +5,7 @@ import { Trophy, ArrowRight, Clock, TrendingUp, CheckCircle } from 'lucide-react
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import PageLayout from "@/components/PageLayout";
-import StandardSidebar from "@/components/StandardSidebar";
+import { SidebarAdSlots } from "@/components/StandardSidebar";
 
 import { BACKEND_URL as API_URL } from '@/api';
 
@@ -131,9 +131,9 @@ export default function CompetitionPage() {
         </div>
 
         <div className="container mx-auto px-4 py-8">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_300px] gap-8">
             {/* Main Content */}
-            <div className="lg:col-span-2 space-y-8">
+            <div className="min-w-0 space-y-8">
               {/* Breaking News */}
               {breaking_news && breaking_news.length > 0 && (
                 <section>
@@ -282,6 +282,7 @@ export default function CompetitionPage() {
                   }
                 </div>
               </div>
+              <SidebarAdSlots />
             </div>
           </div>
         </div>

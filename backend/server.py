@@ -22,6 +22,7 @@ from passlib.context import CryptContext
 import re
 import asyncio
 from security import load_jwt_secret, issue_token, authenticate_token, LoginAttemptLimiter, PasswordChangeRequest
+from ad_slot_defaults import ensure_default_ad_slots
 
 from models import (
     Player, PlayerCreate, PlayerUpdate,
@@ -1142,9 +1143,9 @@ async def get_active_ad_slots(
     query = {"is_active": True}
     
     if page_type:
-        query["$or"] = [{"page_type": page_type}, {"page_type": "all"}]
+        query["page_type"] = {"$in": [page_type, "all"]}
     if device_type:
-        query["$or"] = query.get("$or", []) + [{"device_type": device_type}, {"device_type": "all"}]
+        query["device_type"] = {"$in": [device_type, "all"]}
     
     slots = await db.ad_slots.find(query, {"_id": 0}).sort("priority", -1).to_list(200)
     
@@ -1357,61 +1358,9 @@ async def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
 
 @api_router.post("/init/ad-slots")
 async def init_ad_slots(current_user: dict = Depends(require_admin)):
-    """Initialize default ad slots with TheMonetizer codes"""
-    
-    # TheMonetizer site ID
-    TM_SITE_ID = "141912"
-    
-    def tm_code(format_id):
-        """Generate TheMonetizer embed code"""
-        return f'''<script type="text/javascript" src="//ads.themoneytizer.com/s/gen.js?type={format_id}"></script>
-<script type="text/javascript" src="//ads.themoneytizer.com/s/requestform.js?siteId={TM_SITE_ID}&formatId={format_id}"></script>'''
-    
-    default_slots = [
-        # TheMonetizer Standard Slots
-        {"name": "Megabanner (728x90)", "slot_key": "megabanner", "page_type": "all", "position": "header_below", "device_type": "desktop", "embed_code": tm_code(1), "is_active": True, "priority": 100},
-        {"name": "Billboard (970x250)", "slot_key": "billboard", "page_type": "all", "position": "below_header", "device_type": "desktop", "embed_code": tm_code(31), "is_active": True, "priority": 99},
-        {"name": "Skyscraper (160x600)", "slot_key": "skyscraper", "page_type": "all", "position": "sidebar_left", "device_type": "desktop", "embed_code": tm_code(4), "is_active": True, "priority": 98},
-        {"name": "MREC (300x250)", "slot_key": "mrec", "page_type": "all", "position": "sidebar_top", "device_type": "all", "embed_code": tm_code(2), "is_active": True, "priority": 95},
-        {"name": "MREC 2 (300x250)", "slot_key": "mrec_2", "page_type": "all", "position": "sidebar_middle", "device_type": "all", "embed_code": tm_code(19), "is_active": True, "priority": 94},
-        {"name": "Half Page (300x600)", "slot_key": "sidebar_300x600", "page_type": "all", "position": "sidebar_bottom", "device_type": "desktop", "embed_code": tm_code(3), "is_active": True, "priority": 93},
-        {"name": "Above Footer", "slot_key": "above_footer", "page_type": "all", "position": "footer_top", "device_type": "all", "embed_code": tm_code(28), "is_active": True, "priority": 90},
-        {"name": "Global/Floating", "slot_key": "global", "page_type": "all", "position": "floating", "device_type": "all", "embed_code": tm_code(6), "is_active": True, "priority": 85},
-        
-        # Additional position-based slots
-        {"name": "Header Inline", "slot_key": "header_inline", "page_type": "all", "position": "header_inline", "device_type": "all", "is_active": False, "priority": 80},
-        {"name": "Mobile Sticky Bottom", "slot_key": "mobile_sticky_bottom", "page_type": "all", "position": "sticky_bottom", "device_type": "mobile", "is_active": False, "priority": 70},
-        
-        # Article slots
-        {"name": "Article Below Title", "slot_key": "article_below_title", "page_type": "news_detail", "position": "below_title", "device_type": "all", "is_active": False, "priority": 60},
-        {"name": "Article After Paragraph 1", "slot_key": "article_after_p1", "page_type": "news_detail", "position": "after_p1", "device_type": "all", "is_active": False, "priority": 59},
-        {"name": "Article After Paragraph 2", "slot_key": "article_after_p2", "page_type": "news_detail", "position": "after_p2", "device_type": "all", "is_active": False, "priority": 58},
-        
-        # In-Feed slots
-        {"name": "In-Feed Position 3", "slot_key": "infeed_3", "page_type": "news_list", "position": "feed", "device_type": "all", "feed_interval": 3, "is_active": False, "priority": 50},
-        {"name": "In-Feed Position 6", "slot_key": "infeed_6", "page_type": "news_list", "position": "feed", "device_type": "all", "feed_interval": 6, "is_active": False, "priority": 49},
-        {"name": "In-Feed Position 9", "slot_key": "infeed_9", "page_type": "news_list", "position": "feed", "device_type": "all", "feed_interval": 9, "is_active": False, "priority": 48},
-    ]
-    
-    created = 0
-    updated = 0
-    for slot_data in default_slots:
-        existing = await db.ad_slots.find_one({"slot_key": slot_data["slot_key"]})
-        if not existing:
-            slot = AdSlot(**slot_data)
-            doc = serialize_datetime(slot.model_dump())
-            await db.ad_slots.insert_one(doc)
-            created += 1
-        else:
-            # Update existing slot with new embed_code if provided
-            if slot_data.get("embed_code") and not existing.get("embed_code"):
-                await db.ad_slots.update_one(
-                    {"slot_key": slot_data["slot_key"]},
-                    {"$set": {"embed_code": slot_data["embed_code"]}}
-                )
-                updated += 1
-    
-    return {"message": f"{created} Ad-Slots erstellt, {updated} aktualisiert", "total": len(default_slots)}
+    """Add missing canonical placements without changing existing ad settings."""
+    result = await ensure_default_ad_slots(db)
+    return {**result, "message": f"{result['created']} Ad-Slots erstellt, vorhandene Einstellungen beibehalten"}
 
 
 # =============================================================================
@@ -2837,6 +2786,8 @@ async def wikimedia_use_fallback(
 @app.on_event("startup")
 async def startup_event():
     """Start the configured scheduler; readiness reports failed dependencies."""
+    ad_defaults = await ensure_default_ad_slots(db)
+    logger.info("Ad defaults ready: %s added", ad_defaults["created"])
     enabled = os.environ.get("SCHEDULER_ENABLED", "true").lower() in {"true", "1", "yes"}
     if enabled:
         init_scheduler_db(mongo_url, os.environ['DB_NAME'])

@@ -225,7 +225,7 @@ export default function HomePage() {
       
       <main className="flex-1 py-3 px-3" data-testid="homepage">
         <h1 className="sr-only">Aktuelle Fußball-Transfer-News</h1>
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-3">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_300px] gap-3">
           {/* Main Content */}
           <div className="space-y-3">
             {/* News Box */}
@@ -299,8 +299,8 @@ export default function HomePage() {
 
           {/* Sidebar */}
           <aside className="space-y-3">
-            {/* TheMonetizer Sidebar 300x600 (nur Desktop) */}
-            <div className="hidden lg:block">
+            {/* Device visibility is controlled by the configured ad slot. */}
+            <div className="mx-auto w-full max-w-[300px]">
               <SidebarAd slotKey="sidebar_top" />
             </div>
             
@@ -321,7 +321,7 @@ export default function HomePage() {
             </div>
             
             {/* TheMonetizer MREC 300x250 */}
-            <div className="hidden lg:block">
+            <div className="mx-auto w-full max-w-[300px]">
               <MrecAd />
             </div>
             
@@ -388,7 +388,7 @@ export default function HomePage() {
             </div>
             
             {/* TheMonetizer MREC 2 (Format 19) */}
-            <div className="hidden lg:block">
+            <div className="mx-auto w-full max-w-[300px]">
               <MrecAd2 />
             </div>
           </aside>

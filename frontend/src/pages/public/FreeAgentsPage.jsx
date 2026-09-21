@@ -97,7 +97,7 @@ export default function FreeAgentsPage() {
       <Header />
       
       <main className="flex-1 py-3 px-3" data-testid="free-agents-page">
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-3">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_300px] gap-3">
           {/* Main Content */}
           <div>
         <div className="bg-white border border-gray-300 rounded-sm overflow-hidden">

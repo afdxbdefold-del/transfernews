@@ -1,6 +1,7 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import PageLayout from "@/components/PageLayout";
+import { SidebarAdSlots } from "@/components/StandardSidebar";
 import { NewsCardHorizontal } from "@/components/NewsCard";
 import { TrendingWidget } from "@/components/TrendingWidget";
 import { useEffect, useState } from "react";
@@ -132,7 +133,7 @@ export default function NewsListPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_300px] gap-4">
             {/* Main Content */}
             <div>
               <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm overflow-hidden">
@@ -257,6 +258,7 @@ export default function NewsListPage() {
                   ))}
                 </nav>
               </div>
+              <SidebarAdSlots />
             </aside>
           </div>
       </main>

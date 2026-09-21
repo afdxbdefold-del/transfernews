@@ -391,9 +391,9 @@ export default function NewsDetailPage() {
 
       <main className="flex-1">
         <div className="max-w-[1000px] mx-auto px-3 py-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_300px] gap-6">
             {/* Article Content */}
-            <article className="lg:col-span-2">
+            <article className="min-w-0">
               {/* Back Link */}
               <Link
                 to="/"
@@ -708,6 +708,7 @@ export default function NewsDetailPage() {
               <TrendingWidget />
               <SidebarAd slotKey="sidebar_top" />
               <SidebarAd slotKey="sidebar_middle" />
+              <SidebarAd slotKey="sidebar_bottom" />
             </aside>
           </div>
         </div>

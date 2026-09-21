@@ -1,10 +1,17 @@
 import { canShowAd, LEGACY_FORMATS } from './adPolicy';
 const active = { slot_key: 'top_banner_above_header', is_active: true, page_type: 'all', device_type: 'all' };
-test('desktop formats do not run at mobile/tablet widths, regardless of CSS', () => {
-  for (const slot_key of Object.keys(LEGACY_FORMATS)) {
-    for (const width of [390, 767, 768, 1023]) expect(canShowAd({ ...active, slot_key }, '/', width)).toBe(false);
-    expect(canShowAd({ ...active, slot_key }, '/', 1440)).toBe(true);
+test('all eight unique formats are restored and responsive inline ads run on mobile', () => {
+  expect(Object.values(LEGACY_FORMATS).map(format => format.id).sort((a, b) => a - b)).toEqual([1, 2, 3, 4, 6, 19, 28, 31]);
+  for (const slot_key of ['top_banner_above_header', 'below_header', 'footer_top', 'global']) {
+    for (const width of [390, 768, 1023, 1440]) expect(canShowAd({ ...active, slot_key }, '/', width)).toBe(true);
   }
+  for (const width of [390, 767, 1024, 1359]) expect(canShowAd({ ...active, slot_key: 'skyscraper' }, '/', width)).toBe(false);
+  expect(canShowAd({ ...active, slot_key: 'skyscraper' }, '/', 1360)).toBe(true);
+});
+
+test('existing explicit desktop-only settings and empty unused placeholders are respected', () => {
+  expect(canShowAd({ ...active, device_type: 'desktop' }, '/', 390)).toBe(false);
+  expect(canShowAd({ ...active, slot_key: 'mobile_banner' }, '/', 390)).toBe(false);
 });
 test('disabling a configured slot disables its built-in format', () => {
   expect(canShowAd({ ...active, is_active: false }, '/', 1440)).toBe(false);

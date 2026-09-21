@@ -227,6 +227,7 @@ export default function AuthorsPage() {
   const totalArticles = AUTHORS.reduce((sum, a) => sum + a.articles, 0);
   
   return (
+    <PageLayout>
     <div className="min-h-screen bg-gray-50">
       <Helmet>
         <title>Unsere Redaktion - TransferNews</title>
@@ -335,5 +336,6 @@ export default function AuthorsPage() {
       
       <Footer />
     </div>
+    </PageLayout>
   );
 }

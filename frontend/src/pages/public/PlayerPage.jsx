@@ -1,5 +1,6 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import { SidebarAdSlots } from "@/components/StandardSidebar";
 import PageLayout from "@/components/PageLayout";
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
@@ -206,7 +207,7 @@ export default function PlayerPage() {
             <span className="text-gray-700">{player.name}</span>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-3">
+          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_300px] gap-3">
             {/* Main Content */}
             <div className="space-y-3">
               {/* Player Header Card */}
@@ -428,6 +429,7 @@ export default function PlayerPage() {
                   Keine ähnlichen Spieler gefunden
                 </div>
               </div>
+              <SidebarAdSlots />
             </aside>
           </div>
         </main>

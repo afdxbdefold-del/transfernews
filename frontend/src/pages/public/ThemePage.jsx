@@ -1,4 +1,7 @@
 import PageLayout from "@/components/PageLayout";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
+import { SidebarAdSlots } from "@/components/StandardSidebar";
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
@@ -99,7 +102,7 @@ export default function ThemePage() {
   const config = THEME_CONFIG[slug] || { icon: '📰', color: 'gray' };
 
   return (
-    <>
+    <PageLayout>
       <Helmet>
         <title>{seo?.title || theme.name}</title>
         <meta name="description" content={seo?.description} />
@@ -116,6 +119,7 @@ export default function ThemePage() {
         }}
       />
 
+      <Header />
       <div className="min-h-screen bg-gray-50" data-testid="theme-page">
         {/* Hero Section */}
         <div className="bg-gradient-to-r from-gray-900 to-gray-800 text-white py-12">
@@ -140,9 +144,9 @@ export default function ThemePage() {
         </div>
 
         <div className="container mx-auto px-4 py-8">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_300px] gap-8">
             {/* Main Content */}
-            <div className="lg:col-span-2 space-y-8">
+            <div className="min-w-0 space-y-8">
               {/* Breaking News */}
               {breaking_news && breaking_news.length > 0 && (
                 <section>
@@ -272,10 +276,12 @@ export default function ThemePage() {
                   ))}
                 </div>
               </div>
+              <SidebarAdSlots />
             </div>
           </div>
         </div>
       </div>
-    </>
+      <Footer />
+    </PageLayout>
   );
 }

@@ -97,9 +97,9 @@ export default function TransfersPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_300px] gap-8">
             {/* Main Content */}
-            <div className="lg:col-span-2">
+            <div className="min-w-0">
               {loading ? (
                 <div className="bg-white border">
                   <div className="p-4">
@@ -205,6 +205,7 @@ export default function TransfersPage() {
             <aside className="space-y-6">
               <SidebarAd slotKey="sidebar_top" />
               <SidebarAd slotKey="sidebar_middle" />
+              <SidebarAd slotKey="sidebar_bottom" />
             </aside>
           </div>
       </main>
