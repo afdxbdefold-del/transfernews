@@ -76,13 +76,16 @@ class AutomationPublicationTests(unittest.IsolatedAsyncioTestCase):
     async def test_spanish_renewal_can_publish_a_grounded_german_translation(self):
         await self.pipeline.process_event(self.event(
             headline_raw="La cláusula que tendrá Bernal en su nuevo contrato",
-            summary="El futuro de Marc Bernal en el Barça tiene fecha. El centrocampista está a punto de ampliar su contrato hasta 2031.",
+            summary=("El futuro de Marc Bernal en el Barça tiene fecha. El centrocampista está a punto de ampliar su contrato hasta 2031. "
+                     "Ampliará su vinculación contractual un par de temporadas más. El propio director deportivo Deco anunció el inmediato acuerdo en la última asamblea."),
             source_name="Mundo Deportivo",
             source_url="https://www.mundodeportivo.com/futbol/fc-barcelona/fixture.html"))
         draft = await self.db.articles.find_one({})
         self.assertEqual((draft["status"], draft["transfer_type"]), ("draft", "extension"))
-        rewrite = ("## Bernal vor Vertragsverlängerung\nLaut Mundo Deportivo könnte Marc Bernal seinen Vertrag bei Barcelona bis 2031 verlängern. "
-                   "Die Vertragsverlängerung des Mittelfeldspielers steht dem Bericht zufolge bevor.")
+        rewrite = ("## Marc Bernal steht vor Vertragsverlängerung beim FC Barcelona\n\n"
+                   "Laut Mundo Deportivo steht Marc Bernal kurz davor, seinen Vertrag beim FC Barcelona bis 2031 zu verlängern. "
+                   "Der Mittelfeldspieler wird demnach seine vertragliche Bindung um zwei weitere Jahre ausdehnen. "
+                   "Der Sportdirektor Deco bestätigte das bevorstehende Einvernehmen während der letzten Versammlung.")
         with patch("openai.AsyncOpenAI", return_value=self.client(rewrite)):
             result = await GPTRewriter(self.db).process_rewrite_queue(1)
         article = await self.db.articles.find_one({})

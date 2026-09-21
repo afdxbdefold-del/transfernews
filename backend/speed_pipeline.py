@@ -1096,7 +1096,7 @@ Einziger Quellenbeleg: {original_body}
 Schreibe eine kurze Meldung mit 15 bis 80 Wörtern, zwei bis vier Sätzen und einer H2.
 Bewahre Unsicherheit und Quellenangabe. Keine weiteren Fakten oder Hintergründe ergänzen."""
                 elif source_grounded:
-                    retry_prompt = f"Der Entwurf wurde abgelehnt: {reason}\nQuelle: {article.get('source_name', '')}\nEinzige Fakten:\n{original_body}\nSchreibe 25 bis 180 Wörter, mindestens zwei Sätze und eine H2. Nenne die Quelle, bewahre den belegten Stand und die Meldungsart. Ergänze keine Fakten. Lass im Zweifel Alters-, Nationalitäts-, Positions- und Nationalmannschaftsangaben vollständig weg. Beschränke dich auf die belegte Vertrags- oder Transfermeldung."
+                    retry_prompt = f"Der Entwurf wurde abgelehnt: {reason}\nQuelle: {article.get('source_name', '')}\nMELDUNGSART: {source_article.get('transfer_type', 'permanent')}\nBELEGTER STAND: {source_article.get('transfer_status', 'rumor')}\nEinzige Fakten:\n{original_body}\nSchreibe 25 bis 180 Wörter, mindestens zwei Sätze und eine H2. Nenne die Quelle, bewahre den belegten Stand und die Meldungsart. Ergänze keine Fakten. Lass im Zweifel Alters-, Nationalitäts-, Positions- und Nationalmannschaftsangaben vollständig weg. Beschränke dich auf die belegte Vertrags- oder Transfermeldung."
                 
                 retry_completion = await openai_client.chat.completions.create(
                     model="gpt-4o-mini",

@@ -120,3 +120,24 @@ def test_possible_loan_must_not_become_completed():
     article = {**BBC, "source_headline": "Arsenal interested in Endrick loan", "source_summary": "", "transfer_type": "loan"}
     assert validate_source_rewrite("Laut BBC Sport wurde Endrick ausgeliehen. Zuvor gab es Gerüchte über eine Leihe.", article) == (False, "unsupported_completion_claim")
     assert validate_source_rewrite("Laut BBC Sport könnte Endrick an Arsenal ausgeliehen werden.", article)[0]
+
+
+def test_live_bernal_confirmation_of_forthcoming_agreement_is_not_completed_renewal():
+    article = {**BBC, "source_name": "Mundo Deportivo", "transfer_type": "extension", "evidence_scope": "full",
+               "source_headline": "Marc Bernal está cerca de renovar con el FC Barcelona",
+               "source_summary": "El propio director deportivo Deco anunció el inmediato acuerdo en la última asamblea."}
+    rewrite = ("## Marc Bernal steht vor Vertragsverlängerung beim FC Barcelona\n\n"
+               "Laut Mundo Deportivo steht Marc Bernal kurz davor, seinen Vertrag beim FC Barcelona bis 2031 zu verlängern. "
+               "Der Mittelfeldspieler wird demnach seine vertragliche Bindung um zwei weitere Jahre ausdehnen. "
+               "Der Sportdirektor Deco bestätigte das bevorstehende Einvernehmen während der letzten Versammlung.")
+    assert validate_source_rewrite(rewrite, article) == (True, "OK")
+
+
+@pytest.mark.parametrize("claim", [
+    "Der Sportdirektor bestätigte den abgeschlossenen Wechsel.",
+    "Der Sportdirektor bestätigte bevorstehenden Wechsel und Endrick hat unterschrieben.",
+    "Der Sportdirektor bestätigte den Wechsel während der bevorstehenden Versammlung.",
+])
+def test_forthcoming_confirmation_exception_does_not_hide_completed_claims(claim):
+    rewrite = "Laut BBC Sport könnte Endrick zu Arsenal wechseln. " + claim
+    assert validate_source_rewrite(rewrite, BBC) == (False, "unsupported_completion_claim")

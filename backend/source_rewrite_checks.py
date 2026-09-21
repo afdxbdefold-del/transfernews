@@ -26,7 +26,7 @@ UNCERTAIN = re.compile(
 IN_PROGRESS = re.compile(
     r"\b(?:verhandel\w*|verhandlung\w*|gesprach\w*|gespraech\w*|bemuh\w*|"
     r"bemueh\w*|talks|negotiations)\b|\b(?:arbeitet an|kurz vor|vor abschluss|"
-    r"vor (?:einem |einer |der )?(?:wechsel|unterschrift|verlangerung)|steht bevor)\b")
+    r"vor (?:einem |einer |der )?(?:wechsel|unterschrift|(?:vertrags)?verlangerung)|steht bevor)\b")
 COMPLETION = re.compile(
     r"\b(?:offiziell\w*|official\w*|bestatigt\w*|bestaetigt\w*|confirmed|"
     r"perfekt|fix|abgeschlossen|completed|unterschrieben|unterzeichnet|"
@@ -70,10 +70,16 @@ def _negated(text, match):
 def _asserted_completions(text):
     for match in COMPLETION.finditer(text):
         before, after = _clause_context(text, match)
-        # Confirmation of interest/talks is not confirmation of a transfer.
-        if re.fullmatch(r"(?:bestatigt\w*|bestaetigt\w*|confirmed)", match.group()) and re.match(
-                r"\s+(?:(?:das|sein|ihr|the)\s+)?(?:interesse|interest|gesprache|talks|verhandlungen)\b", after):
-            continue
+        # Confirming talks or a directly named forthcoming agreement does not
+        # confirm completion. Other completion verbs in the clause still apply.
+        if re.fullmatch(r"(?:bestatigt\w*|bestaetigt\w*|confirmed)", match.group()):
+            if re.match(r"\s+(?:(?:das|sein|ihr|the)\s+)?(?:interesse|interest|gesprache|talks|verhandlungen)\b", after):
+                continue
+            if re.match(
+                    r"\s+(?:(?:das|den|die|ein|eine|einen)\s+)?bevorstehende[nrms]?\s+"
+                    r"(?:einvernehmen|einigung|vertrags(?:verlangerung|verlaengerung|abschluss|unterzeichnung)|"
+                    r"unterschrift|wechsel|transfer|bekanntgabe|ankundigung|ankuendigung)\b", after):
+                continue
         post_modal = re.match(
             r"^\s*(?:\w+\s+){0,4}(?:moglicherweise|moeglicherweise|vielleicht|wohl|angeblich|reportedly)\b", after)
         if (not _negated(text, match) and not UNCERTAIN.search(before)
