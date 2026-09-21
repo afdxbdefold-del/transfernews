@@ -220,7 +220,7 @@ class EvidencePipelineTests(unittest.IsolatedAsyncioTestCase):
         result = await self.pipeline.process_event({"id": "direction", "headline_raw":
             "Official: Florian Wirtz transfer from Real Madrid to Liverpool", "source_published_at": utcnow(),
             "source_name": "Source A", "source_url": "https://source.invalid/direction"})
-        self.assertEqual(result["action"], "created")
+        self.assertEqual(result["action"], "created_draft")
         article = await self.db.articles.find_one({})
         story = await self.db.transfer_stories.find_one({})
         self.assertEqual(article["club_name"], "FC Liverpool")

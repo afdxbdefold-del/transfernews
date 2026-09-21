@@ -245,7 +245,8 @@ class StoryEngine:
         text = text.lower()
         uncertain = re.search(
             r"\b(could|may|might|would|expected|reportedly|rumou?rs?|interest|interested|"
-            r"considering|linked|unlikely|könnte|koennte|möglicherweise|moeglicherweise|"
+            r"considering|linked|unlikely|monitoring|eyeing|keen|targeting|pursuing|"
+            r"beobachtet|umwirbt|interessiert|plant|könnte|koennte|möglicherweise|moeglicherweise|"
             r"angeblich|gerücht|geruecht|interesse|podría|podria|pourrait|potrebbe)\b", text)
         for stage in ["official", "done", "near_done", "advanced", "rumor"]:
             for keyword in STAGE_KEYWORDS.get(stage, []):
@@ -456,7 +457,7 @@ class StoryEngine:
         # 1. Entity Extraction
         entities = self.extract_entities(title, summary, source_name)
         stage = entities["stage"]
-        transfer_type = entities["transfer_type"]
+        transfer_type = event.get("verified_transfer_type") or entities["transfer_type"]
         transfer_fee = entities["transfer_fee"]
         
         # 2. Slugs generieren

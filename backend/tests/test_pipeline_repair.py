@@ -86,7 +86,7 @@ class PipelineRepairTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(story["transfer_fee"], "20 Mio. €")
         self.assertTrue(story["sources"][0]["raw_title"].startswith("Official:"))
         self.assertIn("source reports", story["sources"][0]["raw_summary"])
-        self.assertEqual(result["action"], "created")
+        self.assertEqual(result["action"], "created_draft")
 
     async def test_article_uses_entities_resolved_from_summary(self):
         self.pipeline.instant_generator.generate_instant_article = lambda event: {
@@ -106,7 +106,7 @@ class PipelineRepairTests(unittest.IsolatedAsyncioTestCase):
         article = await self.db.articles.find_one({})
         self.assertEqual(story["current_stage"], "official")
         self.assertEqual(len(story["sources"]), 1)
-        self.assertEqual(article["status"], "published")
+        self.assertEqual(article["status"], "draft")  # Source update still needs a validated rewrite.
 
     async def test_exact_duplicate_is_completed_as_skipped(self):
         event = self.event()
@@ -117,13 +117,14 @@ class PipelineRepairTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result["skipped"], 1)
         self.assertEqual(saved["status"], "processed")
 
-    async def test_draft_promotion_and_score_sync(self):
+    async def test_score_sync_does_not_bypass_editorial_review(self):
         for i, source in enumerate(["Source A", "Source B", "Source C"]):
             await self.pipeline.process_event(self.event(i, source_name=source))
         article = await self.db.articles.find_one({})
-        self.assertEqual(article["status"], "published")
+        self.assertEqual(article["status"], "draft")
         self.assertEqual(article["confidence_score"], 45)
-        self.assertIsNotNone(article["published_at"])
+        self.assertIsNone(article["published_at"])
+        self.assertEqual(article["publication_reason"], "unverified_publisher")
 
     async def test_old_missing_future_and_unknown_are_reviewed_before_story_creation(self):
         for value, reason in [(utcnow() - timedelta(days=10), "stale_source"), (None, "missing_source_date"),
@@ -216,9 +217,9 @@ class PipelineRepairTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual((await self.db.articles.find_one({}))["transfer_status"], "official")
 
     async def test_updates_persist_rewrite_work_and_invalidate_running_rewrite(self):
-        await self.pipeline.process_event(self.event())
+        await self.pipeline.process_event(self.event(source_name="BBC Sport", source_url="https://bbc.com/sport/first"))
         await self.db.articles.update_one({}, {"$set": {"needs_gpt_rewrite": False, "rewrite_token": "old", "rewrite_attempts": 4}})
-        await self.pipeline.process_event(self.event(1, source_name="Source B"))
+        await self.pipeline.process_event(self.event(1, source_name="BBC Sport", source_url="https://bbc.com/sport/second"))
         saved = await self.db.articles.find_one({})
         self.assertTrue(saved["needs_gpt_rewrite"])
         self.assertEqual(saved["rewrite_attempts"], 0)
@@ -258,9 +259,10 @@ class PipelineRepairTests(unittest.IsolatedAsyncioTestCase):
             rewriter.rewrite_article.assert_not_awaited()
 
     async def test_real_rewrite_path_preserves_concurrent_source_update(self):
-        await self.pipeline.process_event(self.event())
+        await self.pipeline.process_event(self.event(source_name="BBC Sport", source_url="https://bbc.com/sport/race"))
         article = await self.db.articles.find_one({})
-        text = "## Transfer\n" + ("Der Spieler und der Verein stehen nach Angaben der Quelle weiter im Mittelpunkt des Berichts. " * 12) + "\n## Quelle\nWeitere Angaben enthält die Meldung nicht."
+        text = ("## Wirtz im Gespräch\nLaut BBC Sport wird Florian Wirtz mit dem FC Liverpool in Verbindung gebracht. "
+                "Die Quelle berichtet über Transferinteresse und beschreibt damit einen möglichen Wechsel.")
         context = types.SimpleNamespace(found=True, sources=["Fixture"], market_value=None, contract_until=None,
                                         age=None, nationality=None, position=None, full_name=None, current_club=None,
                                         to_context_text=lambda: "")

@@ -85,7 +85,9 @@ async def task_speed_pipeline():
         result = await pipeline.process_pending_events(limit=20)
         
         if result.get("processed", 0) > 0:
-            logger.info(f"[CRON:SPEED] Created: {result.get('created', 0)}, Updated: {result.get('updated', 0)}, Avg: {result.get('total_time_ms', 0) // max(1, result.get('processed', 1))}ms")
+            logger.info("[CRON:SPEED] processed=%s drafts=%s updated=%s review=%s errors=%s",
+                        result.get("processed", 0), result.get("created_draft", 0), result.get("updated", 0),
+                        result.get("review", 0), len(result.get("errors", [])))
         
         return result
     except Exception as e:
@@ -106,7 +108,7 @@ async def task_gpt_rewrite():
         result = await rewriter.process_rewrite_queue(limit=3)
         
         if result.get("rewritten", 0) > 0:
-            logger.info(f"[CRON:GPT] {result.get('rewritten', 0)} Artikel verbessert")
+            logger.info("[CRON:GPT] rewritten=%s published=%s", result.get("rewritten", 0), result.get("published", 0))
         
         if result.get("blocked"):
             logger.warning("[CRON:GPT] Blocked: %s", result["blocked"])
