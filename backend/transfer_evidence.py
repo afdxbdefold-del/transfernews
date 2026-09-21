@@ -34,22 +34,29 @@ NEGATED_MOVE = re.compile(
     r"renew\w*|extend\w*|renov\w*|renuev\w*|ampli\w*|prolong\w*|intéress\w*|surveill\w*)\b", re.I)
 
 # A headline-only rewrite has no permission to fill gaps from model knowledge.
-# Equivalent English/German forms share a group so a supported translation passes.
+# Direct football-position translations share a group. Spanish nationality
+# additions require an explicit nationality label: a national-team mention alone
+# (e.g. "selección española sub-21") does not establish player nationality.
 HEADLINE_DETAILS = (
-    r"brasilian\w*|brazil\w*", r"deutsch\w*|german\w*", r"französ\w*|french",
-    r"engländ\w*|englisch\w*|english", r"brit\w*", r"spani\w*|spanish",
+    r"brasilian\w*|brazil\w*|nacionalidad\s+brasileña", r"deutsch\w*|german\w*|nacionalidad\s+alemana",
+    r"französ\w*|french|nacionalidad\s+francesa",
+    r"engländ\w*|englisch\w*|english|nacionalidad\s+inglesa", r"brit\w*|nacionalidad\s+británica",
+    r"spani\w*|spanish|nacionalidad\s+española",
     r"portug\w*", r"italien\w*|italian\w*", r"argentini\w*|argentin\w*",
-    r"niederländ\w*|holländ\w*|dutch", r"belg\w*", r"schweiz\w*|swiss",
-    r"österreich\w*|austrian\w*", r"dän\w*|danish", r"schwed\w*|swedish",
+    r"niederländ\w*|holländ\w*|dutch|nacionalidad\s+neerlandesa", r"belg\w*", r"schweiz\w*|swiss|nacionalidad\s+suiza",
+    r"österreich\w*|austrian\w*|nacionalidad\s+austríaca", r"dän\w*|danish|nacionalidad\s+danesa",
+    r"schwed\w*|swedish|nacionalidad\s+sueca",
     r"norweg\w*|norwegian\w*", r"poln\w*|pole|polish", r"kroat\w*|croatian\w*",
     r"türk\w*|turkish", r"japan\w*", r"korea\w*", r"nigerian\w*",
     r"senegales\w*|senegalese", r"marokkan\w*|moroccan\w*", r"uruguay\w*",
     r"kolumbian\w*|colombian\w*", r"ägypt\w*|egyptian\w*",
     r"\d+[- ]?(?:jährig\w*|jahre alt|years?[- ]old)|aged \d+",
     r"jung\w*|young|talent\w*|veteran\w*|routinier\w*",
-    r"stürmer\w*|striker\w*|forward\w*", r"mittelfeld\w*|midfielder\w*",
-    r"verteidiger\w*|defender\w*|fullback\w*", r"torwart\w*|torhüter\w*|goalkeeper\w*",
-    r"flügel\w*|winger\w*", r"nationalspieler\w*|international player",
+    r"stürmer\w*|striker\w*|forward\w*|delanter[oa]s?|attaquants?|attaccant[ei]",
+    r"mittelfeld\w*|midfielder\w*|centrocampistas?|mediocentros?|mediocampistas?|milieu de terrain",
+    r"verteidiger\w*|defender\w*|fullback\w*|defensores?|zaguero[as]?|(?:el|un) defensa|défenseurs?|difensor[ei]",
+    r"torwart\w*|torhüter\w*|goalkeeper\w*|porter[oa]s?|arquer[oa]s?|gardien de but|portier[ei]",
+    r"flügel\w*|winger\w*|extremos?|ailiers?", r"nationalspieler\w*|international player",
     r"geboren|born|aufgewachsen|grew up|karriere\w*|career|jugend\w*|academy|akademie\w*",
     r"tore|goals?|einsätze|appearances|assists?|marktwert|market value",
 )
@@ -59,8 +66,9 @@ def unsupported_headline_detail(rewrite, evidence, catalogues=None):
     """Reject common biographical additions, including translated football facts."""
     for pattern in HEADLINE_DETAILS:
         expression = r"\b(?:" + pattern + r")\b"
-        if re.search(expression, rewrite, re.I) and not re.search(expression, evidence, re.I):
-            return "Unbelegte biografische Angabe in Überschriftenmeldung"
+        detail = re.search(expression, rewrite, re.I)
+        if detail and not re.search(expression, evidence, re.I):
+            return f"Unbelegte biografische Angabe in Überschriftenmeldung: {detail[0]}"
     # Do not add a former/current club just because it exists in the name catalogue.
     resolved = _with_source_players(evidence, "", catalogues)
     resolved = _with_source_players(rewrite, "", resolved)

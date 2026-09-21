@@ -73,6 +73,24 @@ class AutomationPublicationTests(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(article["auto_publish_eligible"])
         self.assertFalse(article["needs_gpt_rewrite"])
 
+    async def test_spanish_renewal_can_publish_a_grounded_german_translation(self):
+        await self.pipeline.process_event(self.event(
+            headline_raw="La cláusula que tendrá Bernal en su nuevo contrato",
+            summary="El futuro de Marc Bernal en el Barça tiene fecha. El centrocampista está a punto de ampliar su contrato hasta 2031.",
+            source_name="Mundo Deportivo",
+            source_url="https://www.mundodeportivo.com/futbol/fc-barcelona/fixture.html"))
+        draft = await self.db.articles.find_one({})
+        self.assertEqual((draft["status"], draft["transfer_type"]), ("draft", "extension"))
+        rewrite = ("## Bernal vor Vertragsverlängerung\nLaut Mundo Deportivo könnte Marc Bernal seinen Vertrag bei Barcelona bis 2031 verlängern. "
+                   "Die Vertragsverlängerung des Mittelfeldspielers steht dem Bericht zufolge bevor.")
+        with patch("openai.AsyncOpenAI", return_value=self.client(rewrite)):
+            result = await GPTRewriter(self.db).process_rewrite_queue(1)
+        article = await self.db.articles.find_one({})
+        self.assertEqual(result["published"], 1)
+        self.assertEqual(article["body"], rewrite)
+        self.assertEqual(article["transfer_status"], "rumor")
+        self.assertEqual(article["confidence_score"], 41)
+
     async def test_review_reconsidered_once_per_version_but_old_backlog_untouched(self):
         await self.db.events.insert_many([
             self.event(status="review", review_reason="unresolved_entities"),
@@ -107,6 +125,7 @@ class AutomationPublicationTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result["rejected"], 1)
         self.assertEqual(article["status"], "draft")
         self.assertIsNone(article["published_at"])
+        self.assertEqual(article["rewrite_rejected_body"], invalid)
 
     async def test_source_becoming_stale_during_api_call_cannot_publish(self):
         await self.pipeline.process_event(self.event())

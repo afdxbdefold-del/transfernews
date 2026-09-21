@@ -153,6 +153,30 @@ class SourceNameAndRelationTests(unittest.TestCase):
         self.assertIsNotNone(unsupported_headline_detail("André Santos joins Liverpool from Santos",
                                                         "Liverpool signs André Santos", catalogues))
 
+    def test_supported_spanish_midfield_position_translates_without_new_facts(self):
+        rewrite = "Mundo Deportivo berichtet über eine mögliche Vertragsverlängerung von Mittelfeldspieler Marc Bernal beim FC Barcelona."
+        self.assertIsNone(unsupported_headline_detail(rewrite, BERNAL_TITLE + "\n" + BERNAL_SUMMARY))
+        for position in ("centrocampista", "mediocentro", "mediocampista", "milieu de terrain"):
+            with self.subTest(position=position):
+                evidence = f"Marc Bernal es {position} y ampliará su contrato con Barcelona."
+                self.assertIsNone(unsupported_headline_detail(rewrite, evidence))
+        no_position = "Marc Bernal ampliará su contrato con Barcelona hasta 2031."
+        reason = unsupported_headline_detail(rewrite, no_position)
+        self.assertIn("Unbelegte", reason)
+        self.assertIn("Mittelfeldspieler", reason)
+
+    def test_spanish_selection_is_not_evidence_of_nationality(self):
+        evidence = BERNAL_TITLE + "\n" + BERNAL_SUMMARY
+        for nationality in ("spanische", "brasilianische", "deutsche"):
+            with self.subTest(nationality=nationality):
+                reason = unsupported_headline_detail(
+                    f"Der {nationality} Mittelfeldspieler Marc Bernal könnte seinen Vertrag bei Barcelona verlängern.", evidence)
+                self.assertIn(nationality, reason)
+        self.assertIsNone(unsupported_headline_detail("Marc Bernal ist spanischer Mittelfeldspieler und verlängert seinen Vertrag bei Barcelona.",
+            "Marc Bernal es centrocampista de nacionalidad española y renueva su contrato con Barcelona."))
+        self.assertIsNotNone(unsupported_headline_detail("Marc Bernal ist brasilianischer Mittelfeldspieler und verlängert seinen Vertrag bei Barcelona.",
+            "Marc Bernal es centrocampista de nacionalidad española y renueva su contrato con Barcelona."))
+
 
 if __name__ == "__main__":
     unittest.main()

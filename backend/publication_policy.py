@@ -5,7 +5,7 @@ from pipeline_state import review_reason
 from story_engine import SOURCE_WEIGHTS, PUBLISH_THRESHOLD_CONFIDENCE
 
 
-PIPELINE_VERSION = "20260921_source_grounded_v2"
+PIPELINE_VERSION = "20260921_source_grounded_v3"
 RECONSIDER_REASONS = (
     "unresolved_entities", "ambiguous_players", "ambiguous_clubs",
     "ambiguous_transfer_direction", "missing_transfer_context",

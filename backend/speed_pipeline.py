@@ -1096,7 +1096,7 @@ Einziger Quellenbeleg: {original_body}
 Schreibe eine kurze Meldung mit 15 bis 80 Wörtern, zwei bis vier Sätzen und einer H2.
 Bewahre Unsicherheit und Quellenangabe. Keine weiteren Fakten oder Hintergründe ergänzen."""
                 elif source_grounded:
-                    retry_prompt = f"Der Entwurf wurde abgelehnt: {reason}\nQuelle: {article.get('source_name', '')}\nEinzige Fakten:\n{original_body}\nSchreibe 25 bis 180 Wörter, mindestens zwei Sätze und eine H2. Nenne die Quelle, bewahre den belegten Stand und die Meldungsart. Ergänze keine Fakten."
+                    retry_prompt = f"Der Entwurf wurde abgelehnt: {reason}\nQuelle: {article.get('source_name', '')}\nEinzige Fakten:\n{original_body}\nSchreibe 25 bis 180 Wörter, mindestens zwei Sätze und eine H2. Nenne die Quelle, bewahre den belegten Stand und die Meldungsart. Ergänze keine Fakten. Lass im Zweifel Alters-, Nationalitäts-, Positions- und Nationalmannschaftsangaben vollständig weg. Beschränke dich auf die belegte Vertrags- oder Transfermeldung."
                 
                 retry_completion = await openai_client.chat.completions.create(
                     model="gpt-4o-mini",
@@ -1120,11 +1120,15 @@ Bewahre Unsicherheit und Quellenangabe. Keine weiteren Fakten oder Hintergründe
                 
                 if not is_valid:
                     logger.error(f"[GPT] FINAL REJECT: {reason}")
+                    rejected_selector = {"id": article_id, "content_revision": article.get("content_revision")}
+                    if article.get("rewrite_token"):
+                        rejected_selector["rewrite_token"] = article["rewrite_token"]
                     await self.db.articles.update_one(
-                        {"id": article_id, "content_revision": article.get("content_revision")},
+                        rejected_selector,
                         {"$set": {"needs_gpt_rewrite": False, "rewrite_failed": True, "rewrite_status": "review",
                                   "rewrite_review_reason": reason, "rewrite_api_calls": api_calls,
-                                  "rewrite_tokens": token_usage}}
+                                  "rewrite_tokens": token_usage,
+                                  "rewrite_rejected_body": rewrite if article.get("status") == "draft" else None}}
                     )
                     return False
             
@@ -1187,7 +1191,8 @@ Bewahre Unsicherheit und Quellenangabe. Keine weiteren Fakten oder Hintergründe
             if article.get("rewrite_token"):
                 selector["rewrite_token"] = article["rewrite_token"]
             updated = await self.db.articles.update_one(selector, {
-                "$set": update_fields, "$unset": {"pending_publication": "", "rewrite_review_reason": ""}})
+                "$set": update_fields, "$unset": {"pending_publication": "", "rewrite_review_reason": "",
+                                                    "rewrite_rejected_body": ""}})
             if not updated.matched_count:
                 return False
             logger.info(f"[GPT] ✓ {title[:30]}... ({original_words} → {new_words} Wörter, context={has_context})")
