@@ -986,7 +986,7 @@ async def get_articles(
         query["is_featured"] = is_featured
     if current_user is None:
         query["status"] = "published"
-    articles = await db.articles.find(query, {"_id": 0}).sort("published_at", -1).skip(skip).limit(limit).to_list(limit)
+    articles = await db.articles.find(query, {"_id": 0}).sort([("published_at", -1), ("id", -1)]).skip(skip).limit(limit).to_list(limit)
     return articles
 
 
@@ -1000,7 +1000,7 @@ async def get_published_articles(
     query = {"status": "published"}
     if article_type:
         query["article_type"] = article_type
-    articles = await db.articles.find(query, {"_id": 0}).sort("published_at", -1).skip(skip).limit(limit).to_list(limit)
+    articles = await db.articles.find(query, {"_id": 0}).sort([("published_at", -1), ("id", -1)]).skip(skip).limit(limit).to_list(limit)
     return articles
 
 

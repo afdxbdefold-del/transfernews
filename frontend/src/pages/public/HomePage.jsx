@@ -3,8 +3,9 @@ import Footer from "@/components/Footer";
 import PageLayout from "@/components/PageLayout";
 import { SidebarAd } from "@/components/AdSlot";
 import { MrecAd, MrecAd2 } from "@/components/TheMoneytizerAds";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { getPublishedArticles, getAllTrending } from "@/api";
+import { useArticlePagination } from "@/lib/useArticlePagination";
 import { Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { WebsiteSchema } from "@/components/SchemaMarkup";
@@ -185,18 +186,23 @@ function TrendingItem({ item, rank, type = 'player' }) {
 }
 
 export default function HomePage() {
-  const [articles, setArticles] = useState([]);
   const [filteredArticles, setFilteredArticles] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
   const [trending, setTrending] = useState({ players: [], clubs: [] });
-  const [hasMore, setHasMore] = useState(true);
-  const limit = 30;
+  const { articles, loading, loadingMore, error: loadError, hasMore, reload, loadMore } =
+    useArticlePagination(getPublishedArticles, 30);
+
+  const fetchData = useCallback(() => {
+    // The optional sidebar must never hide successfully loaded news.
+    getAllTrending(24).then(({ data }) => {
+      setTrending({ players: data?.trending_players || [], clubs: data?.trending_clubs || [] });
+    }).catch(() => setTrending({ players: [], clubs: [] }));
+    return reload();
+  }, [reload]);
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [fetchData]);
 
   useEffect(() => {
     if (activeFilter === 'all') {
@@ -205,36 +211,6 @@ export default function HomePage() {
       setFilteredArticles(articles.filter(a => a.article_type === activeFilter));
     }
   }, [activeFilter, articles]);
-
-  const fetchData = async () => {
-    setLoading(true);
-    setLoadError('');
-    // The optional sidebar must never hide successfully loaded news.
-    getAllTrending(24).then(({ data }) => {
-      setTrending({ players: data?.trending_players || [], clubs: data?.trending_clubs || [] });
-    }).catch(() => setTrending({ players: [], clubs: [] }));
-    try {
-      const response = await getPublishedArticles({ limit });
-      const data = Array.isArray(response.data) ? response.data : [];
-      setArticles(data);
-      setHasMore(data.length === limit);
-    } catch {
-      setLoadError('Die Nachrichten konnten gerade nicht geladen werden.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadMore = async () => {
-    try {
-      const res = await getPublishedArticles({ skip: articles.length, limit });
-      const data = Array.isArray(res.data) ? res.data : [];
-      setArticles([...articles, ...data]);
-      setHasMore(data.length === limit);
-    } catch (e) {
-      console.error("Load more error:", e);
-    }
-  };
 
   return (
     <PageLayout>
@@ -305,6 +281,7 @@ export default function HomePage() {
                 <div className="p-3 border-t border-gray-100 bg-gradient-to-r from-gray-50 to-white">
                   <button
                     onClick={loadMore}
+                    disabled={loadingMore}
                     className="w-full py-2.5 text-[12px] font-semibold text-white bg-[#79B92A] hover:bg-[#6aa825] rounded-full transition-all duration-200 shadow-sm"
                     data-testid="load-more-btn"
                   >
