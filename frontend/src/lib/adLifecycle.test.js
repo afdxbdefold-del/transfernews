@@ -160,3 +160,48 @@ test.each(['sas_26328', 'sas_relative_container_26328_1'])('active exotic overla
   releaseFormats([6], owner);
   expect(node.isConnected).toBe(false);
 });
+
+function equativFixture(creativeId, iframeId = 'sas_26328_iframe') {
+  const container = document.createElement('div');
+  container.id = `sas-container_${creativeId}`;
+  container.innerHTML = `<div id="sas_fixedDiv_${creativeId}" style="position:fixed"><div id="sas_relDiv_${creativeId}"><div id="sas_expDiv_${creativeId}"><iframe id="${iframeId}"></iframe></div></div><button class="sas-close-button-${creativeId}">Close</button></div>`;
+  const fixed = container.firstElementChild;
+  Object.defineProperties(fixed, { offsetWidth: { value: 728 }, scrollWidth: { value: 728 }, offsetHeight: { value: 90 } });
+  document.body.appendChild(container);
+  return { container, fixed };
+}
+
+test('Equativ footer uses its known unit iframe to bound and close only the matching dynamic creative', () => {
+  window.innerWidth = 390;
+  const owner = { dismiss: jest.fn() };
+  claimFormats([6], owner);
+  const own = equativFixture('4785594');
+  const other = equativFixture('9999999', 'sas_99999_iframe');
+  enforceOverlaySafety();
+  expect(own.fixed.style.transform).toBe(`translateX(-50%) scale(${374 / 728})`);
+  expect(other.fixed.style.transform).toBe('');
+  expect(own.fixed.querySelector('.sas-close-button-4785594')).not.toBeNull();
+  document.getElementById('transfernews-close-footer-ad').click();
+  expect(owner.dismiss).toHaveBeenCalledTimes(1);
+  // Native close can remove the identifying iframe before our route cleanup.
+  own.fixed.querySelector('iframe').remove();
+  releaseFormats([6], owner);
+  expect(own.container.isConnected).toBe(false);
+  expect(other.container.isConnected).toBe(true);
+  const late = equativFixture('4785595');
+  enforceOverlaySafety();
+  expect(late.container.isConnected).toBe(false);
+  expect(other.container.isConnected).toBe(true);
+});
+
+test('the known footer iframe in an ordinary inline wrapper is not mistaken for a fixed Equativ creative', () => {
+  const owner = {};
+  claimFormats([6], owner);
+  const inline = equativFixture('4785596');
+  inline.fixed.style.position = 'relative';
+  enforceOverlaySafety();
+  expect(inline.fixed.style.transform).toBe('');
+  expect(document.getElementById('transfernews-close-footer-ad')).toBeNull();
+  releaseFormats([6], owner);
+  expect(inline.container.isConnected).toBe(true);
+});

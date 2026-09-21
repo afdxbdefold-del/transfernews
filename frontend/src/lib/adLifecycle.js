@@ -11,6 +11,32 @@ const EXOTIC_FOOTER_IDS = ['sas_26328', 'sas_relative_container_26328_1'];
 const FOOTER_CLEANUP_IDS = [...FOOTER_IDS, ...EXOTIC_FOOTER_IDS, 'sas_relative_creative_26328'];
 const CLOSE_ID = 'transfernews-close-footer-ad';
 const SMART_IDS = { 4: 26324, 6: 26328 };
+const equativFooterContainers = new Map();
+
+function equativFooterRoots() {
+  // The creative suffix changes. Establish ownership through this format's
+  // exact iframe ID, never through a generic Equativ wrapper selector alone.
+  document.querySelectorAll('iframe[id="sas_26328_iframe"]').forEach(iframe => {
+    const fixed = iframe.closest('[id^="sas_fixedDiv_"]');
+    const creativeId = fixed?.id.match(/^sas_fixedDiv_(\d+)$/)?.[1];
+    if (!creativeId || getComputedStyle(fixed).position !== 'fixed') return;
+    const container = fixed.closest(`[id="sas-container_${creativeId}"]`);
+    equativFooterContainers.set(fixed, container || fixed);
+  });
+  for (const [fixed, container] of equativFooterContainers) {
+    if (!fixed.isConnected && !container.isConnected) equativFooterContainers.delete(fixed);
+  }
+  return [...equativFooterContainers.keys()].filter(node => node.isConnected);
+}
+
+function cleanFooter() {
+  // Discover late renders too; remembered containers still belong to us if a
+  // native close already removed their identifying iframe.
+  equativFooterRoots();
+  equativFooterContainers.forEach(container => container.remove());
+  equativFooterContainers.clear();
+  removeNodes([...FOOTER_CLEANUP_IDS, 'tmzr_footer_slidein_css', CLOSE_ID]);
+}
 
 export function formatIdsForSlot(slot, format) {
   const ids = new Set(format ? [format.id] : []);
@@ -34,7 +60,7 @@ function cleanFormat(id) {
       toolbox._skyrailDisplayNoneInterval = null;
     }
   }
-  if (id === 6) removeNodes([...FOOTER_CLEANUP_IDS, 'tmzr_footer_slidein_css', CLOSE_ID]);
+  if (id === 6) cleanFooter();
   const unit = window.tmzrLocalToolbox?.adUnits?.[SMART_IDS[id]];
   stopUnit(unit, SMART_IDS[id]);
   // These are the secondary loaders injected into <head> by requestform.js.
@@ -125,7 +151,7 @@ export function enforceOverlaySafety() {
     setStyle(node, 'z-index', '30');
   }
   if (!owners.has(6)) {
-    removeNodes([...FOOTER_CLEANUP_IDS, 'tmzr_footer_slidein_css', CLOSE_ID]);
+    cleanFooter();
     return;
   }
   let visible = false;
@@ -134,10 +160,10 @@ export function enforceOverlaySafety() {
     const node = document.getElementById(id);
     return node && getComputedStyle(node).position === 'fixed';
   })];
-  for (const id of overlayIds) {
-    const node = document.getElementById(id);
+  const overlays = [...overlayIds.map(id => document.getElementById(id)).filter(Boolean), ...equativFooterRoots()];
+  for (const node of overlays) {
     if (!node || !node.childElementCount || getComputedStyle(node).display === 'none') continue;
-    if (overlayIds.some(parentId => parentId !== id && document.getElementById(parentId)?.contains(node))) continue;
+    if (overlays.some(parent => parent !== node && parent.contains(node))) continue;
     visible = true;
     const width = Math.max(node.offsetWidth, node.scrollWidth, 1);
     const scale = Math.min(1, (window.innerWidth - 16) / width);
