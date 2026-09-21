@@ -34,6 +34,16 @@ let webpackConfig = {
     },
     configure: (webpackConfig) => {
 
+      if (process.env.NODE_ENV === 'production') {
+        // Keep the build within the shared server's memory budget.
+        for (const plugin of webpackConfig.optimization.minimizer) {
+          if (['TerserPlugin', 'CssMinimizerPlugin'].includes(plugin.constructor.name)) {
+            plugin.options.parallel = false;
+          }
+        }
+        webpackConfig.cache = false;
+      }
+
       // Add ignored patterns to reduce watched directories
         webpackConfig.watchOptions = {
           ...webpackConfig.watchOptions,
