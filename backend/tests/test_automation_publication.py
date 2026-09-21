@@ -96,7 +96,7 @@ class AutomationPublicationTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_review_reconsidered_once_per_version_but_old_backlog_untouched(self):
         await self.db.events.insert_many([
-            self.event(status="review", review_reason="unresolved_entities"),
+            self.event(status="review", review_reason="unresolved_entities", processing_attempts=9),
             self.event(id="old", status="review", review_reason="unresolved_entities",
                        source_published_at=utcnow() - timedelta(days=10)),
             self.event(id="ambiguous", status="review", review_reason="ambiguous_players",
@@ -106,8 +106,63 @@ class AutomationPublicationTests(unittest.IsolatedAsyncioTestCase):
         second = await self.pipeline.process_pending_events(10)
         self.assertEqual((first["processed"], second["processed"]), (2, 0))
         self.assertEqual((await self.db.events.find_one({"id": "fresh"}))["pipeline_version"], PIPELINE_VERSION)
+        self.assertEqual((await self.db.events.find_one({"id": "fresh"}))["processing_attempts"], 1)
         self.assertNotIn("pipeline_version", await self.db.events.find_one({"id": "old"}))
         self.assertEqual((await self.db.events.find_one({"id": "ambiguous"}))["status"], "review")
+
+    async def test_policy_reconsiders_updated_draft_and_published_article_once(self):
+        await self.db.events.insert_many([
+            self.event(id="endrick"),
+            self.event(id="bernal", headline_raw="La cláusula que tendrá Bernal en su nuevo contrato",
+                summary="El futuro de Marc Bernal en el Barça tiene fecha. El centrocampista está a punto de ampliar su contrato hasta 2031.",
+                source_name="Mundo Deportivo", source_url="https://www.mundodeportivo.com/futbol/fc-barcelona/fixture.html"),
+        ])
+        await self.pipeline.process_pending_events(10)
+        endrick = await self.db.articles.find_one({"source_event_id": "endrick"})
+        bernal = await self.db.articles.find_one({"source_event_id": "bernal"})
+        published_at = utcnow().isoformat()
+        await self.db.articles.update_one({"id": endrick["id"]}, {"$set": {
+            "status": "published", "is_draft": False, "body": TEXT, "published_at": published_at,
+            "publication_policy_version": "previous-policy"}})
+        await self.db.articles.update_one({"id": bernal["id"]}, {"$set": {
+            "publication_policy_version": "previous-policy", "rewrite_status": "review",
+            "rewrite_failed": True, "needs_gpt_rewrite": False}})
+        await self.db.events.update_many({}, {"$set": {
+            "status": "processed", "processing_outcome": "updated", "pipeline_version": "previous-policy",
+            "processing_attempts": 5}})
+        result = await self.pipeline.process_pending_events(10)
+        self.assertEqual((result["processed"], result["updated"]), (2, 2))
+        self.assertEqual((await self.pipeline.process_pending_events(10))["processed"], 0)
+        for event in await self.db.events.find({}).to_list(10):
+            self.assertEqual((event["pipeline_version"], event["processing_attempts"]), (PIPELINE_VERSION, 1))
+        published = await self.db.articles.find_one({"id": endrick["id"]})
+        self.assertEqual((published["status"], published["body"], published["published_at"]),
+                         ("published", TEXT, published_at))
+        retry_draft = await self.db.articles.find_one({"id": bernal["id"]})
+        self.assertEqual((retry_draft["status"], retry_draft["rewrite_status"], retry_draft["needs_gpt_rewrite"]),
+                         ("draft", "pending", True))
+        self.assertFalse(retry_draft["rewrite_failed"])
+
+    async def test_policy_change_does_not_reset_normal_retry_or_expired_lease_budget(self):
+        now = utcnow()
+        await self.db.events.insert_many([
+            self.event(id="pending", processing_attempts=4, pipeline_version="previous-policy"),
+            self.event(id="retry", status="retry", processing_attempts=4, pipeline_version="previous-policy",
+                       next_attempt_at=now - timedelta(seconds=1)),
+            self.event(id="expired", status="processing", processing_attempts=4, pipeline_version="previous-policy",
+                       lease_until=now - timedelta(seconds=1), lease_token="expired"),
+            self.event(id="live", status="processing", processing_attempts=4, pipeline_version="previous-policy",
+                       lease_until=now + timedelta(minutes=5), lease_token="live"),
+        ])
+        self.pipeline.process_event = AsyncMock(side_effect=RuntimeError("offline failure"))
+        result = await self.pipeline.process_pending_events(10)
+        self.assertEqual(len(result["errors"]), 3)
+        self.assertEqual(self.pipeline.process_event.await_count, 3)
+        for event_id in ("pending", "retry", "expired"):
+            event = await self.db.events.find_one({"id": event_id})
+            self.assertEqual((event["status"], event["processing_attempts"]), ("error", 5))
+        live = await self.db.events.find_one({"id": "live"})
+        self.assertEqual((live["status"], live["processing_attempts"], live["lease_token"]), ("processing", 4, "live"))
 
     async def test_new_database_player_is_used_by_pipeline(self):
         await self.db.players.insert_one({"name": "Lennard Meyer", "aliases": ["Lenny Meyer"],

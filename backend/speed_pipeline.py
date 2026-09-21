@@ -724,12 +724,19 @@ class SpeedPipeline:
                 {"pipeline_version": {"$ne": PIPELINE_VERSION},
                  "source_published_at": {"$gte": now - timedelta(hours=48), "$lte": now + timedelta(minutes=10)},
                  "$or": [{"status": "review", "review_reason": {"$in": list(RECONSIDER_REASONS)}},
-                         {"status": "processed", "processing_outcome": "created_draft"}]},
+                         {"status": "processed", "processing_outcome": {"$in": ["created_draft", "updated"]}}]},
             ]}
-            event = await self.db.events.find_one_and_update(ready, {
-                "$set": {"status": "processing", "lease_token": token, "lease_until": now + timedelta(minutes=5)},
-                "$inc": {"processing_attempts": 1},
-            }, sort=[("created_at", 1), ("_id", 1)], return_document=ReturnDocument.AFTER)
+            # Evaluate the old state atomically: a deliberate new-policy review
+            # starts a new budget; ordinary retries / expired leases retain it.
+            policy_reconsideration = {"$and": [
+                {"$in": ["$status", ["review", "processed"]]},
+                {"$ne": [{"$ifNull": ["$pipeline_version", None]}, PIPELINE_VERSION]},
+            ]}
+            event = await self.db.events.find_one_and_update(ready, [{"$set": {
+                "status": "processing", "lease_token": token, "lease_until": now + timedelta(minutes=5),
+                "processing_attempts": {"$cond": [policy_reconsideration, 1,
+                    {"$add": [{"$ifNull": ["$processing_attempts", 0]}, 1]}]},
+            }}], sort=[("created_at", 1), ("_id", 1)], return_document=ReturnDocument.AFTER)
             if event is None:
                 break
             selector = {"_id": event["_id"], "lease_token": token}
