@@ -19,7 +19,80 @@ def fresh_event(**fields):
             "source_published_at": NOW - timedelta(hours=1), "processed_at": NOW - timedelta(minutes=3), **fields}
 
 
+def watchdog_record(**fields):
+    return {"checked_at": NOW - timedelta(minutes=1), "status": "healthy", "action": "none", "reason": "ready",
+            "consecutive_failures": 0, "restart_attempts_6h": 0, "last_restart_at": None, **fields}
+
+
 class HealthSnapshotTests(unittest.TestCase):
+    def test_missing_new_telemetry_sources_do_not_create_false_warnings(self):
+        snapshot = PipelineHealthSnapshot(NOW)
+        snapshot.add_watchdog(None)
+        self.assertEqual(snapshot.result()["watchdog"]["status"], "unknown")
+        self.assertEqual(snapshot.result()["scheduler_jobs"]["status"], "unknown")
+        self.assertEqual(snapshot.result()["warnings"], [])
+
+    def test_scheduler_warning_affects_diagnostic_status_not_readiness_or_publication(self):
+        snapshot = PipelineHealthSnapshot(NOW)
+        snapshot.add_event(fresh_event())
+        snapshot.add_article({"status": "published", "published_at": NOW})
+        snapshot.add_scheduler_jobs({"status": "warning", "scheduler_state": "running", "started_at": NOW.isoformat(),
+            "warnings": ["scheduler_rss_stalled", "secret-unrecognized-warning"], "jobs": {"rss": {"status": "stalled"}},
+            "private": "secret-metadata"})
+        result = snapshot.result()
+        self.assertEqual(result["warnings"], ["scheduler_rss_stalled"])
+        self.assertEqual(result["status"], "warning")
+        self.assertFalse(result["readiness_impact"])
+        self.assertEqual(result["last_activity"]["published_at"], NOW.isoformat())
+        self.assertNotIn("secret", str(result))
+
+    def test_watchdog_stale_boundary_and_restart_metadata(self):
+        snapshot = PipelineHealthSnapshot(NOW)
+        snapshot.add_watchdog(watchdog_record(checked_at=NOW - timedelta(minutes=20)))
+        self.assertEqual(snapshot.result()["warnings"], [])
+        snapshot.add_watchdog(watchdog_record(checked_at=NOW - timedelta(minutes=20, seconds=1),
+            last_restart_at=NOW - timedelta(hours=1), restart_attempts_6h=1))
+        result = snapshot.result()
+        self.assertEqual(result["warnings"], ["watchdog_stale"])
+        self.assertEqual(result["status"], "warning")
+        self.assertEqual(result["watchdog"]["last_restart_at"], "2026-10-17T11:00:00+00:00")
+        self.assertFalse(result["readiness_impact"])
+
+    def test_invalid_or_future_watchdog_dates_are_unknown_not_healthy(self):
+        for value in (None, "invalid", NOW + timedelta(seconds=1), 12345):
+            with self.subTest(value=value):
+                snapshot = PipelineHealthSnapshot(NOW)
+                snapshot.add_watchdog(watchdog_record(checked_at=value))
+                result = snapshot.result()
+                self.assertEqual(result["watchdog"]["status"], "unknown")
+                self.assertIsNone(result["watchdog"]["checked_at"])
+                self.assertEqual(result["warnings"], ["watchdog_state_unknown"])
+        snapshot = PipelineHealthSnapshot(NOW)
+        snapshot.add_watchdog({})
+        self.assertEqual(snapshot.result()["warnings"], ["watchdog_state_unknown"])
+
+    def test_watchdog_output_redacts_arbitrary_strings_private_fields_and_invalid_counts(self):
+        snapshot = PipelineHealthSnapshot(NOW)
+        snapshot.add_watchdog(watchdog_record(status="private-raw-status", action=["private-action"], reason="private-reason",
+            consecutive_failures=True, restart_attempts_6h=-1, last_restart_at="private-date",
+            api_key="private-key", error="private-provider-body", container_id="private-container-id"))
+        result = snapshot.result()
+        self.assertNotIn("private", str(result))
+        self.assertEqual(result["watchdog"]["status"], "unknown")
+        self.assertEqual(result["watchdog"]["action"], "unknown")
+        self.assertEqual(result["watchdog"]["reason"], "unknown")
+        self.assertIsNone(result["watchdog"]["consecutive_failures"])
+        self.assertIsNone(result["watchdog"]["restart_attempts_6h"])
+        self.assertEqual(result["warnings"], ["watchdog_state_unknown"])
+
+    def test_watchdog_warning_is_visible_and_maintenance_is_not_a_false_failure(self):
+        snapshot = PipelineHealthSnapshot(NOW)
+        snapshot.add_watchdog(watchdog_record(status="warning", reason="restart_budget_exhausted", consecutive_failures=3))
+        self.assertEqual(snapshot.result()["warnings"], ["watchdog_warning"])
+        snapshot.add_watchdog(watchdog_record(status="paused", reason="maintenance"))
+        self.assertEqual(snapshot.result()["watchdog"]["status"], "paused")
+        self.assertEqual(snapshot.result()["warnings"], [])
+
     def test_twenty_one_day_publication_gap_is_not_hidden_by_a_recent_draft(self):
         snapshot = PipelineHealthSnapshot(NOW)
         snapshot.add_event(fresh_event())
@@ -154,14 +227,14 @@ class ProjectedCollection:
         self.collection = collection
         self.projections = []
 
-    def find(self, query, projection):
+    def find(self, query, projection, **kwargs):
         self.projections.append(projection)
         async def records():
             for record in self.collection.find(query, projection):
                 yield record
         return records()
 
-    async def find_one(self, query, projection):
+    async def find_one(self, query, projection, **kwargs):
         self.projections.append(projection)
         return self.collection.find_one(query, projection)
 
@@ -191,16 +264,27 @@ class HealthCollectionTests(unittest.IsolatedAsyncioTestCase):
         raw = mongomock.MongoClient().diagnostics
         raw.events.insert_one({**fresh_event(), "body_raw": "secret source body"})
         raw.articles.insert_one({"status": "published", "published_at": NOW.isoformat(), "body": "secret article body"})
+        raw.ops_watchdog.insert_one({"_id": "host_watchdog", **watchdog_record(), "error": "secret-watchdog-error"})
+        raw.ops_watchdog.insert_one({"_id": "unrelated", "status": "secret-unrelated-row"})
         db = type("ReadOnlyDB", (), {})()
         db.events = ProjectedCollection(raw.events)
         db.articles = ProjectedCollection(raw.articles)
         db.rewrite_provider_state = ProjectedCollection(raw.rewrite_provider_state)
-        result = await collect_pipeline_health(db, NOW)
+        db.pipeline_job_runs = ProjectedCollection(raw.pipeline_job_runs)
+        db.ops_watchdog = ProjectedCollection(raw.ops_watchdog)
+        with patch("scheduler_runs.runtime_context", return_value={"boot_id": "offline-boot", "started_at": NOW,
+                "enabled": True, "scheduler_state": "running", "recording_errors": {}}):
+            result = await collect_pipeline_health(db, NOW)
         self.assertEqual(result["status"], "ok")
         self.assertNotIn("secret", str(result))
         self.assertNotIn("body_raw", db.events.projections[0])
         self.assertNotIn("body", db.articles.projections[0])
+        self.assertNotIn("error", db.ops_watchdog.projections[0])
+        self.assertNotIn("body", db.pipeline_job_runs.projections[0])
+        self.assertEqual(result["scheduler_jobs"]["status"], "starting")
+        self.assertEqual(result["watchdog"]["status"], "healthy")
         self.assertEqual(raw.events.count_documents({}), 1)
+        self.assertEqual(raw.ops_watchdog.count_documents({}), 2)
 
     async def test_scheduler_returns_sanitized_diagnostic_failure_once_without_starting_jobs(self):
         import scheduler

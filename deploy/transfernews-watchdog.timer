@@ -1,0 +1,11 @@
+[Unit]
+Description=Check Transfernews backend every five minutes
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=5min
+AccuracySec=10s
+Unit=transfernews-watchdog.service
+
+[Install]
+WantedBy=timers.target

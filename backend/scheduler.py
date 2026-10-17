@@ -20,6 +20,7 @@ from apscheduler.triggers.interval import IntervalTrigger
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 from pipeline_health import collect_pipeline_health, HealthWarningThrottle
+from scheduler_runs import begin_scheduler_epoch, run_scheduled_job
 
 logger = logging.getLogger(__name__)
 
@@ -70,9 +71,9 @@ async def task_rss_scrape():
             logger.info(f"[CRON:RSS] {new_events} neue Events gefunden")
         
         return result
-    except Exception as e:
-        logger.error(f"[CRON:RSS] Error: {e}")
-        return {"error": str(e)}
+    except Exception:
+        logger.error("[CRON:RSS] job_exception")
+        return {"error": "job_exception"}
 
 
 # =============================================================================
@@ -93,9 +94,9 @@ async def task_speed_pipeline():
                         result.get("review", 0), len(result.get("errors", [])))
         
         return result
-    except Exception as e:
-        logger.error(f"[CRON:SPEED] Error: {e}")
-        return {"error": str(e)}
+    except Exception:
+        logger.error("[CRON:SPEED] job_exception")
+        return {"error": "job_exception"}
 
 
 # =============================================================================
@@ -116,9 +117,9 @@ async def task_gpt_rewrite():
         if result.get("blocked"):
             logger.warning("[CRON:GPT] Blocked: %s", result["blocked"])
         return result
-    except Exception as e:
-        logger.error("[CRON:GPT] Error: %s", type(e).__name__)
-        return {"error": str(e)}
+    except Exception:
+        logger.error("[CRON:GPT] job_exception")
+        return {"error": "job_exception"}
 
 
 # =============================================================================
@@ -238,13 +239,23 @@ async def task_health_check():
 # SCHEDULER SETUP
 # =============================================================================
 
+async def _scheduled_task(job, operation):
+    # Manual triggers call task_* directly and cannot manufacture cron evidence.
+    return await run_scheduled_job(get_db(), job, operation)
+
+
+def _scheduler_state():
+    return {0: "stopped", 1: "running", 2: "paused"}.get(scheduler.state, "not_started")
+
+
 def setup_scheduler():
     """Konfiguriert alle Cronjobs"""
     
     # Job 1: RSS Scraping - alle 2 Minuten
     scheduler.add_job(
-        task_rss_scrape,
+        _scheduled_task,
         IntervalTrigger(minutes=2),
+        args=["rss", task_rss_scrape],
         id='rss_scrape',
         name='RSS Feed Scraping',
         replace_existing=True,
@@ -253,8 +264,9 @@ def setup_scheduler():
     
     # Job 2: Speed Pipeline - alle 1 Minute
     scheduler.add_job(
-        task_speed_pipeline,
+        _scheduled_task,
         IntervalTrigger(minutes=1),
+        args=["speed", task_speed_pipeline],
         id='speed_pipeline',
         name='Speed Pipeline Processing',
         replace_existing=True,
@@ -263,8 +275,9 @@ def setup_scheduler():
     
     # Job 3: GPT Rewrite - alle 5 Minuten
     scheduler.add_job(
-        task_gpt_rewrite,
+        _scheduled_task,
         IntervalTrigger(minutes=5),
+        args=["gpt", task_gpt_rewrite],
         id='gpt_rewrite',
         name='GPT Article Rewrite',
         replace_existing=True,
@@ -329,6 +342,7 @@ def start_scheduler():
     """Startet den Scheduler"""
     if not scheduler.running:
         setup_scheduler()
+        begin_scheduler_epoch(_scheduler_state)
         scheduler.start()
         logger.info("[SCHEDULER] Started")
 
@@ -353,6 +367,7 @@ def get_scheduler_status() -> dict:
     
     return {
         "running": scheduler.running,
+        "state": _scheduler_state(),
         "jobs": jobs,
         "job_count": len(jobs)
     }

@@ -6,6 +6,7 @@ A publication warning requests investigation; it never bypasses editorial gates.
 from collections import Counter
 from datetime import datetime, timedelta, timezone
 from rewrite_errors import AUTH_CODES, BILLING_CODES, TRANSIENT_CODES
+from scheduler_runs import collect_scheduler_run_health, SCHEDULER_WARNING_CODES
 
 
 EVENT_STATES = ("pending", "retry", "processing", "review", "processed", "error", "rejected", "published")
@@ -20,6 +21,17 @@ PROVIDER_ERROR_CODES = AUTH_CODES | BILLING_CODES | TRANSIENT_CODES | {
     "provider_access_denied", "invalid_retry_after", "unclassified_rate_limit",
     "provider_unavailable", "provider_timeout", "provider_connection_error",
     "provider_request_rejected", "missing_openai_key",
+}
+WATCHDOG_FIELDS = {"_id": 0, "checked_at": 1, "status": 1, "action": 1, "reason": 1,
+                   "consecutive_failures": 1, "restart_attempts_6h": 1, "last_restart_at": 1}
+WATCHDOG_STATUSES = {"healthy", "warning", "recovering", "paused", "error"}
+WATCHDOG_ACTIONS = {"none", "would_restart", "restart_attempted", "restarted", "restart_failed"}
+WATCHDOG_REASONS = {
+    "ready", "ready_unavailable", "ready_unhealthy", "scheduler_stopped", "scheduler_job_stalled",
+    "startup_grace", "maintenance", "deployment_active", "target_ambiguous", "target_changed",
+    "mongo_unhealthy", "invalid_state", "lock_busy", "threshold_pending", "cooldown",
+    "restart_budget_exhausted", "probe_failed", "restart_failed", "state_write_failed",
+    "diagnostic_publish_failed",
 }
 
 
@@ -52,6 +64,49 @@ class PipelineHealthSnapshot:
         self.last = dict(imported_at=None, processed_at=None, rewritten_at=None, published_at=None)
         self.first_import = None
         self.provider = {"status": "not_recorded", "error_code": None, "error_kind": None, "retry_at": None}
+        self.scheduler_jobs = {"status": "unknown", "scheduler_state": "not_started",
+                               "started_at": None, "warnings": [], "jobs": {}}
+        self.watchdog = {"checked_at": None, "status": "unknown", "action": None, "reason": None,
+                         "consecutive_failures": None, "restart_attempts_6h": None, "last_restart_at": None}
+        self.watchdog_warnings = []
+
+    def add_scheduler_jobs(self, snapshot):
+        """The dedicated helper supplies sanitized, fixed-schema job records."""
+        if not snapshot:
+            return
+        self.scheduler_jobs = {key: snapshot.get(key) for key in (
+            "status", "scheduler_state", "started_at", "jobs")}
+        self.scheduler_jobs["warnings"] = sorted({
+            code for code in snapshot.get("warnings", [])
+            if isinstance(code, str) and code in SCHEDULER_WARNING_CODES})
+
+    def add_watchdog(self, record):
+        if record is None:
+            return  # Not installed yet is unknown, not a false alarm.
+        checked = _time(record.get("checked_at"), self.now)
+        restarted = _time(record.get("last_restart_at"), self.now)
+        status, action, reason = (record.get(key) for key in ("status", "action", "reason"))
+        counters = {key: value if type(value) is int and 0 <= value <= 2**31 - 1 else None
+                    for key in ("consecutive_failures", "restart_attempts_6h")
+                    for value in (record.get(key),)}
+        valid_status = isinstance(status, str) and status in WATCHDOG_STATUSES
+        valid_action = isinstance(action, str) and action in WATCHDOG_ACTIONS
+        valid_reason = isinstance(reason, str) and reason in WATCHDOG_REASONS
+        valid = (checked is not None and valid_status and valid_action and valid_reason
+                 and all(value is not None for value in counters.values())
+                 and (record.get("last_restart_at") is None or restarted is not None))
+        self.watchdog = {"checked_at": checked.isoformat() if checked else None,
+                         "status": status if valid else "unknown",
+                         "action": action if valid_action else "unknown",
+                         "reason": reason if valid_reason else "unknown", **counters,
+                         "last_restart_at": restarted.isoformat() if restarted else None}
+        self.watchdog_warnings = []
+        if not valid:
+            self.watchdog_warnings.append("watchdog_state_unknown")
+        if checked and self.now - checked > timedelta(minutes=20):
+            self.watchdog_warnings.append("watchdog_stale")
+        if valid_status and status in {"warning", "error"}:
+            self.watchdog_warnings.append("watchdog_warning")
 
     def add_provider(self, provider):
         if not provider:
@@ -113,7 +168,7 @@ class PipelineHealthSnapshot:
                 self.activity["published_last_hour"] += 1
 
     def result(self):
-        warnings = []
+        warnings = list(self.scheduler_jobs["warnings"]) + self.watchdog_warnings
         if self.provider["status"] == "blocked":
             warnings.append("rewrite_provider_blocked")
         fresh = self.activity["fresh_imports_last_24h"]
@@ -145,6 +200,8 @@ class PipelineHealthSnapshot:
             "status": status, "checked_at": self.now.isoformat(), "readiness_impact": False,
             "warnings": warnings,
             "provider": self.provider,
+            "scheduler_jobs": self.scheduler_jobs,
+            "watchdog": self.watchdog,
             "last_activity": {key: value.isoformat() if value else None for key, value in self.last.items()},
             "publication_gap_hours": round(publication_gap, 2) if publication_gap is not None else None,
             "activity": {key: self.activity[key] for key in (
@@ -158,7 +215,8 @@ class PipelineHealthSnapshot:
             },
             "data_quality": {key: self.quality[key] for key in (
                 "events_without_valid_import_time", "published_articles_without_valid_date")},
-            "thresholds": {"publication_gap_hours": 24, "import_lookback_hours": 24, "source_freshness_hours": 48},
+            "thresholds": {"publication_gap_hours": 24, "import_lookback_hours": 24,
+                           "source_freshness_hours": 48, "watchdog_stale_minutes": 20},
         }
 
 
@@ -170,6 +228,8 @@ async def collect_pipeline_health(db, now=None):
     async for article in db.articles.find({}, ARTICLE_FIELDS):
         snapshot.add_article(article)
     snapshot.add_provider(await db.rewrite_provider_state.find_one({"_id": "openai_rewrite"}, PROVIDER_FIELDS))
+    snapshot.add_scheduler_jobs(await collect_scheduler_run_health(db, now=snapshot.now))
+    snapshot.add_watchdog(await db.ops_watchdog.find_one({"_id": "host_watchdog"}, WATCHDOG_FIELDS))
     return snapshot.result()
 
 
