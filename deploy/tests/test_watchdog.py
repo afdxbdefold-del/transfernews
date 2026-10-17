@@ -54,6 +54,11 @@ class Docker:
                 self.on_second_inventory(self)
             return "\n".join(c["id"] for c in self.containers)
         if args[:2] == ["docker", "inspect"]:
+            # Docker 29 strict map lookup: unrelated containers may have no
+            # State.Health key. A dotted lookup aborts the entire inventory.
+            template = args[args.index("--format") + 1]
+            if any(c.get("health") is None for c in self.containers) and ".State.Health" in template:
+                raise subprocess.CalledProcessError(1, args, stderr='map has no entry for key "Health"')
             return "\n".join(json.dumps(c) for c in self.containers)
         if args[:2] == ["docker", "restart"]:
             if self.restart_error:
@@ -316,5 +321,17 @@ def test_health_timestamp_is_compared_with_receipt_time_not_tick_start(tmp_path,
     # a newly generated snapshot at +1s is valid, one at +3s is truly future.
     clock = iter([NOW, NOW + timedelta(seconds=2)])
     result = w.tick(d, tmp_path / "state.json", clock=lambda: next(clock))
+    assert result["reason"] == expected
+    assert not d.restarts() and not list(tmp_path.iterdir())
+
+
+@pytest.mark.parametrize("service,expected", [("unrelated", "ready"), ("backend", "ready"), ("mongodb", "mongo_unhealthy")])
+def test_inventory_containers_without_healthcheck_do_not_abort_inspection(tmp_path, service, expected):
+    d = Docker()
+    if service == "unrelated":
+        d.containers.append(container("unrelated", health=None))
+    else:
+        next(c for c in d.containers if c["labels"]["com.docker.compose.service"] == service)["health"] = None
+    result = w.tick(d, tmp_path / "state.json", now=NOW)
     assert result["reason"] == expected
     assert not d.restarts() and not list(tmp_path.iterdir())

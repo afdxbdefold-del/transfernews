@@ -20,7 +20,7 @@ RECOVERABLE = {"ready_unavailable", "ready_unhealthy", "scheduler_stopped", "sch
 INSPECT = ('{"id":{{json .Id}},"name":{{json .Name}},"image":{{json .Config.Image}},'
            '"labels":{{json .Config.Labels}},"running":{{json .State.Running}},'
            '"started_at":{{json .State.StartedAt}},"health":'
-           '{{if .State.Health}}{{json .State.Health.Status}}{{else}}null{{end}}}')
+           '{{with (index .State "Health")}}{{json (index . "Status")}}{{else}}null{{end}}}')
 
 
 def utcnow():
