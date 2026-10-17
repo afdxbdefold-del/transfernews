@@ -46,6 +46,24 @@ PERMANENT = re.compile(
     r"\b(?:dauerhaft\w*|permanent\w*|endgultig\w*|endgueltig\w*|gekauft|"
     r"kauft|kaufen|kauf)\b|\bfest(?:e[nrms]?)?\s+(?:verpflicht\w*|wechsel|transfer)\b")
 
+# Agreement/renewal is not evidence of a signature, even when the generated
+# signature claim is qualified with "soll" or "könnte".
+SIGNATURE = re.compile(
+    r"\b(?:unterschr(?:ieben|ieb\w*|eibt|eiben)|unterzeichn\w*|signiert\w*|"
+    r"sign|signed|signs|signing|signe|signee|signes|signees|signato|signata|firmado|firmada|firmo)\b")
+DETAILS = r"\b(?:details|informationen|infos|einzelheiten|angaben|information|informacion|detalles)\b"
+HEADLINE_FILLER = (
+    (re.compile(DETAILS + r"[^.!?;\n]{0,90}\b(?:unklar\w*|unbekannt\w*|offen|unclear|unknown)\b"),
+     re.compile(DETAILS + r"[^.!?;\n]{0,90}\b(?:unklar\w*|unbekannt\w*|offen|unclear|unknown|desconocid\w*)\b")),
+    (re.compile(DETAILS + r"[^.!?;\n]{0,90}\b(?:unbestatigt\w*|unbestaetigt\w*|nicht\s+bestatigt|unconfirmed)\b"),
+     re.compile(DETAILS + r"[^.!?;\n]{0,90}\b(?:unbestatigt\w*|unbestaetigt\w*|nicht\s+bestatigt|unconfirmed|not\s+confirmed|sin\s+confirmar)\b")),
+    (re.compile(DETAILS + r"[^.!?;\n]{0,90}\b(?:aussteh\w*|stehen\s+(?:noch\s+)?aus|fehlen\w*|"
+                r"nicht\s+(?:bekannt|veroffentlicht|bekanntgegeben|genannt)|liegen\s+(?:noch\s+)?nicht\s+vor)\b"),
+     re.compile(DETAILS + r"[^.!?;\n]{0,90}\b(?:aussteh\w*|stehen\s+(?:noch\s+)?aus|fehlen\w*|"
+                r"nicht\s+(?:bekannt|veroffentlicht|bekanntgegeben|genannt)|liegen\s+(?:noch\s+)?nicht\s+vor|"
+                r"not\s+(?:yet\s+)?(?:available|disclosed|released|announced)|remain\s+undisclosed|pending)\b")),
+)
+
 
 def _clause_context(text, match):
     # A modal in an earlier sentence/contrasting clause does not qualify a claim.
@@ -87,6 +105,13 @@ def _asserted_completions(text):
             yield match
 
 
+def _positive_signature(text, match):
+    before, after = _clause_context(text, match)
+    return not (_negated(text, match)
+                or re.search(r"\b(?:pas|jamais|non|sin|sans|denies|denied|denying|refused)\s+(?:having\s+)?$", before)
+                or re.match(r"\s+(?:has\s+been\s+|was\s+|is\s+)?(?:denied|dementi\w*)\b", after))
+
+
 def _attributed(text, publisher):
     name = _words(publisher)
     if not name:
@@ -125,6 +150,14 @@ def validate_source_rewrite(rewrite, article):
     elif claims and not list(_asserted_completions(evidence)):
         # A stage label alone is not a source for completion wording.
         return False, "unsupported_completion_claim"
+
+    if (any(_positive_signature(text, match) for match in SIGNATURE.finditer(text))
+            and not any(_positive_signature(evidence, match) for match in SIGNATURE.finditer(evidence))):
+        return False, "unsupported_signature_claim"
+    if article.get("evidence_scope") == "headline":
+        for output_pattern, source_pattern in HEADLINE_FILLER:
+            if output_pattern.search(text) and not source_pattern.search(evidence):
+                return False, "unsupported_headline_filler"
 
     kind = _text(article.get("transfer_type"))
     renewal = kind in {"extension", "renewal"} or bool(RENEWAL.search(evidence))

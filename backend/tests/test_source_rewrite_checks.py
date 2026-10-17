@@ -141,3 +141,94 @@ def test_live_bernal_confirmation_of_forthcoming_agreement_is_not_completed_rene
 def test_forthcoming_confirmation_exception_does_not_hide_completed_claims(claim):
     rewrite = "Laut BBC Sport könnte Endrick zu Arsenal wechseln. " + claim
     assert validate_source_rewrite(rewrite, BBC) == (False, "unsupported_completion_claim")
+
+
+RENEWAL_REPORT = {
+    **BBC, "source_headline": "Bellingham agrees new Real deal - Saturday's gossip",
+    "transfer_type": "extension",
+}
+
+
+def test_actual_live_agreement_cannot_become_a_modal_signature_claim():
+    rewrite = ("## Bellingham soll neuen Vertrag bei Real Madrid unterschrieben haben\n\n"
+               "Laut BBC Sport soll Jude Bellingham einen neuen Vertrag bei Real Madrid vereinbart haben. "
+               "Details zur Vertragsverlängerung sind bislang unbestätigt.")
+    assert validate_source_rewrite(rewrite, RENEWAL_REPORT) == (False, "unsupported_signature_claim")
+
+
+@pytest.mark.parametrize("claim", [
+    "soll seinen Vertrag unterschrieben haben", "könnte seinen Vertrag unterschrieben haben",
+    "soll seinen Vertrag unterzeichnet haben", "könnte seinen Vertrag unterzeichnen",
+    "soll seinen Vertrag signiert haben", "soll seinen Vertrag unterschreiben",
+])
+def test_modal_signature_words_still_require_signature_evidence(claim):
+    rewrite = f"Laut BBC Sport {claim}. Es geht um die Vertragsverlängerung bei Real Madrid."
+    assert validate_source_rewrite(rewrite, RENEWAL_REPORT) == (False, "unsupported_signature_claim")
+
+
+@pytest.mark.parametrize("headline", [
+    "Bellingham has signed a new Real Madrid contract",
+    "Bellingham reportedly signed a new Real Madrid contract",
+    "Bellingham hat seinen Vertrag bei Real Madrid unterzeichnet",
+])
+def test_source_signature_allows_a_cautious_attributed_signature_translation(headline):
+    rewrite = "Laut BBC Sport soll Bellingham die Vertragsverlängerung bei Real Madrid unterschrieben haben."
+    assert validate_source_rewrite(rewrite, {**RENEWAL_REPORT, "source_headline": headline}) == (True, "OK")
+
+
+@pytest.mark.parametrize("headline", [
+    "Bellingham has not signed a new Real Madrid contract",
+    "Bellingham denies signing a new Real Madrid contract",
+    "Bellingham n'a pas signé un nouveau contrat au Real Madrid",
+])
+def test_negated_source_signature_does_not_authorize_a_positive_modal_signature(headline):
+    rewrite = "Laut BBC Sport soll Bellingham die Vertragsverlängerung bei Real Madrid unterschrieben haben."
+    assert validate_source_rewrite(rewrite, {**RENEWAL_REPORT, "source_headline": headline}) == (False, "unsupported_signature_claim")
+
+
+def test_negated_output_signature_and_plain_agreement_keep_existing_conservative_behavior():
+    for rewrite in (
+        "Laut BBC Sport soll Bellingham eine Vertragsverlängerung bei Real Madrid vereinbart haben.",
+        "Laut BBC Sport soll Bellingham eine Vertragsverlängerung vereinbart haben. Der Vertrag ist nicht unterschrieben.",
+    ):
+        assert validate_source_rewrite(rewrite, RENEWAL_REPORT) == (True, "OK")
+
+
+@pytest.mark.parametrize("filler", [
+    "Details zur Vertragsverlängerung sind bislang unbestätigt.",
+    "Konkrete Details sind jedoch noch unklar.",
+    "Weitere Informationen stehen noch aus.",
+    "Nähere Einzelheiten sind nicht bekannt.",
+    "Weitere Angaben liegen noch nicht vor.",
+])
+def test_headline_only_unknown_details_filler_requires_its_own_source_evidence(filler):
+    rewrite = "Laut BBC Sport soll Bellingham eine Vertragsverlängerung bei Real Madrid vereinbart haben. " + filler
+    assert validate_source_rewrite(rewrite, RENEWAL_REPORT) == (False, "unsupported_headline_filler")
+
+
+def test_source_confirmed_details_gap_can_be_translated_but_mixed_summary_cannot_supply_it():
+    rewrite = "Laut BBC Sport soll Bellingham eine Vertragsverlängerung vereinbart haben. Details sind unbestätigt."
+    assert validate_source_rewrite(rewrite, {**RENEWAL_REPORT, "source_headline": "Bellingham agrees new Real deal: details remain unconfirmed"}) == (True, "OK")
+    assert validate_source_rewrite(rewrite, {**RENEWAL_REPORT, "source_summary": "Details remain unconfirmed."}) == (False, "unsupported_headline_filler")
+
+
+def test_signature_in_excluded_roundup_summary_does_not_authorize_signature_claim():
+    rewrite = "Laut BBC Sport soll Bellingham die Vertragsverlängerung bei Real Madrid unterschrieben haben."
+    article = {**RENEWAL_REPORT, "source_summary": "Another player has signed elsewhere."}
+    assert validate_source_rewrite(rewrite, article) == (False, "unsupported_signature_claim")
+
+
+def test_source_may_sign_accepts_matching_uncertain_german_infinitive():
+    article = {**RENEWAL_REPORT, "source_headline": "Bellingham may sign a new Real Madrid contract"}
+    rewrite = "Laut BBC Sport könnte Bellingham eine Vertragsverlängerung bei Real Madrid unterschreiben."
+    assert validate_source_rewrite(rewrite, article) == (True, "OK")
+
+
+@pytest.mark.parametrize("headline", [
+    "No sign of Bellingham agreeing a new Real Madrid contract",
+    "Bellingham may not sign a new Real Madrid contract",
+])
+def test_negated_base_sign_is_not_positive_signature_evidence(headline):
+    article = {**RENEWAL_REPORT, "source_headline": headline}
+    rewrite = "Laut BBC Sport könnte Bellingham eine Vertragsverlängerung bei Real Madrid unterschreiben."
+    assert validate_source_rewrite(rewrite, article) == (False, "unsupported_signature_claim")
