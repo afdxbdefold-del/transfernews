@@ -19,6 +19,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
+from pipeline_health import collect_pipeline_health, HealthWarningThrottle
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +29,8 @@ scheduler = AsyncIOScheduler()
 # DB Connection - shared with main app
 _db = None
 _client = None
+_health_warnings = HealthWarningThrottle()
+HEALTH_CHECK_TIMEOUT_SECONDS = 10
 
 def init_db(mongo_url: str, db_name: str):
     """Initialize DB connection from main app"""
@@ -211,25 +214,24 @@ async def task_cache_cleanup():
 # =============================================================================
 
 async def task_health_check():
-    """Prüft System-Gesundheit"""
+    """Diagnose editorial throughput without changing deployment readiness."""
     try:
-        db = get_db()
-        
-        # Pending Events zählen
-        pending = await db.events.count_documents({"status": "pending"})
-        
-        # Artikel der letzten Stunde
-        from datetime import timedelta
-        cutoff = (datetime.now(timezone.utc) - timedelta(hours=1)).isoformat()
-        recent = await db.articles.count_documents({"published_at": {"$gte": cutoff}})
-        
-        if pending > 50:
-            logger.warning(f"[HEALTH] {pending} pending events - Pipeline möglicherweise überlastet")
-        
-        return {"pending_events": pending, "recent_articles": recent}
-    except Exception as e:
-        logger.error(f"[HEALTH] Error: {e}")
-        return {"error": str(e)}
+        snapshot = await asyncio.wait_for(
+            collect_pipeline_health(get_db()), timeout=HEALTH_CHECK_TIMEOUT_SECONDS)
+    except Exception:
+        # Exception text can contain connection strings. Only a fixed code is
+        # returned/logged, and repeated failures are throttled like other alerts.
+        snapshot = {"status": "unknown", "checked_at": datetime.now(timezone.utc).isoformat(),
+                    "readiness_impact": False, "warnings": ["diagnostic_unavailable"]}
+    emitted, recovered = _health_warnings.update(
+        snapshot["warnings"], complete="diagnostic_unavailable" not in snapshot["warnings"])
+    if emitted:
+        logger.warning("[HEALTH] pipeline=%s warnings=%s last_activity=%s activity=%s stages=%s",
+                       snapshot["status"], emitted, snapshot.get("last_activity", {}),
+                       snapshot.get("activity", {}), snapshot.get("stages", {}))
+    if recovered:
+        logger.info("[HEALTH] Pipeline warnings cleared: %s", recovered)
+    return snapshot
 
 
 # =============================================================================

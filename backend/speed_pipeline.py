@@ -22,11 +22,15 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 import os
 from uuid import uuid4, uuid5, NAMESPACE_URL
 from pymongo import ReturnDocument
-from pipeline_state import utcnow, parse_source_time, review_reason, retry_at, due_query, story_lease
+from pipeline_state import utcnow, parse_source_time, review_reason, retry_at, due_query, story_lease, StoryBusy
 from transfer_evidence import assess_transfer_evidence, unsupported_headline_detail
 from entity_catalogue import load_entity_catalogues
 from publication_policy import PIPELINE_VERSION, RECONSIDER_REASONS, editorial_eligibility, can_publish_rewrite
 from source_rewrite_checks import validate_source_rewrite
+from rewrite_errors import (PROVIDER_ID, RewriteFailure, RewriteProviderError,
+                            classify_rewrite_error, get_rewrite_provider_pause,
+                            record_rewrite_provider_failure, record_rewrite_provider_success,
+                            rewrite_provider_pause)
 
 logger = logging.getLogger(__name__)
 
@@ -869,6 +873,28 @@ NUR OUTPUT: Der Artikel-Text mit H2-Überschriften."""
     def __init__(self, db: AsyncIOMotorDatabase):
         self.db = db
         self.evidence_catalogues = None
+
+    async def _create_completion(self, client, **kwargs):
+        """One provider request at a time; a persistent stop covers all workers."""
+        try:
+            async with story_lease(self.db, "rewrite-provider:openai"):
+                state = await self.db.rewrite_provider_state.find_one({"_id": PROVIDER_ID})
+                pause = rewrite_provider_pause(state)
+                if pause:
+                    raise RewriteProviderError(pause)
+                try:
+                    completion = await client.chat.completions.create(**kwargs)
+                except Exception as exc:
+                    failure = classify_rewrite_error(exc)
+                    if failure is None:
+                        raise
+                    pause = await record_rewrite_provider_failure(self.db, failure)
+                    raise RewriteProviderError(pause) from None
+                await record_rewrite_provider_success(self.db, state)
+                return completion
+        except StoryBusy:
+            raise RewriteProviderError({"status": "retry", "error_code": "provider_busy",
+                                        "error_kind": "connection", "retry_at": utcnow() + timedelta(seconds=30)}) from None
     
     def validate_rewrite(self, original: str, rewrite: str, allow_context_numbers: bool = False,
                          evidence: str = "", evidence_scope: str = "full", catalogues=None) -> tuple[bool, str]:
@@ -960,7 +986,8 @@ NUR OUTPUT: Der Artikel-Text mit H2-Überschriften."""
                 return False
             
             from openai import AsyncOpenAI
-            openai_client = AsyncOpenAI(api_key=api_key, timeout=60, max_retries=1)
+            # The queue owns retry policy. SDK retries would repeat billing calls.
+            openai_client = AsyncOpenAI(api_key=api_key, timeout=60, max_retries=0)
             
             # Artikel laden
             article = await self.db.articles.find_one(
@@ -972,6 +999,15 @@ NUR OUTPUT: Der Artikel-Text mit H2-Überschriften."""
                 return False
 
             source_grounded = article.get("source_grounded", False)
+            if source_grounded and review_reason(article):
+                stale_selector = {"id": article_id, "content_revision": article.get("content_revision")}
+                if article.get("rewrite_token"):
+                    stale_selector["rewrite_token"] = article["rewrite_token"]
+                await self.db.articles.update_one(stale_selector, {"$set": {
+                    "needs_gpt_rewrite": False, "rewrite_failed": True, "rewrite_status": "review",
+                    "rewrite_review_reason": "source_not_fresh",
+                }})
+                return False
             if source_grounded and not article.get("auto_publish_eligible"):
                 return False
             if self.evidence_catalogues is None:
@@ -1053,7 +1089,7 @@ Nutze alle verfügbaren Fakten aus dem Original UND dem Kontext.
 Liefere NUR den Artikel-Text."""
             
             # OpenAI API Call
-            completion = await openai_client.chat.completions.create(
+            completion = await self._create_completion(openai_client,
                 model="gpt-4o-mini",
                 messages=[
                     {"role": "system", "content": system_prompt},
@@ -1105,7 +1141,7 @@ Bewahre Unsicherheit und Quellenangabe. Keine weiteren Fakten oder Hintergründe
                 elif source_grounded:
                     retry_prompt = f"Der Entwurf wurde abgelehnt: {reason}\nQuelle: {article.get('source_name', '')}\nMELDUNGSART: {source_article.get('transfer_type', 'permanent')}\nBELEGTER STAND: {source_article.get('transfer_status', 'rumor')}\nEinzige Fakten:\n{original_body}\nSchreibe 25 bis 180 Wörter, mindestens zwei Sätze und eine H2. Nenne die Quelle, bewahre den belegten Stand und die Meldungsart. Ergänze keine Fakten. Lass im Zweifel Alters-, Nationalitäts-, Positions- und Nationalmannschaftsangaben vollständig weg. Beschränke dich auf die belegte Vertrags- oder Transfermeldung."
                 
-                retry_completion = await openai_client.chat.completions.create(
+                retry_completion = await self._create_completion(openai_client,
                     model="gpt-4o-mini",
                     messages=[
                         {"role": "system", "content": system_prompt},
@@ -1205,6 +1241,8 @@ Bewahre Unsicherheit und Quellenangabe. Keine weiteren Fakten oder Hintergründe
             logger.info(f"[GPT] ✓ {title[:30]}... ({original_words} → {new_words} Wörter, context={has_context})")
             return True
         
+        except RewriteProviderError:
+            raise
         except Exception as e:
             logger.error("[GPT] Rewrite error: %s", type(e).__name__)
         finally:
@@ -1235,13 +1273,21 @@ Bewahre Unsicherheit und Quellenangabe. Keine weiteren Fakten oder Hintergründe
     
     async def process_rewrite_queue(self, limit: int = 5) -> dict:
         result = {"rewritten": 0, "published": 0, "errors": 0, "rejected": 0}
+        pause = await get_rewrite_provider_pause(self.db)
+        if pause:
+            return {**result, "blocked" if pause["status"] == "blocked" else "paused": pause["error_code"]}
         if not os.environ.get("OPENAI_API_KEY"):
             logger.warning("[GPT] Rewrite blocked: OPENAI_API_KEY is not configured")
+            await record_rewrite_provider_failure(self.db, RewriteFailure("missing_openai_key", "configuration", True))
             return {**result, "blocked": "missing_openai_key"}
         for _ in range(limit):
             now, token = utcnow(), uuid4().hex
+            pause = await get_rewrite_provider_pause(self.db, now)
+            if pause:
+                result["blocked" if pause["status"] == "blocked" else "paused"] = pause["error_code"]
+                break
             eligible = {"needs_gpt_rewrite": True, "$or": [
-                {"$and": [{"rewrite_status": {"$nin": ["processing", "review", "failed"]}}, due_query("rewrite_next_attempt_at", now)]},
+                {"$and": [{"rewrite_status": {"$nin": ["processing", "review", "failed", "blocked"]}}, due_query("rewrite_next_attempt_at", now)]},
                 {"rewrite_status": "processing", "rewrite_lease_until": {"$lte": now}},
             ]}
             article = await self.db.articles.find_one_and_update(eligible, {
@@ -1251,16 +1297,36 @@ Bewahre Unsicherheit und Quellenangabe. Keine weiteren Fakten oder Hintergründe
             if article is None:
                 break
             selector = {"_id": article["_id"], "rewrite_token": token}
+            provider_error = None
             try:
                 success = False if article["rewrite_attempts"] > 5 else await asyncio.wait_for(self.rewrite_article(article["id"]), timeout=240)
+            except RewriteProviderError as exc:
+                provider_error = exc.state
+                logger.warning("[GPT] Provider %s: %s", provider_error["status"], provider_error["error_code"])
+                success = False
             except Exception as exc:
-                logger.warning("[GPT] Rewrite attempt failed: %s", type(exc).__name__)
+                failure = classify_rewrite_error(exc)
+                if failure:
+                    provider_error = await record_rewrite_provider_failure(self.db, failure)
+                else:
+                    logger.warning("[GPT] Rewrite attempt failed: %s", type(exc).__name__)
                 success = False
             current = await self.db.articles.find_one(selector)
             if current is None:
                 continue  # A newer source update invalidated this lease.
             fields = {}
-            if success:
+            if provider_error:
+                blocked = provider_error["status"] == "blocked"
+                fields = {"rewrite_status": "blocked" if blocked else "retry", "needs_gpt_rewrite": True,
+                          "rewrite_failed": False, "rewrite_last_error": provider_error["error_code"],
+                          "rewrite_error_kind": provider_error["error_kind"], "rewrite_last_attempt_at": now}
+                if blocked:
+                    fields["rewrite_block_id"] = provider_error["block_id"]
+                else:
+                    fields["rewrite_next_attempt_at"] = provider_error["retry_at"]
+                result["errors"] += 1
+                result["blocked" if blocked else "paused"] = provider_error["error_code"]
+            elif success:
                 fields = {"rewrite_status": "complete", "needs_gpt_rewrite": False, "rewrite_failed": False}
                 result["rewritten"] += 1
                 if article.get("status") == "draft" and current.get("status") == "published":
@@ -1273,7 +1339,14 @@ Bewahre Unsicherheit und Quellenangabe. Keine weiteren Fakten oder Hintergründe
                 fields = {"rewrite_status": "failed" if terminal else "retry", "needs_gpt_rewrite": not terminal,
                           "rewrite_next_attempt_at": retry_at(article["rewrite_attempts"]), "rewrite_last_error": "rewrite_attempt_failed"}
                 result["errors"] += 1
-            await self.db.articles.update_one(selector, {"$set": fields, "$unset": {"rewrite_token": "", "rewrite_lease_until": ""}})
+            unset = {"rewrite_token": "", "rewrite_lease_until": ""}
+            if success:
+                unset.update(rewrite_last_error="", rewrite_error_kind="", rewrite_block_id="", rewrite_next_attempt_at="")
+            elif provider_error and provider_error["error_code"] == "provider_busy":
+                fields["rewrite_attempts"] = article["rewrite_attempts"] - 1
+            await self.db.articles.update_one(selector, {"$set": fields, "$unset": unset})
+            if provider_error:
+                break  # Do not spend more requests on other articles during this pause.
         return result
 
 

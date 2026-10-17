@@ -2,6 +2,22 @@
 
 This file replaces deployment assumptions in inherited Emergent documentation.
 
+## Current operating decisions (2026-10-17)
+
+The owner's current instructions override the historical setup procedures below: website administrator accounts stay disabled, the backup timer stays disabled, and Hetzner backups stay off. Do not execute the historical backup-enablement or initial migration procedures during routine releases. Retain the existing Mongo volume and external proxy.
+
+## Publication diagnostics and provider recovery
+
+`GET /api/pipeline/health` exposes only aggregate counts, activity timestamps and allowlisted provider errors. It is cached for 60 seconds and has a 10-second diagnostic timeout. `/api/ready` remains a deployment readiness check; its success does not prove news publication. The scheduler logs a publication warning after 24 hours without an actual published article when fresh sources continue arriving. Repeated warnings are limited to one per code every six hours. This is a diagnostic endpoint/log warning, not an external notification service.
+
+Pipeline version `20261017_source_grounded_v6` recognizes explicit English and French contract-renewal headlines. It may isolate a complete headline from a mixed summary, without importing other players or historical clubs into the article. Existing source attribution, freshness, duplicate, validation and revision checks remain required. A new policy reconsiders only eligible events with source timestamps within the existing 48-hour window; never bulk-requeue old failures.
+
+OpenAI errors are recorded using structured, allowlisted codes only. Billing/access errors and unclassified HTTP429 errors pause the whole provider persistently; known transient errors use Retry-After and bounded backoff. Five consecutive transient provider failures also require operator review. SDK retries are disabled; a provider lease serializes requests. Never log exception messages, response bodies or key values.
+
+For a persistent provider block, first diagnose the sanitized health result and resolve the actual cause. Do not assume every HTTP429 is insufficient credit, and do not automatically purchase credit. After confirming recovery, an authenticated operator may call `rewrite_errors.resume_rewrite_provider(db, expected_block_id=<the current stored block_id>, operator_confirmed=True)` inside the existing backend environment. The compare-and-set release returns whether the exact block was cleared and always `requeued_articles=0`; it makes no API call and does not restart old articles. A blocked article must be reconsidered through fresh source evidence and the normal editorial pipeline. Do not change website authentication for this operation.
+
+Verify a release using its running code revision, readiness, the diagnostic snapshot, actual scheduler executions, and a newly published source-grounded article visible in the public API, article HTML and sitemap. A successful generic API probe alone does not prove publication.
+
 ## Existing deployment
 
 - Coolify application: `t4iysn7locgn8jdax7xb6s9j` on `167.235.252.152`.

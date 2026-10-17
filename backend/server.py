@@ -21,6 +21,7 @@ import jwt
 from passlib.context import CryptContext
 import re
 import asyncio
+import time
 from security import load_jwt_secret, issue_token, authenticate_token, LoginAttemptLimiter, PasswordChangeRequest
 from ad_slot_defaults import ensure_default_ad_slots
 
@@ -1543,6 +1544,26 @@ async def readiness_check():
 # =============================================================================
 # TRENDING & BREAKING NEWS ROUTES
 # =============================================================================
+
+_publication_health_cache = {}
+_publication_health_lock = asyncio.Lock()
+
+
+@api_router.get("/pipeline/health")
+async def publication_health():
+    """Public, content-free publication diagnostics; separate from deploy readiness."""
+    from pipeline_health import collect_pipeline_health
+    async with _publication_health_lock:
+        if time.monotonic() >= _publication_health_cache.get("expires_at", 0):
+            try:
+                snapshot = await asyncio.wait_for(collect_pipeline_health(db), timeout=10.0)
+            except Exception:
+                # Cache failures too, so public polling cannot repeatedly exhaust Mongo.
+                snapshot = {"status": "unavailable", "warnings": ["diagnostics_unavailable"],
+                            "readiness_impact": False}
+            _publication_health_cache.update(snapshot=snapshot, expires_at=time.monotonic() + 60)
+        return _publication_health_cache["snapshot"]
+
 
 from trending import (
     calculate_event_score,

@@ -31,7 +31,29 @@ NEGATED_MOVE = re.compile(
     r"\b(?:not|never|kein\w*|nicht|no|non|ne|pas|denies|denied|dismissed)\b.{0,35}"
     r"\b(?:join\w*|sign\w*|transfer\w*|wechsel\w*|verpflicht\w*|fich\w*|moves?|"
     r"monitor\w*|eyeing|keen|interest\w*|interesse|interessiert|beobacht\w*|verlänger\w*|"
-    r"renew\w*|extend\w*|renov\w*|renuev\w*|ampli\w*|prolong\w*|intéress\w*|surveill\w*)\b", re.I)
+    r"renew\w*|extend\w*|renov\w*|renuev\w*|ampli\w*|prolong\w*|intéress\w*|surveill\w*|"
+    r"agree\w*|deals?|contracts?|boucl\w*|confirm\w*)\b", re.I)
+RENEWAL_DENIAL = re.compile(
+    r"\b(?:deal|contract|renewal|extension|prolongation|renouvellement)\b[^.!?\n]{0,60}"
+    r"\b(?:denied|dismissed|rejected|démenti\w*|dementi\w*|annulé\w*|refusé\w*)\b", re.I)
+
+# Complete source-present relations only; a generic 'deal' is not transfer evidence.
+# Tokens are produced from resolved names, never from a player's current club.
+_RENEWAL_HEADLINE = re.compile(
+    r"(?:"
+    r"player\s+(?:(?:has|reportedly)\s+){0,2}(?:agrees?|agreed|signs?|signed)\s+(?:a\s+)?new\s+"
+    r"(?:(?:one|two|three|four|five|six|seven|eight|nine|ten|\d{1,2})[- ]year\s+)?"
+    r"(?:deal|contract)\s+(?:at|with)\s+club"
+    r"|player\s+(?:agrees?|agreed|signs?|signed)\s+(?:a\s+)?new\s+club\s+(?:deal|contract)"
+    r"|(?:le\s+|l['’])?club\s+(?:(?:a|aurait)\s+)?"
+    r"(?:bouclé|officialisé|annoncé|confirmé|acté)\s+(?:la\s+)?"
+    r"(?:prolongation|renouvellement)\s+(?:du contrat\s+)?(?:de\s+|d['’])player"
+    r"|(?:le\s+|l['’])?club\s+prolonge\s+(?:le contrat de\s+)?player"
+    r"|player\s+(?:a\s+)?(?:prolonge|prolongé)\s+(?:son contrat\s+)?"
+    r"(?:avec|au|à|chez)\s+(?:le\s+)?club"
+    r")"
+    r"(?:\s*[-–—]\s*(?:(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday)['’]s )?gossip)?[.!]?"
+)
 
 # A headline-only rewrite has no permission to fill gaps from model knowledge.
 # Direct football-position translations share a group. Spanish nationality
@@ -204,6 +226,24 @@ def _mark_mentions(text, players, clubs, tokens):
     return re.sub(r"\s+", " ", text).lower().strip()
 
 
+def _standalone_renewal(title, catalogues):
+    """A whole, unambiguous headline is sufficient evidence for this renewal."""
+    if not re.search(r"\b(?:new|prolonge|prolongé|prolongation|renouvellement)\b", title, re.I):
+        return None
+    players, clubs = _resolved_mentions(title, catalogues)
+    if len({item[2] for item in players}) != 1 or len({item[2] for item in clubs}) != 1:
+        return None
+    if (_has_ambiguous_alias(title, catalogues.get("ambiguous_players", ()), players) or
+            _has_ambiguous_alias(title, catalogues.get("ambiguous_clubs", ()), clubs)):
+        return None
+    player, club = players[0][2], clubs[0][2]
+    marked = _mark_mentions(title, players, clubs, {club: "CLUB"}).strip("\"'“”‘’")
+    if not _RENEWAL_HEADLINE.fullmatch(marked):
+        return None
+    return {"player": player, "club": club, "from_club": None,
+            "confidence": 1.0, "reason": None, "transfer_type": "extension"}
+
+
 def assess_transfer_evidence(title, summary="", catalogues=None):
     """An explicit standalone headline may be isolated from a mixed roundup.
 
@@ -219,6 +259,11 @@ def assess_transfer_evidence(title, summary="", catalogues=None):
     headline = _assess_evidence(title, "", catalogues)
     if headline.get("reason"):
         return result
+    renewal = _standalone_renewal(title, catalogues)
+    if renewal:
+        # The summary may contain other players or historical clubs. None of it
+        # may enter the article once the complete renewal headline is isolated.
+        return {**renewal, "evidence_scope": "headline"}
     players, clubs = _resolved_mentions(title, catalogues)
     if len({item[2] for item in clubs}) != 1:
         return result
@@ -239,12 +284,13 @@ def _assess_evidence(title, summary="", catalogues=None):
         return {"reason": reason}
     if OFF_TOPIC.search(text) or NON_TRANSFER_HEADLINE.search(title):
         return reject("non_transfer_topic")
-    if not CONTEXT.search(text):
+    catalogues = _catalogues(catalogues)
+    headline_renewal = _standalone_renewal(title, catalogues)
+    if not CONTEXT.search(text) and not headline_renewal:
         return reject("missing_transfer_context")
-    if NEGATED_MOVE.search(text):
+    if NEGATED_MOVE.search(text) or (headline_renewal and RENEWAL_DENIAL.search(text)):
         return reject("negated_transfer")
 
-    catalogues = _catalogues(catalogues)
     players, clubs = _resolved_mentions(text, catalogues)
     if any(player[:2] == club[:2] for player in players for club in clubs):
         return reject("ambiguous_players")
@@ -288,13 +334,13 @@ def _assess_evidence(title, summary="", catalogues=None):
             origins.add(name)
 
     # Renewals concern the single explicitly named employer, not a guessed destination.
-    renewal = len(club_names) == 1 and re.search(
+    renewal = len(club_names) == 1 and (headline_renewal or re.search(
         r"\b(?:contract extension|extends? (?:his )?contract|new contract|"
         r"vertragsverlängerung|verlängert.{0,35}vertrag|neuer vertrag|"
         r"prolong(?:e|er|ation).{0,35}contrat|renouvellement|rinnovo|"
         r"(?:renueva|renovará|renovar|ampliar|ampliará|ampliación).{0,40}contrato|"
         r"nuevo contrato|renovación de contrato|(?:renovar|renueva|renovará) a player)\b", marked
-    )
+    ))
     if renewal:
         targets.add(club_names[0])
         origins.discard(club_names[0])

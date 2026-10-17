@@ -169,6 +169,39 @@ def test_publication_visibility_and_authenticated_editor_view(app):
     assert len(request(app,'GET','/api/articles',headers=headers(app)).json()) == 2
 
 
+def test_publication_stall_is_public_cached_and_separate_from_readiness(app, monkeypatch):
+    import pipeline_health
+    calls = []
+    async def collect(database):
+        assert database is app.db
+        calls.append(True)
+        return {'status': 'warning', 'warnings': ['publication_stalled'], 'readiness_impact': False}
+    monkeypatch.setattr(pipeline_health, 'collect_pipeline_health', collect)
+    monkeypatch.setattr(app, '_publication_health_cache', {})
+    for _ in range(2):
+        response = request(app, 'GET', '/api/pipeline/health')
+        assert response.status_code == 200
+        assert response.json()['warnings'] == ['publication_stalled']
+    assert len(calls) == 1
+    assert request(app, 'GET', '/api/ready').status_code == 200
+
+
+def test_publication_diagnostics_failure_does_not_expose_errors_or_retry_every_request(app, monkeypatch):
+    import pipeline_health
+    calls = []
+    async def broken(database):
+        calls.append(True)
+        raise RuntimeError('private database details')
+    monkeypatch.setattr(pipeline_health, 'collect_pipeline_health', broken)
+    monkeypatch.setattr(app, '_publication_health_cache', {})
+    for _ in range(2):
+        response = request(app, 'GET', '/api/pipeline/health')
+        assert response.json()['status'] == 'unavailable'
+        assert 'private' not in response.text
+    assert len(calls) == 1
+    assert request(app, 'GET', '/api/ready').status_code == 200
+
+
 def test_unauthenticated_management_routes_cannot_write(app):
     for method,path in [('POST','/api/players/enrich-images'),('POST','/api/players/fixture/update-image'),('GET','/api/settings/internal')]:
         assert request(app,method,path).status_code == 401
