@@ -21,6 +21,19 @@ def recent(value, now, seconds):
         return False
 
 
+def current_startup_grace(watchdog, jobs, now):
+    """Allow the last genuine startup observation across one timer/cache delay."""
+    if (not isinstance(jobs, dict) or not recent(jobs.get("started_at"), now, 21 * 60)
+            or not recent(watchdog.get("checked_at"), now, 20 * 60)):
+        return False
+    try:
+        started = datetime.fromisoformat(jobs["started_at"].replace("Z", "+00:00"))
+        checked = datetime.fromisoformat(watchdog["checked_at"].replace("Z", "+00:00"))
+        return 0 <= (checked - started).total_seconds() <= 15 * 60
+    except (TypeError, ValueError, AttributeError):
+        return False
+
+
 def assess(ready, health, now=None):
     now = now or datetime.now(timezone.utc)
     errors = []
@@ -43,7 +56,7 @@ def assess(ready, health, now=None):
         errors.append("host_watchdog_not_current")
     elif (watchdog.get("status") not in {"healthy", "recovering"}
           and not (watchdog.get("status") == "paused" and watchdog.get("reason") == "startup_grace"
-                   and isinstance(jobs, dict) and recent(jobs.get("started_at"), now, 900))):
+                   and current_startup_grace(watchdog, jobs, now))):
         errors.append("host_watchdog_requires_attention")
     return errors
 

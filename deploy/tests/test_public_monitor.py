@@ -50,6 +50,43 @@ class PublicMonitorTests(unittest.TestCase):
         self.health["scheduler_jobs"]["started_at"] = (self.now - timedelta(minutes=16)).isoformat()
         self.assertIn("host_watchdog_requires_attention", monitor.assess(self.ready, self.health, self.now))
 
+    def grace_snapshot(self, epoch_age, observation_offset):
+        epoch = self.now - timedelta(seconds=epoch_age)
+        self.health["scheduler_jobs"]["started_at"] = epoch.isoformat()
+        self.health["watchdog"].update(status="paused", reason="startup_grace",
+            checked_at=(epoch + timedelta(seconds=observation_offset)).isoformat())
+
+    def test_startup_observation_survives_timer_and_cache_delay(self):
+        for minutes in (19, 21):
+            with self.subTest(minutes=minutes):
+                self.grace_snapshot(minutes * 60, 14 * 60)
+                self.assertEqual(monitor.assess(self.ready, self.health, self.now), [])
+
+    def test_startup_grace_expires_after_twenty_one_minutes(self):
+        self.grace_snapshot(21 * 60 + 1, 14 * 60)
+        self.assertIn("host_watchdog_requires_attention", monitor.assess(self.ready, self.health, self.now))
+
+    def test_startup_observation_must_belong_to_first_fifteen_minutes_of_this_boot(self):
+        for offset in (-1, 15 * 60 + 1):
+            with self.subTest(offset=offset):
+                self.grace_snapshot(19 * 60, offset)
+                self.assertIn("host_watchdog_requires_attention", monitor.assess(self.ready, self.health, self.now))
+        self.grace_snapshot(19 * 60, 15 * 60)
+        self.assertEqual(monitor.assess(self.ready, self.health, self.now), [])
+
+    def test_startup_grace_keeps_snapshot_freshness_and_timestamp_validation(self):
+        self.grace_snapshot(21 * 60, 0)
+        self.assertIn("host_watchdog_not_current", monitor.assess(self.ready, self.health, self.now))
+        for value in ("invalid", None, "2026-10-17T13:00:00", (self.now + timedelta(seconds=1)).isoformat()):
+            with self.subTest(epoch=value):
+                self.grace_snapshot(19 * 60, 14 * 60)
+                self.health["scheduler_jobs"]["started_at"] = value
+                self.assertIn("host_watchdog_requires_attention", monitor.assess(self.ready, self.health, self.now))
+            with self.subTest(observation=value):
+                self.grace_snapshot(19 * 60, 14 * 60)
+                self.health["watchdog"]["checked_at"] = value
+                self.assertIn("host_watchdog_not_current", monitor.assess(self.ready, self.health, self.now))
+
     def test_transient_failure_gets_one_recheck(self):
         with patch.object(monitor, "check_once", side_effect=[["public_request_failed"], []]) as call, patch.object(monitor.time, "sleep"):
             self.assertEqual(monitor.main(), 0)
