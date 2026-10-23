@@ -153,7 +153,7 @@ class RenewalEvidenceTests(unittest.TestCase):
 
 
 class RenewalScopePipelineTests(unittest.IsolatedAsyncioTestCase):
-    async def test_french_topic_review_becomes_extension_draft_then_validated_publication(self):
+    async def test_french_topic_existing_review_reprocesses_same_draft_then_validated_publication(self):
         from pipeline_state import utcnow
         from publication_policy import PIPELINE_VERSION
         from speed_pipeline import GPTRewriter, SpeedPipeline
@@ -161,9 +161,10 @@ class RenewalScopePipelineTests(unittest.IsolatedAsyncioTestCase):
 
         rewrite = (
             "## Arda Güler soll seinen Vertrag bei Real Madrid verlängert haben\n\n"
-            "Laut Foot Mercato soll Arda Güler seinen Vertrag bei Real Madrid verlängert haben. "
-            "Das Portal beruft sich dabei auf Informationen des Journalisten Fabrizio Romano. "
-            "Güler spielt dem Bericht zufolge seit 2023 bei Real Madrid."
+            "Laut Foot Mercato soll der türkische offensive Mittelfeldspieler Arda Güler "
+            "seinen Vertrag bei Real Madrid verlängert haben. "
+            "Das Portal beruft sich dabei auf Informationen des italienischen Journalisten Fabrizio Romano. "
+            "Güler spielt dem Bericht zufolge seit dem Sommer 2023 bei Real Madrid."
         )
         complete = AsyncMock(return_value=types.SimpleNamespace(
             id="offline-response", usage=types.SimpleNamespace(total_tokens=123),
@@ -197,6 +198,22 @@ class RenewalScopePipelineTests(unittest.IsolatedAsyncioTestCase):
                 FRENCH_TOPIC_SUMMARY, rewrite.replace("2023", "2031"),
                 evidence=FRENCH_TOPIC_TITLE + "\n" + FRENCH_TOPIC_SUMMARY,
                 evidence_scope="source")[0])
+            # Existing live shape: same source was already processed by v8 and
+            # its generated body was held by the old translation detail guard.
+            await db.events.update_one({"id": "french-topic-renewal"}, {"$set": {
+                "pipeline_version": "20261023_source_grounded_v8"}})
+            await db.articles.update_one({"id": draft["id"]}, {"$set": {
+                "publication_policy_version": "20261023_source_grounded_v8",
+                "rewrite_status": "review", "rewrite_failed": True, "needs_gpt_rewrite": False,
+                "rewrite_review_reason": "Unbelegte biografische Angabe in Überschriftenmeldung: Mittelfeldspieler"}})
+            reconsidered = await pipeline.process_pending_events(1)
+            self.assertEqual((reconsidered["updated"], reconsidered["created_draft"]), (1, 0))
+            pending = await db.articles.find_one({"id": draft["id"]})
+            self.assertEqual((pending["status"], pending["rewrite_status"], pending["needs_gpt_rewrite"]),
+                             ("draft", "pending", True))
+            self.assertEqual(pending["content_revision"], draft["content_revision"] + 1)
+            self.assertEqual(len(await db.articles.find({}).to_list(10)), 1)
+            self.assertEqual(len(await db.transfer_stories.find({}).to_list(10)), 1)
             with patch("openai.AsyncOpenAI", return_value=client):
                 result = await GPTRewriter(db).process_rewrite_queue(1)
             self.assertEqual((result["rewritten"], result["published"]), (1, 1))

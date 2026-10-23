@@ -60,6 +60,11 @@ _RENEWAL_HEADLINE = re.compile(
 # Direct football-position translations share a group. Spanish nationality
 # additions require an explicit nationality label: a national-team mention alone
 # (e.g. "selección española sub-21") does not establish player nationality.
+_FRENCH_MIDFIELD_ROLE = r"milieux?\s+(?:de\s+terrain|offensifs?)"
+_FRENCH_FOOTBALL_ROLE = (
+    r"(?:" + _FRENCH_MIDFIELD_ROLE +
+    r"|joueurs?|footballeurs?|attaquants?|défenseurs?|gardiens?(?:\s+de\s+but)?)"
+)
 HEADLINE_DETAILS = (
     r"brasilian\w*|brazil\w*|nacionalidad\s+brasileña", r"deutsch\w*|german\w*|nacionalidad\s+alemana",
     r"französ\w*|french|nacionalidad\s+francesa",
@@ -70,13 +75,14 @@ HEADLINE_DETAILS = (
     r"österreich\w*|austrian\w*|nacionalidad\s+austríaca", r"dän\w*|danish|nacionalidad\s+danesa",
     r"schwed\w*|swedish|nacionalidad\s+sueca",
     r"norweg\w*|norwegian\w*", r"poln\w*|pole|polish", r"kroat\w*|croatian\w*",
-    r"türk\w*|turkish", r"japan\w*", r"korea\w*", r"nigerian\w*",
+    r"türk\w*|turkish|" + _FRENCH_FOOTBALL_ROLE + r"\s+tur(?:c|cs|que|ques)",
+    r"japan\w*", r"korea\w*", r"nigerian\w*",
     r"senegales\w*|senegalese", r"marokkan\w*|moroccan\w*", r"uruguay\w*",
     r"kolumbian\w*|colombian\w*", r"ägypt\w*|egyptian\w*",
     r"\d+[- ]?(?:jährig\w*|jahre alt|years?[- ]old)|aged \d+",
     r"jung\w*|young|talent\w*|veteran\w*|routinier\w*",
     r"stürmer\w*|striker\w*|forward\w*|delanter[oa]s?|attaquants?|attaccant[ei]",
-    r"mittelfeld\w*|midfielder\w*|centrocampistas?|mediocentros?|mediocampistas?|milieu de terrain",
+    r"mittelfeld\w*|midfielder\w*|centrocampistas?|mediocentros?|mediocampistas?|" + _FRENCH_MIDFIELD_ROLE,
     r"verteidiger\w*|defender\w*|fullback\w*|defensores?|zaguero[as]?|(?:el|un) defensa|défenseurs?|difensor[ei]",
     r"torwart\w*|torhüter\w*|goalkeeper\w*|porter[oa]s?|arquer[oa]s?|gardien de but|portier[ei]",
     r"flügel\w*|winger\w*|extremos?|ailiers?", r"nationalspieler\w*|international player",
@@ -85,13 +91,21 @@ HEADLINE_DETAILS = (
 )
 
 
+def _journalist_detail(text, match):
+    """A reporter's nationality cannot establish the player's nationality."""
+    return bool(re.search(r"\b(?:journalist\w*|reporter\w*)\s+$", text[:match.start()], re.I)
+                or re.match(r"\s+(?:journalist\w*|reporter\w*)\b", text[match.end():], re.I))
+
+
 def unsupported_headline_detail(rewrite, evidence, catalogues=None):
     """Reject common biographical additions, including translated football facts."""
     for pattern in HEADLINE_DETAILS:
         expression = r"\b(?:" + pattern + r")\b"
-        detail = re.search(expression, rewrite, re.I)
-        if detail and not re.search(expression, evidence, re.I):
-            return f"Unbelegte biografische Angabe in Überschriftenmeldung: {detail[0]}"
+        reported = list(re.finditer(expression, evidence, re.I))
+        for detail in re.finditer(expression, rewrite, re.I):
+            subject = _journalist_detail(rewrite, detail)
+            if not any(_journalist_detail(evidence, item) == subject for item in reported):
+                return f"Unbelegte biografische Angabe in Überschriftenmeldung: {detail[0]}"
     # Do not add a former/current club just because it exists in the name catalogue.
     resolved = _with_source_players(evidence, "", catalogues)
     resolved = _with_source_players(rewrite, "", resolved)
@@ -104,11 +118,21 @@ def unsupported_headline_detail(rewrite, evidence, catalogues=None):
     return None
 
 
+def _calendar_alias(text, match):
+    """Only a dated temporal phrase disambiguates a one-word season surname."""
+    return (match[0].casefold() in {"sommer", "winter", "herbst", "frühling", "fruehling"}
+            and re.search(r"\b(?:im|zum|vom|(?:seit|ab)(?:[ \t]+dem)?|bis(?:[ \t]+zum)?)[ \t]+$",
+                          text[max(0, match.start() - 32):match.start()], re.I)
+            and re.match(r"[ \t]+(?:19|20)\d{2}\b", text[match.end():]))
+
+
 def _mentions(text, catalogue):
     """Longest non-overlapping aliases, with every distinct entity retained."""
     found = []
     for alias, data in catalogue.items():
         for match in re.finditer(r"(?<!\w)" + re.escape(alias) + r"(?!\w)", text, re.I):
+            if _calendar_alias(text, match):
+                continue
             # These short surnames are also common grammatical words. Their
             # lowercase forms alone cannot establish a named footballer.
             if alias.casefold() in {"son", "can", "tel"} and match[0].islower():
@@ -201,6 +225,8 @@ def _with_source_players(title, summary, catalogues):
 def _has_ambiguous_alias(text, aliases, resolved):
     for alias in aliases:
         for match in re.finditer(r"(?<!\w)" + re.escape(alias) + r"(?!\w)", text, re.I):
+            if _calendar_alias(text, match):
+                continue
             # A complete unambiguous name can disambiguate its shared surname.
             if not any(start <= match.start() and end >= match.end() for start, end, _ in resolved):
                 return True

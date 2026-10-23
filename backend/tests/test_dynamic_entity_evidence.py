@@ -177,6 +177,77 @@ class SourceNameAndRelationTests(unittest.TestCase):
         self.assertIsNotNone(unsupported_headline_detail("Marc Bernal ist brasilianischer Mittelfeldspieler und verlängert seinen Vertrag bei Barcelona.",
             "Marc Bernal es centrocampista de nacionalidad española y renueva su contrato con Barcelona."))
 
+    def test_french_football_role_and_nationality_translate_from_actual_source(self):
+        from test_renewal_evidence import FRENCH_TOPIC_TITLE, FRENCH_TOPIC_SUMMARY
+        evidence = FRENCH_TOPIC_TITLE + "\n" + FRENCH_TOPIC_SUMMARY
+        natural = ("Laut Foot Mercato soll der türkische offensive Mittelfeldspieler Arda Güler "
+                   "seinen Vertrag bei Real Madrid verlängert haben. Seit Sommer 2023 spielt er dort. "
+                   "Das Portal beruft sich auf den italienischen Journalisten Fabrizio Romano.")
+        self.assertIsNone(unsupported_headline_detail(natural, evidence))
+        for role in ("milieu offensif", "milieux offensifs"):
+            with self.subTest(role=role):
+                self.assertIsNone(unsupported_headline_detail(
+                    "Mittelfeldspieler Arda Güler verlängert bei Real Madrid.",
+                    f"Arda Güler est {role} au Real Madrid."))
+        for addition in ("Stürmer", "Torwart", "21-jährige", "brasilianische", "italienische"):
+            with self.subTest(addition=addition):
+                self.assertIsNotNone(unsupported_headline_detail(
+                    f"Der {addition} Mittelfeldspieler Arda Güler verlängert bei Real Madrid.", evidence))
+        # A supported reporter description must not hide a later added player claim.
+        self.assertIsNotNone(unsupported_headline_detail(
+            "Der italienische Journalist Fabrizio Romano berichtet über den italienischen "
+            "Mittelfeldspieler Arda Güler bei Real Madrid.", evidence))
+
+    def test_french_national_team_or_reporter_is_not_player_nationality(self):
+        rewrite = "Der türkische Mittelfeldspieler Arda Güler verlängert bei Real Madrid."
+        for context in ("la sélection turque", "la Turquie", "le journaliste turc",
+                        "le milieu offensif rejoint la sélection turque"):
+            with self.subTest(context=context):
+                self.assertIsNotNone(unsupported_headline_detail(
+                    rewrite, f"Arda Güler est milieu offensif au Real Madrid. {context}."))
+        for role in ("le milieu offensif turc", "le joueur turc", "la joueuse turque"):
+            with self.subTest(role=role):
+                # Only supported football-role labels are accepted; feminine role
+                # forms outside the bounded catalogue remain conservative.
+                result = unsupported_headline_detail(
+                    "Arda Güler est türkisch.", f"Arda Güler, {role}, joue au Real Madrid.")
+                if role == "la joueuse turque":
+                    self.assertIsNotNone(result)
+                else:
+                    self.assertIsNone(result)
+
+    def test_dated_calendar_alias_is_not_a_new_or_source_licensed_player(self):
+        source = "Arda Güler joue au Real Madrid depuis l’été 2023."
+        for phrase in ("seit Sommer 2023", "seit dem Sommer 2023", "im Sommer 2023",
+                       "ab Sommer 2023", "ab dem Sommer 2023", "bis zum Sommer 2023"):
+            with self.subTest(phrase=phrase):
+                dated = f"Arda Güler spielt {phrase} bei Real Madrid."
+                self.assertIsNone(unsupported_headline_detail(dated, source))
+                self.assertIsNotNone(unsupported_headline_detail("Yann Sommer spielt bei Real Madrid.", dated))
+        for player in ("Yann Sommer", "Sommer"):
+            with self.subTest(player=player):
+                self.assertIsNotNone(unsupported_headline_detail(
+                    f"Inter verpflichtet {player} 2023.", source))
+                self.assertIsNone(unsupported_headline_detail(
+                    f"Inter verpflichtet {player} 2023.", "Inter signs Yann Sommer in 2023."))
+        self.assertIsNotNone(unsupported_headline_detail("Arda Güler spielt mit Sommer 2023 bei Real Madrid.", source))
+
+    def test_calendar_alias_collisions_do_not_create_ambiguous_players(self):
+        for surname in ("Sommer", "Winter", "Herbst", "Frühling"):
+            with self.subTest(surname=surname):
+                catalogues = build_entity_catalogues(players=[
+                    {"name": f"Felix {surname}", "aliases": [surname]},
+                    {"name": f"Jonas {surname}", "aliases": [surname]},
+                ])
+                title = "Arda Güler verlängert seinen Vertrag bei Real Madrid"
+                summary = f"Arda Güler spielt seit {surname} 2023 bei Real Madrid."
+                result = assess_transfer_evidence(title, summary, catalogues)
+                self.assertEqual((result["player"], result["transfer_type"]), ("Arda Güler", "extension"))
+                self.assertEqual(assess_transfer_evidence(
+                    f"Liverpool signs {surname}", catalogues=catalogues)["reason"], "ambiguous_players")
+                self.assertIsNotNone(assess_transfer_evidence(
+                    title, f"Felix {surname} joins Liverpool.", catalogues)["reason"])
+
 
 if __name__ == "__main__":
     unittest.main()
