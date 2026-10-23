@@ -49,6 +49,7 @@ _RENEWAL_HEADLINE = re.compile(
     r"(?:bouclé|officialisé|annoncé|confirmé|acté)\s+(?:la\s+)?"
     r"(?:prolongation|renouvellement)\s+(?:du contrat\s+)?(?:de\s+|d['’])player"
     r"|(?:le\s+|l['’])?club\s+prolonge\s+(?:le contrat de\s+)?player"
+    r"|club\s*:\s*player\s+a\s+prolongé"
     r"|player\s+(?:a\s+)?(?:prolonge|prolongé)\s+(?:son contrat\s+)?"
     r"(?:avec|au|à|chez)\s+(?:le\s+)?club"
     r")"

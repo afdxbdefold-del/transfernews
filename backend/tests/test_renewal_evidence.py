@@ -1,7 +1,9 @@
 """Actual October RSS claims and conservative renewal counterexamples; offline."""
 from pathlib import Path
+import os
 import socket
 import sys
+import types
 import unittest
 from unittest.mock import AsyncMock, patch
 
@@ -22,6 +24,12 @@ FRENCH_SUMMARY = (
     "Jude Bellingham et le Real Madrid ont trouvé un accord pour prolonger leur collaboration "
     "jusqu’au 30 juin 2031, selon AS. Arrivé à l’été 2023 en provenance du Borussia Dortmund, "
     "l’international (…)"
+)
+FRENCH_TOPIC_TITLE = "Real Madrid : Arda Güler a prolongé"
+FRENCH_TOPIC_SUMMARY = (
+    "Au Real Madrid depuis l’été 2023, Arda Güler va continuer l’aventure merengue. "
+    "Selon les informations du journaliste italien Fabrizio Romano, le milieu offensif turc "
+    "a signé son nouveau contrat avec (…)"
 )
 
 
@@ -48,6 +56,40 @@ class RenewalEvidenceTests(unittest.TestCase):
     def test_actual_french_renewal_discards_historical_club(self):
         self.assert_renewal(FRENCH_TITLE, FRENCH_SUMMARY)
         self.assert_renewal(FRENCH_TITLE)
+
+    def test_actual_french_topic_renewal_retains_same_player_summary(self):
+        self.assert_renewal(FRENCH_TOPIC_TITLE, player="Arda Güler")
+        self.assert_renewal(FRENCH_TOPIC_TITLE, FRENCH_TOPIC_SUMMARY,
+                           player="Arda Güler", scope="full")
+        self.assert_renewal("Bayern: Harry Kane a prolongé.",
+                           player="Harry Kane", club="FC Bayern München")
+
+    def test_french_topic_renewal_is_only_a_complete_affirmative_claim(self):
+        for title in (
+            "Real Madrid : Arda Güler n’a pas prolongé",
+            "Real Madrid : Arda Güler a prolongé ?",
+            "Real Madrid : Arda Güler aurait prolongé",
+            "Real Madrid : Arda Güler pourrait prolonger",
+            "Real Madrid : si Arda Güler a prolongé",
+            "Real Madrid : Arda Güler a prolongé ses vacances",
+            "Real Madrid : Arda Güler a prolongé son séjour",
+            "Real Madrid : Arda Güler et Jude Bellingham ont prolongé",
+            "Real Madrid : Arda Güler a prolongé et Harry Kane aussi",
+            "Real Madrid : Arda Güler a prolongé avec le Bayern",
+            "Real Madrid et Bayern : Arda Güler a prolongé",
+        ):
+            for summary in ("", FRENCH_TOPIC_SUMMARY):
+                with self.subTest(title=title, with_summary=bool(summary)):
+                    self.assertIsNotNone(assess_transfer_evidence(
+                        title, summary, self.catalogues)["reason"])
+
+    def test_french_topic_renewal_preserves_negation_and_topic_guards(self):
+        for summary in ("La prolongation a été démentie par son agent.",
+                        "Arda Güler n’a pas signé de nouveau contrat.",
+                        "Arda Güler has agreed to a charity appearance."):
+            with self.subTest(summary=summary):
+                self.assertIsNotNone(assess_transfer_evidence(
+                    FRENCH_TOPIC_TITLE, summary, self.catalogues)["reason"])
 
     def test_language_patterns_are_not_specific_to_player_or_club(self):
         for title in ("Harry Kane agrees a new two-year deal with Bayern",
@@ -111,6 +153,64 @@ class RenewalEvidenceTests(unittest.TestCase):
 
 
 class RenewalScopePipelineTests(unittest.IsolatedAsyncioTestCase):
+    async def test_french_topic_review_becomes_extension_draft_then_validated_publication(self):
+        from pipeline_state import utcnow
+        from publication_policy import PIPELINE_VERSION
+        from speed_pipeline import GPTRewriter, SpeedPipeline
+        from test_pipeline_repair import Database
+
+        rewrite = (
+            "## Arda Güler soll seinen Vertrag bei Real Madrid verlängert haben\n\n"
+            "Laut Foot Mercato soll Arda Güler seinen Vertrag bei Real Madrid verlängert haben. "
+            "Das Portal beruft sich dabei auf Informationen des Journalisten Fabrizio Romano. "
+            "Güler spielt dem Bericht zufolge seit 2023 bei Real Madrid."
+        )
+        complete = AsyncMock(return_value=types.SimpleNamespace(
+            id="offline-response", usage=types.SimpleNamespace(total_tokens=123),
+            choices=[types.SimpleNamespace(message=types.SimpleNamespace(content=rewrite))]))
+        client = types.SimpleNamespace(
+            chat=types.SimpleNamespace(completions=types.SimpleNamespace(create=complete)), close=AsyncMock())
+        with patch.object(socket.socket, "connect", side_effect=AssertionError("No networking")), \
+                patch.dict(os.environ, {"OPENAI_API_KEY": "offline-test"}):
+            db = Database()
+            pipeline = SpeedPipeline(db)
+            pipeline._assign_article_image = AsyncMock()
+            await db.events.insert_one({
+                "id": "french-topic-renewal", "status": "review", "created_at": utcnow(),
+                "review_reason": "ambiguous_transfer_direction", "pipeline_version": "previous-policy",
+                "headline_raw": FRENCH_TOPIC_TITLE, "summary": FRENCH_TOPIC_SUMMARY,
+                "body_raw": FRENCH_TOPIC_SUMMARY, "source_name": "Foot Mercato",
+                "source_url": "https://www.footmercato.net/a3045578490507207433-real-madrid-arda-guler-a-prolonge",
+                "source_published_at": utcnow(),
+            })
+            result = await pipeline.process_pending_events(1)
+            self.assertEqual(result["created_draft"], 1)
+            draft = await db.articles.find_one({})
+            self.assertEqual((draft["status"], draft["transfer_type"], draft["from_club"]),
+                             ("draft", "extension", None))
+            self.assertIn("Vertragsverlängerung", draft["title"])
+            self.assertEqual((draft["source_headline"], draft["source_summary"], draft["evidence_scope"]),
+                             (FRENCH_TOPIC_TITLE, FRENCH_TOPIC_SUMMARY, "full"))
+            self.assertTrue(draft["auto_publish_eligible"])
+            self.assertIsNone(draft["published_at"])
+            self.assertFalse(GPTRewriter(db).validate_rewrite(
+                FRENCH_TOPIC_SUMMARY, rewrite.replace("2023", "2031"),
+                evidence=FRENCH_TOPIC_TITLE + "\n" + FRENCH_TOPIC_SUMMARY,
+                evidence_scope="source")[0])
+            with patch("openai.AsyncOpenAI", return_value=client):
+                result = await GPTRewriter(db).process_rewrite_queue(1)
+            self.assertEqual((result["rewritten"], result["published"]), (1, 1))
+            complete.assert_awaited_once()
+            saved = await db.articles.find_one({})
+            self.assertEqual((saved["status"], saved["body"], saved["rewrite_status"]),
+                             ("published", rewrite, "complete"))
+            self.assertEqual(saved["rewrite_completed_revision"], saved["content_revision"])
+            self.assertFalse(saved["has_researched_context"])
+            event = await db.events.find_one({"id": "french-topic-renewal"})
+            self.assertEqual((event["pipeline_version"], event["body_raw"]),
+                             (PIPELINE_VERSION, FRENCH_TOPIC_SUMMARY))
+            self.assertEqual((await pipeline.process_pending_events(1))["processed"], 0)
+
     async def test_roundup_and_historical_summary_never_reach_article_or_story(self):
         from pipeline_state import utcnow
         from speed_pipeline import SpeedPipeline
