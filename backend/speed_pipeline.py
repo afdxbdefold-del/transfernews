@@ -27,6 +27,7 @@ from transfer_evidence import assess_transfer_evidence, unsupported_headline_det
 from entity_catalogue import load_entity_catalogues
 from publication_policy import PIPELINE_VERSION, RECONSIDER_REASONS, editorial_eligibility, can_publish_rewrite
 from source_rewrite_checks import validate_source_rewrite
+from source_scope import apply_evidence_scope
 from rewrite_errors import (PROVIDER_ID, RewriteFailure, RewriteProviderError,
                             classify_rewrite_error, get_rewrite_provider_pause,
                             record_rewrite_provider_failure, record_rewrite_provider_success,
@@ -452,11 +453,7 @@ class SpeedPipeline:
         entities = assess_transfer_evidence(event["title"], event["summary"], self.evidence_catalogues)
         if entities.get("reason"):
             return {"action": "review", "reason": entities["reason"], "article_id": None, "time_ms": 0}
-        event["evidence_scope"] = entities["evidence_scope"]
-        if event["evidence_scope"] == "headline":
-            # Local copy only: preserve the original imported event for editorial review.
-            # Clear every summary alias so StoryEngine cannot fall back to mixed RSS text.
-            event.update(summary="", body_raw="", summary_raw="")
+        event = apply_evidence_scope(event, entities)
         player, club = entities.get("player", ""), entities.get("club", "")
         if (not player or not club or any("unbekannt" in value.lower() or "unknown" in value.lower()
                                         for value in (player, club))):
@@ -493,7 +490,7 @@ class SpeedPipeline:
     @staticmethod
     def _source_article_body(story: dict, event: dict) -> str:
         """Publish supplied facts, without the old invented negotiations/background templates."""
-        if event.get("evidence_scope") == "headline":
+        if event.get("evidence_scope") in {"headline", "claim"}:
             return "## Quellenmeldung\n\n" + (event.get("source_name") or "Die Quelle") + ": " + event["title"]
         pieces = ["## Transferstand", story["headline"] + "."]
         if story.get("transfer_fee"):
@@ -526,6 +523,8 @@ class SpeedPipeline:
             "source_event_id": event.get("id"), "source_published_at": parse_source_time(event.get("source_published_at")),
             "source_headline": event["title"], "source_summary": event.get("summary", ""),
             "evidence_scope": event.get("evidence_scope", "full"),
+            "evidence_spans": event.get("evidence_spans", []),
+            "original_source_headline": event.get("original_source_headline", event["title"]),
             "source_grounded": True, "transfer_type": story.get("transfer_type", "permanent"),
             "source_name": event.get("source_name", ""), "source_url": event.get("source_url", ""),
             "auto_publish_eligible": eligible, "publication_reason": publication_reason,
@@ -559,6 +558,8 @@ class SpeedPipeline:
             "primary_source": story.get("primary_source", ""), "secondary_sources": story.get("secondary_sources", []),
             "source_headline": event["title"], "source_summary": event.get("summary", ""),
             "evidence_scope": event.get("evidence_scope", "full"),
+            "evidence_spans": event.get("evidence_spans", []),
+            "original_source_headline": event.get("original_source_headline", event["title"]),
             "source_grounded": True, "transfer_type": story.get("transfer_type", "permanent"),
             "auto_publish_eligible": eligible, "publication_reason": publication_reason,
             "publication_policy_version": PIPELINE_VERSION,
@@ -726,7 +727,7 @@ class SpeedPipeline:
                 {"$and": [{"status": {"$in": ["pending", "retry"]}}, due_query("next_attempt_at", now)]},
                 {"status": "processing", "lease_until": {"$lte": now}},
                 {"pipeline_version": {"$ne": PIPELINE_VERSION},
-                 "source_published_at": {"$gte": now - timedelta(hours=48), "$lte": now + timedelta(minutes=10)},
+                 "source_published_at": {"$gte": now - timedelta(hours=24), "$lte": now + timedelta(minutes=10)},
                  "$or": [{"status": "review", "review_reason": {"$in": list(RECONSIDER_REASONS)}},
                          {"status": "processed", "processing_outcome": {"$in": ["created_draft", "updated"]}}]},
             ]}
@@ -1050,7 +1051,7 @@ NUR OUTPUT: Der Artikel-Text mit H2-Überschriften."""
             source_article = {**article, **article.get("pending_publication", {})}
             source_constraints = self._source_constraints(source_article)
 
-            headline_only = article.get("evidence_scope") == "headline"
+            headline_only = article.get("evidence_scope") in {"headline", "claim"}
             source_headline = article.get("source_headline", "")
             if headline_only and not source_headline.strip():
                 return False

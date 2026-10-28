@@ -33,6 +33,8 @@ WATCHDOG_REASONS = {
     "restart_budget_exhausted", "probe_failed", "restart_failed", "state_write_failed",
     "diagnostic_publish_failed",
 }
+THROUGHPUT_WINDOW_HOURS = 6
+THROUGHPUT_MIN_FRESH_IMPORTS = 10
 
 
 def _time(value, now, allow_future=False):
@@ -56,6 +58,7 @@ class PipelineHealthSnapshot:
             self.now = self.now.replace(tzinfo=timezone.utc)
         self.now = self.now.astimezone(timezone.utc)
         self.cutoff = self.now - timedelta(hours=24)
+        self.throughput_cutoff = self.now - timedelta(hours=THROUGHPUT_WINDOW_HOURS)
         self.events = Counter()
         self.articles = Counter()
         self.rewrites = Counter()
@@ -134,14 +137,22 @@ class PipelineHealthSnapshot:
             self.quality["events_without_valid_import_time"] += 1
         else:
             self.first_import = min(self.first_import or imported, imported)
+            source_time = _time(event.get("source_published_at"), self.now)
+            if imported >= self.throughput_cutoff:
+                self.activity["imports_last_6h"] += 1
+                # A reimport of yesterday's source is not new source supply.
+                # Keep the existing 24h/48h freshness diagnostic separate.
+                if source_time and source_time >= self.throughput_cutoff:
+                    self.activity["fresh_imports_last_6h"] += 1
             if imported >= self.cutoff:
                 self.activity["imports_last_24h"] += 1
-                source_time = _time(event.get("source_published_at"), self.now)
                 if source_time and source_time >= self.now - timedelta(hours=48):
                     self.activity["fresh_imports_last_24h"] += 1
         processed = self._record_time("processed_at", event.get("processed_at"))
         if processed and processed >= self.cutoff:
             self.activity["processed_last_24h"] += 1
+        if processed and processed >= self.throughput_cutoff:
+            self.activity["processed_last_6h"] += 1
 
     def add_article(self, article):
         state = article.get("status")
@@ -156,6 +167,8 @@ class PipelineHealthSnapshot:
         rewritten = self._record_time("rewritten_at", article.get("gpt_rewritten_at"))
         if rewritten and rewritten >= self.cutoff:
             self.activity["rewritten_last_24h"] += 1
+        if rewritten and rewritten >= self.throughput_cutoff:
+            self.activity["rewritten_last_6h"] += 1
         if state != "published":
             return  # A draft's inherited published_at must not hide a stalled pipeline.
         published = self._record_time("published_at", article.get("published_at"))
@@ -164,6 +177,9 @@ class PipelineHealthSnapshot:
         else:
             if published >= self.cutoff:
                 self.activity["published_last_24h"] += 1
+            # Exactly six hours without publication reaches the warning boundary.
+            if published > self.throughput_cutoff:
+                self.activity["published_last_6h"] += 1
             if published >= self.now - timedelta(hours=1):
                 self.activity["published_last_hour"] += 1
 
@@ -181,6 +197,15 @@ class PipelineHealthSnapshot:
                 warnings.append("publication_stalled")
             elif not self.articles["published"] and self.first_import and self.first_import <= self.cutoff:
                 warnings.append("publication_stalled")
+        no_recent_publication = (
+            publication_gap is not None and publication_gap >= THROUGHPUT_WINDOW_HOURS
+        ) or (
+            not self.articles["published"] and self.first_import is not None
+            and self.first_import <= self.throughput_cutoff
+        )
+        if (self.activity["fresh_imports_last_6h"] >= THROUGHPUT_MIN_FRESH_IMPORTS
+                and no_recent_publication and not self.quality["published_articles_without_valid_date"]):
+            warnings.append("publication_throughput_low")
         waiting = self.events["pending"] + self.events["retry"]
         if waiting > 50:
             warnings.append("event_backlog")
@@ -205,6 +230,8 @@ class PipelineHealthSnapshot:
             "last_activity": {key: value.isoformat() if value else None for key, value in self.last.items()},
             "publication_gap_hours": round(publication_gap, 2) if publication_gap is not None else None,
             "activity": {key: self.activity[key] for key in (
+                "imports_last_6h", "fresh_imports_last_6h", "processed_last_6h",
+                "rewritten_last_6h", "published_last_6h",
                 "imports_last_24h", "fresh_imports_last_24h", "processed_last_24h",
                 "rewritten_last_24h", "published_last_24h", "published_last_hour")},
             "stages": {
@@ -216,7 +243,11 @@ class PipelineHealthSnapshot:
             "data_quality": {key: self.quality[key] for key in (
                 "events_without_valid_import_time", "published_articles_without_valid_date")},
             "thresholds": {"publication_gap_hours": 24, "import_lookback_hours": 24,
-                           "source_freshness_hours": 48, "watchdog_stale_minutes": 20},
+                           "source_freshness_hours": 48, "watchdog_stale_minutes": 20,
+                           "publication_throughput_gap_hours": THROUGHPUT_WINDOW_HOURS,
+                           "throughput_import_lookback_hours": THROUGHPUT_WINDOW_HOURS,
+                           "throughput_source_freshness_hours": THROUGHPUT_WINDOW_HOURS,
+                           "throughput_min_fresh_imports": THROUGHPUT_MIN_FRESH_IMPORTS},
         }
 
 

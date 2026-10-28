@@ -128,7 +128,7 @@ def _attributed(text, publisher):
 def validate_source_rewrite(rewrite, article):
     """Return (accepted, reason) without network, database, or model calls."""
     headline = article.get("source_headline") or ""
-    summary = "" if article.get("evidence_scope") == "headline" else article.get("source_summary") or ""
+    summary = "" if article.get("evidence_scope") in {"headline", "claim"} else article.get("source_summary") or ""
     evidence = _text(headline + "\n" + summary)
     if not evidence.strip():
         return False, "missing_source_evidence"
@@ -154,7 +154,7 @@ def validate_source_rewrite(rewrite, article):
     if (any(_positive_signature(text, match) for match in SIGNATURE.finditer(text))
             and not any(_positive_signature(evidence, match) for match in SIGNATURE.finditer(evidence))):
         return False, "unsupported_signature_claim"
-    if article.get("evidence_scope") == "headline":
+    if article.get("evidence_scope") in {"headline", "claim"}:
         for output_pattern, source_pattern in HEADLINE_FILLER:
             if output_pattern.search(text) and not source_pattern.search(evidence):
                 return False, "unsupported_headline_filler"
