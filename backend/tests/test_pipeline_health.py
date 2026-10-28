@@ -221,6 +221,118 @@ class HealthSnapshotTests(unittest.TestCase):
         self.assertEqual(throttle.update(["publication_stalled"], NOW + timedelta(minutes=10)), ([], ["diagnostic_unavailable"]))
 
 
+class PublicationThroughputTests(unittest.TestCase):
+    def snapshot(self, publication_age=timedelta(hours=7), imports=10, **event_fields):
+        snapshot = PipelineHealthSnapshot(NOW)
+        if publication_age is not None:
+            snapshot.add_article({"status": "published", "published_at": NOW - publication_age})
+        for _ in range(imports):
+            snapshot.add_event(fresh_event(**event_fields))
+        return snapshot
+
+    def test_six_hour_publication_boundary_is_exact_and_requires_ten_fresh_imports(self):
+        for age, imports, expected in (
+            (timedelta(hours=6) - timedelta(seconds=1), 10, False),
+            (timedelta(hours=6), 10, True),
+            (timedelta(hours=6, seconds=1), 10, True),
+            (timedelta(hours=7), 9, False),
+            (timedelta(hours=7), 0, False),
+        ):
+            with self.subTest(age=age, imports=imports):
+                result = self.snapshot(age, imports).result()
+                self.assertEqual("publication_throughput_low" in result["warnings"], expected)
+                self.assertEqual(result["status"] == "warning", expected)
+                self.assertFalse(result["readiness_impact"])
+
+    def test_six_hour_supply_requires_recent_import_and_recent_original_source(self):
+        cases = (
+            ({"created_at": NOW - timedelta(hours=6)}, 10),
+            ({"created_at": NOW - timedelta(hours=6, seconds=1)}, 0),
+            ({"source_published_at": NOW - timedelta(hours=6)}, 10),
+            ({"source_published_at": NOW - timedelta(hours=6, seconds=1)}, 0),
+            ({"source_published_at": NOW - timedelta(hours=25)}, 0),
+            ({"source_published_at": NOW - timedelta(days=300)}, 0),
+            ({"source_published_at": None}, 0),
+            ({"source_published_at": "invalid"}, 0),
+            ({"source_published_at": NOW + timedelta(seconds=1)}, 0),
+            ({"created_at": NOW + timedelta(seconds=1)}, 0),
+        )
+        for event_fields, count in cases:
+            with self.subTest(event_fields=event_fields):
+                result = self.snapshot(**event_fields).result()
+                self.assertEqual(result["activity"]["fresh_imports_last_6h"], count)
+                self.assertEqual("publication_throughput_low" in result["warnings"], count >= 10)
+
+    def test_overnight_pause_does_not_reuse_the_twenty_four_hour_import_count(self):
+        snapshot = self.snapshot(created_at=NOW - timedelta(hours=7),
+                                 source_published_at=NOW - timedelta(hours=8))
+        snapshot.add_event(fresh_event())
+        result = snapshot.result()
+        self.assertEqual(result["activity"]["fresh_imports_last_24h"], 11)
+        self.assertEqual(result["activity"]["fresh_imports_last_6h"], 1)
+        self.assertEqual(result["warnings"], [])
+
+    def test_no_first_publication_gets_six_hours_from_first_persisted_import(self):
+        for age, expected in ((timedelta(hours=6) - timedelta(seconds=1), False),
+                              (timedelta(hours=6), True)):
+            with self.subTest(age=age):
+                snapshot = self.snapshot(publication_age=None)
+                snapshot.add_event(fresh_event(created_at=NOW - age, source_published_at=NOW - age))
+                snapshot.add_scheduler_jobs({"status": "starting", "scheduler_state": "running",
+                    "started_at": NOW.isoformat(), "jobs": {}, "warnings": []})
+                result = snapshot.result()
+                self.assertEqual("publication_throughput_low" in result["warnings"], expected)
+                self.assertIsNone(result["last_activity"]["published_at"])
+
+    def test_recent_draft_rewrite_and_successful_empty_jobs_do_not_count_as_publication(self):
+        snapshot = self.snapshot()
+        snapshot.add_article({"status": "draft", "published_at": NOW,
+                              "gpt_rewritten_at": NOW, "rewrite_status": "complete"})
+        snapshot.add_scheduler_jobs({"status": "ok", "scheduler_state": "running", "started_at": NOW.isoformat(),
+            "warnings": [], "jobs": {"gpt": {"status": "ok", "counts": {"rewritten": 0, "published": 0}}}})
+        result = snapshot.result()
+        self.assertEqual(result["warnings"], ["publication_throughput_low"])
+        self.assertEqual(result["activity"]["published_last_6h"], 0)
+        self.assertEqual(result["activity"]["rewritten_last_6h"], 1)
+        self.assertEqual(result["activity"]["processed_last_6h"], 10)
+
+    def test_real_publication_clears_warning_and_exact_boundary_is_not_recent(self):
+        snapshot = self.snapshot(publication_age=timedelta(hours=6))
+        self.assertEqual(snapshot.result()["activity"]["published_last_6h"], 0)
+        snapshot.add_article({"status": "published", "published_at": NOW - timedelta(seconds=1)})
+        result = snapshot.result()
+        self.assertEqual(result["warnings"], [])
+        self.assertEqual(result["activity"]["published_last_6h"], 1)
+
+    def test_twenty_four_hour_stall_remains_independent_of_short_window_supply(self):
+        snapshot = self.snapshot(publication_age=timedelta(hours=24), imports=1)
+        self.assertEqual(snapshot.result()["warnings"], ["publication_stalled"])
+        for _ in range(9):
+            snapshot.add_event(fresh_event())
+        self.assertEqual(snapshot.result()["warnings"], ["publication_stalled", "publication_throughput_low"])
+
+    def test_unknown_publication_time_is_not_reported_as_proven_six_hour_gap(self):
+        for known_age in (None, timedelta(hours=7)):
+            with self.subTest(known_age=known_age):
+                snapshot = self.snapshot(publication_age=known_age)
+                snapshot.add_event(fresh_event(created_at=NOW - timedelta(days=2)))
+                snapshot.add_article({"status": "published", "published_at": "invalid"})
+                self.assertEqual(snapshot.result()["warnings"], ["publication_timestamp_unknown"])
+
+    def test_activity_and_thresholds_are_explicit_and_no_source_text_is_emitted(self):
+        snapshot = self.snapshot(body_raw="private source text", review_reason="private untrusted reason",
+                                 source_url="https://private.example/token")
+        result = snapshot.result()
+        self.assertEqual(result["thresholds"]["publication_throughput_gap_hours"], 6)
+        self.assertEqual(result["thresholds"]["throughput_import_lookback_hours"], 6)
+        self.assertEqual(result["thresholds"]["throughput_source_freshness_hours"], 6)
+        self.assertEqual(result["thresholds"]["throughput_min_fresh_imports"], 10)
+        self.assertEqual(result["thresholds"]["publication_gap_hours"], 24)
+        self.assertEqual(result["thresholds"]["source_freshness_hours"], 48)
+        self.assertEqual(result["activity"]["imports_last_6h"], 10)
+        self.assertNotIn("private", str(result))
+
+
 class ProjectedCollection:
     """Only find is exposed: a diagnostic mutation would fail this test."""
     def __init__(self, collection):

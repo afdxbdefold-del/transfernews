@@ -540,6 +540,8 @@ CLUBS_DB = {
     "madrid": {"name": "Real Madrid", "country": "ESP", "league": "La Liga", "popularity": 100},
     "los blancos": {"name": "Real Madrid", "country": "ESP", "league": "La Liga", "popularity": 100},
     "barcelona": {"name": "FC Barcelona", "country": "ESP", "league": "La Liga", "popularity": 98},
+    "barcelone": {"name": "FC Barcelona", "country": "ESP", "league": "La Liga", "popularity": 98},
+    "fc barcelone": {"name": "FC Barcelona", "country": "ESP", "league": "La Liga", "popularity": 98},
     "barca": {"name": "FC Barcelona", "country": "ESP", "league": "La Liga", "popularity": 98},
     "barça": {"name": "FC Barcelona", "country": "ESP", "league": "La Liga", "popularity": 98},
     "fc barcelona": {"name": "FC Barcelona", "country": "ESP", "league": "La Liga", "popularity": 98},

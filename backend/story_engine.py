@@ -149,8 +149,8 @@ HEADLINE_TEMPLATES = {
     "rumor": "{player} wird mit {club} in Verbindung gebracht",
     "advanced": "{club} arbeitet an Transfer von {player}",
     "near_done": "{player} vor Wechsel zu {club}",
-    "done": "{player} steht vor Unterschrift bei {club}",
-    "official": "{club} bestätigt Transfer von {player}"
+    "done": "Bericht über Wechsel von {player} zu {club}",
+    "official": "Bericht: {player} wechselt zu {club}"
 }
 
 # =============================================================================
@@ -456,7 +456,7 @@ class StoryEngine:
         
         # 1. Entity Extraction
         entities = self.extract_entities(title, summary, source_name)
-        stage = entities["stage"]
+        stage = event.get("verified_stage") or entities["stage"]
         transfer_type = event.get("verified_transfer_type") or entities["transfer_type"]
         transfer_fee = entities["transfer_fee"]
         
