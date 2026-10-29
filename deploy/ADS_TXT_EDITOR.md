@@ -41,7 +41,7 @@ Die editorbezogene `www`-Route führt zur kanonischen HTTPS-Origin ohne `www`. S
 
 Beim Wechsel zwischen normalen Seiten und Editor wird ein neues Dokument geladen, damit die Editor-CSP gilt und vorher geladene Werbeskripte nicht in dieses Dokument übernommen werden. Die gemeinsame Origin bleibt dennoch eine Vertrauensgrenze: JavaScript in einem anderen gleichzeitig geöffneten `transfernews.de`-Tab kann grundsätzlich dieselbe API mit der dort gültigen Sitzung ansprechen. Eine vollständige Trennung von Drittanbieterskripten erfordert einen eigenen Editor-Origin; Pfadtrennung und CSRF allein leisten das nicht.
 
-Die Login-Begrenzung verwendet die vom Server ermittelte Clientadresse. Ungeprüfte Forwarding-Header dürfen diese Adresse nicht überschreiben. Vor Betrieb die wirksame Uvicorn-Konfiguration prüfen; insbesondere kein pauschales Vertrauen in `X-Forwarded-For` durch `FORWARDED_ALLOW_IPS=*`. Ohne Proxyheader-Auswertung teilen Anfragen über denselben Reverse Proxy dessen Loginlimit; das ist eine bewusste Verfügbarkeitsgrenze, kein Authentifizierungs-Bypass.
+Die Login-Begrenzung verwendet die vom Server ermittelte Clientadresse. Der Backend-Docker-CMD setzt seit Commit `c889a89` ausdrücklich `--no-proxy-headers`, damit ungeprüfte Forwarding-Header diese Adresse nicht überschreiben. Vor Betrieb auch die wirksame Startkonfiguration auf abweichende Overrides prüfen. Ohne Proxyheader-Auswertung teilen Anfragen über denselben Reverse Proxy dessen Loginlimit; das ist eine bewusste Verfügbarkeitsgrenze, kein Authentifizierungs-Bypass.
 
 Die Editor-API hat den Präfix `/api/ads-txt-editor`:
 
