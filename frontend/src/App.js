@@ -50,14 +50,24 @@ import AdminAdSlots from "@/pages/admin/AdminAdSlots";
 import AdminTransfers from "@/pages/admin/AdminTransfers";
 import AdminRumours from "@/pages/admin/AdminRumours";
 import AdminGSC from "@/pages/admin/AdminGSC";
+import AdsTxtEditor from "@/pages/AdsTxtEditor";
 
-function App() {
+const isAdsEditor = pathname => /^\/ads-txt-editor\/?$/.test(pathname);
+const editorDocument = isAdsEditor(window.location.pathname);
+
+function ApplicationContent() {
+  const { pathname } = useLocation();
+  const reloadDocument = isAdsEditor(pathname) !== editorDocument;
+  useEffect(() => {
+    // Entering the editor must load its restrictive CSP and discard ad scripts.
+    if (reloadDocument) window.location.reload();
+  }, [reloadDocument]);
+  if (reloadDocument) return null;
+  if (isAdsEditor(pathname)) return <AdsTxtEditor />;
+
   return (
-    <HelmetProvider>
       <AdSlotsProvider>
         <div className="App min-h-screen">
-          <BrowserRouter>
-            <ScrollToTop />
             <Routes>
             {/* Public Routes */}
             <Route path="/" element={<HomePage />} />
@@ -96,10 +106,19 @@ function App() {
             <Route path="/admin/gsc" element={<AdminGSC />} />
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
-          </BrowserRouter>
           <Toaster position="top-right" />
         </div>
       </AdSlotsProvider>
+  );
+}
+
+function App() {
+  return (
+    <HelmetProvider>
+      <BrowserRouter>
+        <ScrollToTop />
+        <ApplicationContent />
+      </BrowserRouter>
     </HelmetProvider>
   );
 }

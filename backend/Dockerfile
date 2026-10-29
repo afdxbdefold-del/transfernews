@@ -18,4 +18,5 @@ RUN mkdir -p /app/static/images /app/prerender_cache
 EXPOSE 8001
 
 # Run the application
-CMD ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8001"]
+# Authentication rate limits use the actual connecting proxy, never spoofed XFF.
+CMD ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8001", "--no-proxy-headers"]

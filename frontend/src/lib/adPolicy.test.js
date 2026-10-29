@@ -17,8 +17,8 @@ test('disabling a configured slot disables its built-in format', () => {
   expect(canShowAd({ ...active, is_active: false }, '/', 1440)).toBe(false);
   expect(canShowAd(undefined, '/', 1440)).toBe(false);
 });
-test('admin and legal pages never load ad scripts', () => {
-  for (const path of ['/admin', '/admin/articles', '/datenschutz', '/impressum']) expect(canShowAd(active, path, 1440)).toBe(false);
+test('admin, ads editor and legal pages never load ad scripts', () => {
+  for (const path of ['/admin', '/admin/articles', '/ads-txt-editor', '/ads-txt-editor/', '/datenschutz', '/impressum']) expect(canShowAd(active, path, 1440)).toBe(false);
 });
 test('custom slots respect page and explicit device configuration', () => {
   const mobile = { ...active, slot_key: 'mobile_sticky_bottom', device_type: 'mobile', embed_code: '<div>mobile</div>', page_type: 'news_detail' };

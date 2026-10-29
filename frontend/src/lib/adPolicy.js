@@ -1,4 +1,4 @@
-export const NO_AD_PAGES = ['/impressum', '/datenschutz', '/ueber-uns', '/about', '/admin'];
+export const NO_AD_PAGES = ['/impressum', '/datenschutz', '/ueber-uns', '/about', '/admin', '/ads-txt-editor'];
 // Only these eight established placements have a built-in provider format.
 export const SKYSCRAPER_MIN_WIDTH = 1360;
 export const LEGACY_FORMATS = {

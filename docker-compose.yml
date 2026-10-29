@@ -26,10 +26,15 @@ services:
       - SITE_URL=https://transfernews.de
       - MEDIA_ROOT=/app/static
       - PRERENDER_CACHE_DIR=/app/prerender_cache
+      - ADS_TXT_EDITOR_DB_PATH=/app/ads_txt/editor.sqlite3
+      - ADS_TXT_EDITOR_PASSWORD_HASH_FILE=/run/secrets/ads_txt_editor_password_hash
+      - ADS_TXT_EDITOR_ORIGIN=https://transfernews.de
     volumes:
       - /opt/transfernews-runtime/static:/app/static
       - /opt/transfernews-runtime/prerender_cache:/app/prerender_cache
       - /opt/transfernews-runtime/secrets/jwt_secret:/run/secrets/jwt_secret:ro
+      - /opt/transfernews-runtime/ads_txt:/app/ads_txt
+      - /opt/transfernews-runtime/secrets/ads_txt_editor_password_hash:/run/secrets/ads_txt_editor_password_hash:ro
     depends_on:
       mongodb:
         condition: service_healthy
