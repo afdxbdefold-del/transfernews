@@ -45,12 +45,24 @@ class UnitedClubAliasTests(unittest.TestCase):
                 self.assertEqual(assess_transfer_evidence(
                     "Florian Wirtz joins United", catalogues=catalogue)["reason"], "ambiguous_clubs")
 
-    def test_standalone_and_unknown_prefixed_united_do_not_guess_a_club(self):
-        for title in ("Florian Wirtz joins United", "Florian Wirtz joins Oxford United",
-                      "Florian Wirtz joins Sheffield United"):
+    def test_standalone_united_does_not_guess_a_club(self):
+        for catalogue in self.catalogue_variants():
+            with self.subTest(catalogue=catalogue is not None):
+                self.assertEqual(assess_transfer_evidence(
+                    "Florian Wirtz joins United", catalogues=catalogue)["reason"], "ambiguous_clubs")
+
+    def test_complete_source_club_name_is_preserved_instead_of_manchester(self):
+        # The source-name extension can now recognize a previously uncatalogued
+        # full name. The original bug was guessing Manchester from its suffix,
+        # not accepting the exact complete name reported by the source.
+        for club in ("Oxford United", "Sheffield United"):
             for catalogue in self.catalogue_variants():
-                with self.subTest(title=title, catalogue=catalogue is not None):
-                    self.assertIsNotNone(assess_transfer_evidence(title, catalogues=catalogue)["reason"])
+                with self.subTest(club=club, catalogue=catalogue is not None):
+                    result = assess_transfer_evidence(f"Florian Wirtz joins {club}", catalogues=catalogue)
+                    self.assertEqual((result["reason"], result["player"], result["club"], result["from_club"]),
+                                     (None, "Florian Wirtz", club, None))
+                    if catalogue is not None:
+                        self.assertNotIn(club.casefold(), catalogue["clubs"])
 
     def test_full_known_names_still_disambiguate_shared_suffix(self):
         for alias, expected in (("Manchester United", "Manchester United"), ("Man United", "Manchester United"),
@@ -63,13 +75,30 @@ class UnitedClubAliasTests(unittest.TestCase):
 
     def test_unresolved_united_cannot_disappear_next_to_a_known_club(self):
         for title in ("Florian Wirtz contract extension at Liverpool and United",
-                      "Florian Wirtz contract extension at Liverpool and Oxford United",
-                      "Florian Wirtz transfer from United to Leeds",
-                      "Florian Wirtz transfer from Sheffield United to Leeds"):
+                      "Florian Wirtz transfer from United to Leeds"):
             for catalogue in self.catalogue_variants():
                 with self.subTest(title=title, catalogue=catalogue is not None):
                     self.assertEqual(assess_transfer_evidence(title, catalogues=catalogue)["reason"],
                                      "ambiguous_clubs")
+
+    def test_complete_source_club_does_not_hide_ambiguous_renewal_direction(self):
+        for catalogue in self.catalogue_variants():
+            with self.subTest(catalogue=catalogue is not None):
+                result = assess_transfer_evidence(
+                    "Florian Wirtz contract extension at Liverpool and Oxford United", catalogues=catalogue)
+                self.assertEqual(result, {"reason": "ambiguous_transfer_direction"})
+
+    def test_complete_source_club_names_preserve_explicit_transfer_direction(self):
+        cases = (("Sheffield United", "Leeds", "Sheffield United", "Leeds United"),
+                 ("Leeds", "Oxford United", "Leeds United", "Oxford United"),
+                 ("Sheffield United", "Oxford United", "Sheffield United", "Oxford United"))
+        for origin, destination, expected_origin, expected_destination in cases:
+            for catalogue in self.catalogue_variants():
+                with self.subTest(origin=origin, destination=destination, catalogue=catalogue is not None):
+                    result = assess_transfer_evidence(
+                        f"Florian Wirtz transfer from {origin} to {destination}", catalogues=catalogue)
+                    self.assertEqual((result["reason"], result["player"], result["from_club"], result["club"]),
+                                     (None, "Florian Wirtz", expected_origin, expected_destination))
 
     def test_known_united_clubs_preserve_explicit_transfer_direction(self):
         result = assess_transfer_evidence("Florian Wirtz transfer from Manchester United to Leeds United",
