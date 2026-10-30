@@ -5,6 +5,11 @@ import unicodedata
 from entity_recognition import PLAYERS_DB, CLUBS_DB
 
 
+# These aliases are inherently shared even when the database happens to contain
+# only one claimant. Exact names such as "Leeds United" still disambiguate them.
+AMBIGUOUS_CLUB_ALIASES = frozenset({"united"})
+
+
 def normalize_alias(value):
     if not isinstance(value, str):
         return ""
@@ -52,6 +57,9 @@ def build_entity_catalogues(players=(), clubs=()):
     """Pure builder; data fields other than supplied names/aliases are ignored."""
     player_names, player_conflicts = _merge_catalogue(PLAYERS_DB, players)
     club_names, club_conflicts = _merge_catalogue(CLUBS_DB, clubs)
+    for alias in AMBIGUOUS_CLUB_ALIASES:
+        club_names.pop(alias, None)
+    club_conflicts = sorted(set(club_conflicts) | AMBIGUOUS_CLUB_ALIASES)
     return {"players": player_names, "clubs": club_names,
             "ambiguous_players": player_conflicts, "ambiguous_clubs": club_conflicts}
 

@@ -562,8 +562,11 @@ CLUBS_DB = {
     "manchester united": {"name": "Manchester United", "country": "ENG", "league": "Premier League", "popularity": 93},
     "man united": {"name": "Manchester United", "country": "ENG", "league": "Premier League", "popularity": 93},
     "man utd": {"name": "Manchester United", "country": "ENG", "league": "Premier League", "popularity": 93},
-    "united": {"name": "Manchester United", "country": "ENG", "league": "Premier League", "popularity": 93},
     "the red devils": {"name": "Manchester United", "country": "ENG", "league": "Premier League", "popularity": 93},
+    # Source-present names only; "United" alone cannot identify any one club.
+    # No league or popularity is inferred for these evidence catalogue entries.
+    "leeds united": {"name": "Leeds United", "country": "ENG", "popularity": 0},
+    "leeds": {"name": "Leeds United", "country": "ENG", "popularity": 0},
     "chelsea": {"name": "FC Chelsea", "country": "ENG", "league": "Premier League", "popularity": 92},
     "fc chelsea": {"name": "FC Chelsea", "country": "ENG", "league": "Premier League", "popularity": 92},
     "the blues": {"name": "FC Chelsea", "country": "ENG", "league": "Premier League", "popularity": 92},

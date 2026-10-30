@@ -6,7 +6,7 @@ Unknown or ambiguous reports remain reviewable events rather than invented trans
 import re
 
 from entity_recognition import PLAYERS_DB, CLUBS_DB
-from entity_catalogue import normalize_alias
+from entity_catalogue import AMBIGUOUS_CLUB_ALIASES, normalize_alias
 
 
 CONTEXT = re.compile(
@@ -148,7 +148,7 @@ def _mentions(text, catalogue):
 def _catalogues(catalogues):
     return catalogues if catalogues is not None else {
         "players": PLAYERS_DB, "clubs": CLUBS_DB,
-        "ambiguous_players": (), "ambiguous_clubs": (),
+        "ambiguous_players": (), "ambiguous_clubs": AMBIGUOUS_CLUB_ALIASES,
     }
 
 
