@@ -249,7 +249,7 @@ PLAYERS_DB = {
     "gabriel martinelli": {"name": "Gabriel Martinelli", "club": "Arsenal", "position": "LW", "nationality": "BRA", "popularity": 65},
     "saliba": {"name": "William Saliba", "club": "Arsenal", "position": "CB", "nationality": "FRA", "popularity": 63},
     "william saliba": {"name": "William Saliba", "club": "Arsenal", "position": "CB", "nationality": "FRA", "popularity": 63},
-    "gabriel": {"name": "Gabriel Magalhães", "club": "Arsenal", "position": "CB", "nationality": "BRA", "popularity": 60},
+    "gabriel magalhães": {"name": "Gabriel Magalhães", "club": "Arsenal", "position": "CB", "nationality": "BRA", "popularity": 60},
     "gabriel magalhaes": {"name": "Gabriel Magalhães", "club": "Arsenal", "position": "CB", "nationality": "BRA", "popularity": 60},
     "trossard": {"name": "Leandro Trossard", "club": "Arsenal", "position": "LW", "nationality": "BEL", "popularity": 58},
     "leandro trossard": {"name": "Leandro Trossard", "club": "Arsenal", "position": "LW", "nationality": "BEL", "popularity": 58},

@@ -6,7 +6,7 @@ Unknown or ambiguous reports remain reviewable events rather than invented trans
 import re
 
 from entity_recognition import PLAYERS_DB, CLUBS_DB
-from entity_catalogue import AMBIGUOUS_CLUB_ALIASES, normalize_alias
+from entity_catalogue import AMBIGUOUS_CLUB_ALIASES, AMBIGUOUS_PLAYER_ALIASES, normalize_alias
 
 
 CONTEXT = re.compile(
@@ -39,7 +39,13 @@ RENEWAL_DENIAL = re.compile(
     r"\b(?:deal|contract|renewal|extension|prolongation|renouvellement)\b[^.!?\n]{0,60}"
     r"\b(?:denied|dismissed|rejected|démenti\w*|dementi\w*|annulé\w*|refusé\w*)\b", re.I)
 SOURCE_DENIAL = re.compile(
-    r"\b(?:dementiert|dementieren|dementi|denies|denied|refutes?|démenti\w*|dementi\w*|doch\s+nicht)\b", re.I)
+    r"\b(?:dementiert|dementieren|dementi|denies|denied|refutes?|démenti\w*|dementi\w*|doch\s+nicht)\b"
+    r"|\b(?:formulé|soumis|transmis|présenté|déposé|envoyé|fait)\s+aucune\s+offre\b"
+    r"|\b(?:pas|jamais)\s+(?:formulé|soumis|transmis|présenté|déposé|envoyé|fait)\s+d['’]offre\b"
+    r"|(?:^|:\s*)(?:aucune\s+offre|pas\s+d['’]offre)\s+pour\b", re.I | re.M)
+_FRENCH_AFFILIATION = re.compile(
+    r"\b(?:appartient|appartenant|appartenait|sous contrat)\s+(?:(?:encore|toujours|actuellement)\s+)?"
+    r"(?:à|au|aux|chez)\s+(?:(?:le|la)\s+)?(club\d+)\b")
 CONDITIONAL_MOVE = re.compile(
     r"\b(?:if|unless|wenn|falls|sofern|würde|würden|sollte|sollten|morgen|übermorgen|tomorrow|next week)\b", re.I)
 
@@ -158,7 +164,7 @@ def _mentions(text, catalogue):
 def _catalogues(catalogues):
     return catalogues if catalogues is not None else {
         "players": PLAYERS_DB, "clubs": CLUBS_DB,
-        "ambiguous_players": (), "ambiguous_clubs": AMBIGUOUS_CLUB_ALIASES,
+        "ambiguous_players": AMBIGUOUS_PLAYER_ALIASES, "ambiguous_clubs": AMBIGUOUS_CLUB_ALIASES,
     }
 
 
@@ -548,6 +554,8 @@ def _assess_evidence(title, summary="", catalogues=None):
     # Replace actual mentions so all aliases have identical direction semantics.
     tokens = {name: f"CLUB{i}" for i, name in enumerate(club_names)}
     marked = _mark_mentions(text, players, clubs, tokens)
+    # An employer mentioned in an appositive is not the destination of a move.
+    direction_text = _FRENCH_AFFILIATION.sub(r"employer \1", marked)
     targets, origins = set(), set()
     for name, token in tokens.items():
         club = token.lower()
@@ -566,7 +574,7 @@ def _assess_evidence(title, summary="", catalogues=None):
             rf"\b{club}\s+(?:(?:está|esta|se muestra)\s+)?(?:interesado en|sigue de cerca|quiere fichar a?|se interesa por)\s+player\b",
             rf"\b{club}\s+(?:surveille|convoite|veut recruter|s'intéresse à)\s+player\b",
         ]
-        if any(re.search(pattern, marked) for pattern in target_patterns):
+        if any(re.search(pattern, direction_text) for pattern in target_patterns):
             targets.add(name)
         if re.search(rf"\b(?:from|von|vom|aus|de|du|dal|dalla|del|desde)\s+(?:den |dem |le |la |el )?{club}\b", marked):
             origins.add(name)

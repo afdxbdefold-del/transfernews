@@ -54,6 +54,32 @@ class SourceClaimEvidenceTests(unittest.TestCase):
         self.assertEqual(result["evidence_headline"], KROUPI_TITLE)
         self.assertNotIn("Bournemouth", result["evidence_headline"])
 
+    def test_denied_bid_cannot_be_replaced_by_a_market_teaser(self):
+        teaser = ("Alors que JJ Gabriel, jeune attaquant de 16 ans appartenant à Manchester United, "
+                  "fait actuellement beaucoup parler de lui sur le marché des transferts, "
+                  "son nom a notamment été associé à plusieurs (…)")
+        # Even a fully known player must not turn his employer into the buyer.
+        catalogues = build_entity_catalogues(players=[{"name": "JJ Gabriel"}])
+        for headline in (
+            "Le PSG n’a formulé aucune offre pour JJ Gabriel !",
+            "Le PSG n'a pas fait d'offre pour JJ Gabriel",
+            "PSG : aucune offre pour JJ Gabriel",
+        ):
+            with self.subTest(headline=headline):
+                self.assertEqual(assess_transfer_evidence(headline, teaser, catalogues),
+                                 {"reason": "negated_transfer"})
+        for affiliation in ("appartenant à", "appartient toujours à", "sous contrat à"):
+            with self.subTest(affiliation=affiliation):
+                result = assess_transfer_evidence("Le marché des transferts",
+                                                  teaser.replace("appartenant à", affiliation), catalogues)
+                self.assertIsNotNone(result["reason"])
+
+    def test_affiliation_does_not_hide_a_separate_explicit_destination(self):
+        title = "Liverpool surveille Florian Wirtz"
+        result = assess_transfer_evidence(title, "Florian Wirtz appartient à Manchester United.")
+        self.assertEqual((result["player"], result["club"]), ("Florian Wirtz", "FC Liverpool"))
+        self.assert_exact_claim(result, title, "Florian Wirtz appartient à Manchester United.")
+
     def test_generic_full_names_and_clubs_need_no_catalogue_entry(self):
         for title, person, club in (
             ("Nico Neumann unterschreibt beim SC Hafenstadt", "Nico Neumann", "SC Hafenstadt"),

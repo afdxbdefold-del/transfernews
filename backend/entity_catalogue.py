@@ -5,8 +5,9 @@ import unicodedata
 from entity_recognition import PLAYERS_DB, CLUBS_DB
 
 
-# These aliases are inherently shared even when the database happens to contain
-# only one claimant. Exact names such as "Leeds United" still disambiguate them.
+# A database with only one claimant does not make these names unambiguous.
+# "Gabriel" can even be a different player's surname, as in "JJ Gabriel".
+AMBIGUOUS_PLAYER_ALIASES = frozenset({"gabriel"})
 AMBIGUOUS_CLUB_ALIASES = frozenset({"united"})
 
 
@@ -16,7 +17,7 @@ def normalize_alias(value):
     return " ".join(unicodedata.normalize("NFKC", value).split()).casefold()
 
 
-def _merge_catalogue(static, records):
+def _merge_catalogue(static, records, reserved):
     # Claim an alias for every named entity before accepting it. A shared surname
     # must never be assigned to the first / most popular database row.
     claims, names = {}, {}
@@ -31,7 +32,8 @@ def _merge_catalogue(static, records):
     for alias, item in static.items():
         claim(alias, item["name"])
         claim(item["name"], item["name"])
-    static_names = {alias: names[next(iter(owners))] for alias, owners in claims.items() if len(owners) == 1}
+    static_names = {alias: names[next(iter(owners))] for alias, owners in claims.items()
+                    if len(owners) == 1 and alias not in reserved}
     for item in records:
         raw_name = item.get("full_name") or item.get("name")
         if not isinstance(raw_name, str) or not raw_name.strip():
@@ -48,18 +50,15 @@ def _merge_catalogue(static, records):
         for alias in [raw_name, item.get("name"), item.get("short_name"), *aliases]:
             claim(alias, name)
     accepted = {alias: {"name": names[next(iter(owners))]}
-                for alias, owners in claims.items() if len(owners) == 1}
-    ambiguous = sorted(alias for alias, owners in claims.items() if len(owners) > 1)
+                for alias, owners in claims.items() if len(owners) == 1 and alias not in reserved}
+    ambiguous = sorted({alias for alias, owners in claims.items() if len(owners) > 1} | reserved)
     return accepted, ambiguous
 
 
 def build_entity_catalogues(players=(), clubs=()):
     """Pure builder; data fields other than supplied names/aliases are ignored."""
-    player_names, player_conflicts = _merge_catalogue(PLAYERS_DB, players)
-    club_names, club_conflicts = _merge_catalogue(CLUBS_DB, clubs)
-    for alias in AMBIGUOUS_CLUB_ALIASES:
-        club_names.pop(alias, None)
-    club_conflicts = sorted(set(club_conflicts) | AMBIGUOUS_CLUB_ALIASES)
+    player_names, player_conflicts = _merge_catalogue(PLAYERS_DB, players, AMBIGUOUS_PLAYER_ALIASES)
+    club_names, club_conflicts = _merge_catalogue(CLUBS_DB, clubs, AMBIGUOUS_CLUB_ALIASES)
     return {"players": player_names, "clubs": club_names,
             "ambiguous_players": player_conflicts, "ambiguous_clubs": club_conflicts}
 
