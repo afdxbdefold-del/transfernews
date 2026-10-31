@@ -1,5 +1,6 @@
 """Validate and apply exact source spans selected by the offline evidence gate."""
 from copy import deepcopy
+from source_rewrite_checks import confirmed_french_renewal
 
 
 def apply_evidence_scope(event, evidence):
@@ -42,6 +43,10 @@ def apply_evidence_scope(event, evidence):
             scoped["verified_stage"] = stage
     elif scope not in {"full", "headline"}:
         raise ValueError("invalid_source_evidence_scope")
+    elif (scope == "full" and evidence.get("transfer_type") == "extension"
+          and confirmed_french_renewal(event.get("title"), event.get("summary"),
+                                       evidence.get("player"), evidence.get("club"))):
+        scoped["verified_stage"] = "official"
     if scope in {"headline", "claim"}:
         scoped.update(summary="", body_raw="", summary_raw="")
     return scoped

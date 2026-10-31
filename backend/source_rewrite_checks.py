@@ -18,6 +18,37 @@ def _words(value):
     return re.sub(r"[^\w]+", " ", _text(value)).strip()
 
 
+def confirmed_french_renewal(headline, summary, player, club):
+    """Require a named renewal and the club's affirmative announcement in the same report."""
+    def normalized(value):
+        return " ".join(_text(value).replace("’", "'").split())
+
+    person, team = re.escape(normalized(player)), re.escape(normalized(club))
+    if not person or not team:
+        return False
+    named_club = rf"(?:l'|le |la |les )?{team}"
+    title = re.fullmatch(rf"{named_club}\s*:\s*{person} prolonge(?: son contrat)? "
+                         r"jusqu'en (?P<year>20[0-9]{2})[.!]?", normalized(headline))
+    if not title:
+        return False
+    year = title["year"]
+    month = r"(?:janvier|fevrier|mars|avril|mai|juin|juillet|aout|septembre|octobre|novembre|decembre)"
+    until = rf"jusqu'(?:en {year}|au (?:[1-9]|[12][0-9]|3[01]) {month} {year})"
+    announced = (r"a (?:annonce|confirme|officialise) "
+                 r"(?:(?:ce |le )?(?:lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche) )?"
+                 r"la prolongation (?:de |du )?contrat ")
+    named_player = rf"(?:de |d'){person}"
+    # A reference to "the club" or "the international" needs the preceding
+    # official statement identifying both parties. Neither a date nor an
+    # isolated "officiel" in an RSS teaser establishes this link.
+    identified = (rf"c'est (?:desormais )?officiel\s*:\s*{person} (?:poursuit|continue) "
+                  rf"son aventure avec {named_club}\. le club(?: [a-z-]+)? {announced}"
+                  rf"(?:{named_player}|du joueur|de l'international(?:e)? [a-z-]+)")
+    direct = rf"{named_club} {announced}{named_player}"
+    return bool(re.fullmatch(rf"(?:{direct}|{identified}) {until}[.!]?(?:\s*\(\.\.\.\))?",
+                             normalized(summary)))
+
+
 UNCERTAIN = re.compile(
     r"\b(?:konnte\w*|koennte\w*|moglich\w*|moeglich\w*|soll\w*|gerucht\w*|"
     r"geruecht\w*|erwag\w*|erwaeg\w*|interess\w*|rumou?r\w*|may|might|could|"
@@ -147,7 +178,10 @@ def validate_source_rewrite(rewrite, article):
             return False, "unsupported_completion_claim"
         if not UNCERTAIN.search(text) and not IN_PROGRESS.search(text):
             return False, "missing_transfer_uncertainty"
-    elif claims and not list(_asserted_completions(evidence)):
+    elif claims and not (list(_asserted_completions(evidence)) or
+                         (stage == "official" and article.get("transfer_type") == "extension"
+                          and confirmed_french_renewal(headline, summary, article.get("player_name"),
+                                                       article.get("club_name")))):
         # A stage label alone is not a source for completion wording.
         return False, "unsupported_completion_claim"
 

@@ -526,6 +526,11 @@ PLAYERS_DB = {
 }
 
 
+# Foot Mercato also writes the full name as Pulišić. Keep the existing canonical
+# identity for both spellings without introducing an accented surname-only alias.
+PLAYERS_DB["christian pulišić"] = PLAYERS_DB["christian pulisic"]
+
+
 # =============================================================================
 # CLUB-DATENBANK (300+ Clubs)
 # =============================================================================
