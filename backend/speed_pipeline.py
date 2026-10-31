@@ -556,6 +556,7 @@ class SpeedPipeline:
             "transfer_status": story["current_stage"], "confidence_score": story["confidence_score"],
             "transfer_probability": story["confidence_score"], "transfer_fee": story.get("transfer_fee", ""),
             "primary_source": story.get("primary_source", ""), "secondary_sources": story.get("secondary_sources", []),
+            "source_event_id": event.get("id"),
             "source_headline": event["title"], "source_summary": event.get("summary", ""),
             "evidence_scope": event.get("evidence_scope", "full"),
             "evidence_spans": event.get("evidence_spans", []),

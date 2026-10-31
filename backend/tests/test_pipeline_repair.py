@@ -117,6 +117,38 @@ class PipelineRepairTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result["skipped"], 1)
         self.assertEqual(saved["status"], "processed")
 
+    async def test_updated_article_points_to_the_event_behind_its_current_source(self):
+        source_time = utcnow().replace(microsecond=0)
+        first_event = self.event(source_published_at=source_time - timedelta(hours=1))
+        await self.db.events.insert_one(first_event)
+        self.assertEqual((await self.pipeline.process_pending_events(1))["created_draft"], 1)
+        original = await self.db.articles.find_one({})
+        self.assertEqual(original["source_event_id"], first_event["id"])
+
+        current_event = self.event(
+            1, headline_raw="Official: Florian Wirtz has signed for FC Liverpool",
+            body_raw="FC Liverpool have confirmed the signing of Florian Wirtz.",
+            source_published_at=source_time)
+        await self.db.events.insert_one(current_event)
+        self.assertEqual((await self.pipeline.process_pending_events(1))["updated"], 1)
+        updated = await self.db.articles.find_one({})
+        self.assertEqual(updated["id"], original["id"])
+        self.assertEqual(updated["slug"], original["slug"])
+        self.assertEqual(updated["source_event_id"], current_event["id"])
+        linked_event = await self.db.events.find_one({"id": updated["source_event_id"]})
+        self.assertEqual(updated["source_url"], linked_event["source_url"])
+        self.assertEqual(updated["source_headline"], linked_event["headline_raw"])
+        self.assertEqual(updated["source_summary"], linked_event["body_raw"])
+        self.assertEqual(updated["source_published_at"], linked_event["source_published_at"])
+        self.assertEqual(updated["status"], "draft")
+        self.assertIsNone(updated["published_at"])
+        self.assertEqual(await self.db.articles.count_documents({}), 1)
+
+        self.assertEqual((await self.pipeline.process_event(current_event))["action"], "skipped")
+        replayed = await self.db.articles.find_one({})
+        self.assertEqual(replayed["source_event_id"], current_event["id"])
+        self.assertEqual(replayed["content_revision"], updated["content_revision"])
+
     async def test_score_sync_does_not_bypass_editorial_review(self):
         for i, source in enumerate(["Source A", "Source B", "Source C"]):
             await self.pipeline.process_event(self.event(i, source_name=source))
