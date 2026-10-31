@@ -1,3 +1,4 @@
+import { AdFeed } from "@/components/FreestarAds";
 import PageLayout from "@/components/PageLayout";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -180,7 +181,7 @@ export default function ThemePage() {
               <section>
                 <h2 className="text-xl font-bold mb-4">Alle Artikel zu {theme.name}</h2>
                 <div className="space-y-4">
-                  {all_news?.map((article, idx) => (
+                  {<AdFeed>{all_news?.map((article, idx) => (
                     <a 
                       key={article.id || idx}
                       href={`/news/${article.slug}`}
@@ -216,7 +217,7 @@ export default function ThemePage() {
                         <ArrowRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
                       </div>
                     </a>
-                  ))}
+                  ))}</AdFeed>}
                   
                   {(!all_news || all_news.length === 0) && (
                     <div className="text-center py-12 text-gray-500">

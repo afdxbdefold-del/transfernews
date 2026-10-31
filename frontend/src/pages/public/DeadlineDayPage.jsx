@@ -1,3 +1,4 @@
+import { AdFeed } from "@/components/FreestarAds";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import PageLayout from "@/components/PageLayout";
@@ -116,7 +117,7 @@ export default function DeadlineDayPage() {
   }, [isDeadlineDay]);
 
   return (
-    <PageLayout>
+    <PageLayout ads={!loading && (latestNews.length > 0 || breakingNews.length > 0)}>
       <Helmet>
         <title>Deadline Day - Transfer-Countdown | TransferNews.de</title>
         <meta name="description" content={`Countdown zum ${deadline.name}. Alle Breaking News am Deadline Day.`} />
@@ -192,9 +193,9 @@ export default function DeadlineDayPage() {
               </div>
             ) : (
               <div>
-                {latestNews.map((article, idx) => (
+                {<AdFeed>{latestNews.map((article, idx) => (
                   <NewsRow key={article.id} article={article} isHot={idx < 3 && isDeadlineDay} />
-                ))}
+                ))}</AdFeed>}
               </div>
             )}
           </div>

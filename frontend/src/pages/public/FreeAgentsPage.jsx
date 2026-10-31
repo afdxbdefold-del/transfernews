@@ -1,3 +1,4 @@
+import { AdFeed } from "@/components/FreestarAds";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import PageLayout from "@/components/PageLayout";
@@ -87,7 +88,7 @@ export default function FreeAgentsPage() {
   }, []);
 
   return (
-    <PageLayout>
+    <PageLayout ads={!loading && articles.length > 0}>
       <Helmet>
         <title>Ablösefreie Spieler | TransferNews.de</title>
         <meta name="description" content="Alle ablösefreien Spieler und auslaufende Verträge." />
@@ -125,9 +126,9 @@ export default function FreeAgentsPage() {
               </div>
             ) : articles.length > 0 ? (
               <div>
-                {articles.map((article) => (
+                {<AdFeed>{articles.map((article) => (
                   <FreeAgentRow key={article.id} article={article} />
-                ))}
+                ))}</AdFeed>}
               </div>
             ) : (
               <div className="p-8 text-center text-gray-500 text-[13px]">

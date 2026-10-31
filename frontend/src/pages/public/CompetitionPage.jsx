@@ -1,3 +1,4 @@
+import { AdFeed } from "@/components/FreestarAds";
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
@@ -167,7 +168,7 @@ export default function CompetitionPage() {
               <section>
                 <h2 className="text-xl font-bold mb-4">Alle Transfer-News</h2>
                 <div className="space-y-4">
-                  {all_news?.map((article, idx) => (
+                  {<AdFeed>{all_news?.map((article, idx) => (
                     <a 
                       key={article.id || idx}
                       href={`/news/${article.slug}`}
@@ -203,7 +204,7 @@ export default function CompetitionPage() {
                         <ArrowRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
                       </div>
                     </a>
-                  ))}
+                  ))}</AdFeed>}
                   
                   {(!all_news || all_news.length === 0) && (
                     <div className="text-center py-12 text-gray-500">

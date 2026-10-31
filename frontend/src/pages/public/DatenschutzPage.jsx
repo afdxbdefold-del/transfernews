@@ -132,13 +132,24 @@ export default function DatenschutzPage() {
               Unsere Website wird auf Servern in Deutschland gehostet (Hetzner Online GmbH).
             </p>
             
-            <h3 className="font-bold text-gray-800 mt-4 mb-2">Werbung (TheMonetizer)</h3>
+            <h3 className="font-bold text-gray-800 mt-4 mb-2">Werbung (Freestar)</h3>
             <p className="text-gray-600 mb-4">
-              Wir nutzen TheMonetizer zur Einbindung von Werbeanzeigen. Dabei können Cookies gesetzt 
-              und personenbezogene Daten verarbeitet werden. Weitere Informationen finden Sie in der 
-              Datenschutzerklärung von TheMonetizer.
+              Unsere Werbeplätze werden durch Freestar (Publisher First, Inc.) vermarktet.
+              Freestar und seine Werbepartner können dabei Geräteinformationen, IP-Adressen
+              und Cookie-Kennungen zur Auslieferung und Messung von Werbung verarbeiten.
+              In Ländern, in denen die DSGVO gilt, laden wir diese Werbetechnik erst nach
+              entsprechender Einwilligung im Einwilligungsdialog. Hinweise zu Partnern,
+              Datenverarbeitung und Übermittlungen in die USA finden Sie in der{' '}
+              <a href="https://freestar.com/privacy-policy/" target="_blank" rel="noopener noreferrer" className="text-[#79B92A] underline">Datenschutzerklärung von Freestar</a>.
             </p>
-            
+            <h3 className="font-bold text-gray-800 mt-4 mb-2">Einwilligungsverwaltung (InMobi Choice)</h3>
+            <p className="text-gray-600 mb-4">
+              Für den Einwilligungsdialog verwenden wir weiterhin InMobi Choice. Die bestehende
+              Konfiguration wird noch über den bisherigen Werbepartner bereitgestellt; darüber
+              werden keine Werbeanzeigen dieses Partners mehr geladen. Ihre Auswahl können Sie
+              jederzeit über „Datenschutzeinstellungen“ im Seitenfuß ändern oder widerrufen.
+            </p>
+
             <h3 className="font-bold text-gray-800 mt-4 mb-2">Bilder (Wikimedia Commons, Unsplash, Pexels)</h3>
             <p className="text-gray-600 mb-4">
               Wir verwenden lizenzfreie Bilder. Beim Laden dieser Bilder kann Ihre IP-Adresse an die 

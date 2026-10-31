@@ -82,7 +82,7 @@ export default function TransfersPage() {
   };
 
   return (
-    <PageLayout>
+    <PageLayout ads={!loading && transfersWithDetails.length > 0}>
       <Header />
 
       <main className="flex-1 py-3 px-3" data-testid="transfers-page">

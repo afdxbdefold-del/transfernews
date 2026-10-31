@@ -1,4 +1,4 @@
-import { SidebarAd300x600, MrecAd, MrecAd2 } from "@/components/TheMoneytizerAds";
+import { SidebarAd300x600, MrecAd, MrecAd2 } from "@/components/EditorialAds";
 import { TrendingWidget } from "@/components/TrendingWidget";
 
 // Existing sidebars can include all three formats without adding another column.

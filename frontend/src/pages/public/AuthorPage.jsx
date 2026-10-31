@@ -1,3 +1,4 @@
+import { AdFeed } from "@/components/FreestarAds";
 import PageLayout from "@/components/PageLayout";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -38,7 +39,7 @@ export default function AuthorPage() {
 
   if (loading) {
     return (
-      <PageLayout>
+      <PageLayout ads={false}>
         <Header />
         <main className="flex-1 py-8">
           <div className="max-w-[1000px] mx-auto px-4">
@@ -61,7 +62,7 @@ export default function AuthorPage() {
 
   if (!author) {
     return (
-      <PageLayout>
+      <PageLayout ads={false}>
         <Header />
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
@@ -214,9 +215,9 @@ export default function AuthorPage() {
 
                 {author.articles && author.articles.length > 0 ? (
                   <div className="space-y-4">
-                    {author.articles.map((article) => (
+                    {<AdFeed>{author.articles.map((article) => (
                       <NewsCard key={article.id} article={article} />
-                    ))}
+                    ))}</AdFeed>}
                   </div>
                 ) : (
                   <div className="bg-white border border-gray-200 p-8 text-center text-gray-500">

@@ -1,3 +1,4 @@
+import { AdFeed } from "@/components/FreestarAds";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import PageLayout from "@/components/PageLayout";
@@ -33,7 +34,7 @@ export default function RumoursPage() {
   }, []);
 
   return (
-    <PageLayout>
+    <PageLayout ads={!loading && rumours.length > 0}>
       <Helmet>
         <title>Transfer-Gerüchte - TransferNews</title>
         <meta name="description" content="Die heißesten Transfer-Gerüchte und Spekulationen vom Transfermarkt." />
@@ -63,9 +64,9 @@ export default function RumoursPage() {
                 </div>
               ) : rumours.length > 0 ? (
                 <div className="divide-y divide-gray-200">
-                  {rumours.map((article) => (
+                  {<AdFeed>{rumours.map((article) => (
                     <NewsCardHorizontal key={article.id} article={article} />
-                  ))}
+                  ))}</AdFeed>}
                 </div>
               ) : (
                 <div className="text-center py-12">

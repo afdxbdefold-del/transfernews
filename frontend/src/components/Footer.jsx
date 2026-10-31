@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { AboveFooterAd } from "./TheMoneytizerAds";
+import { FreestarSlot, RemainingContentAds } from "./FreestarAds";
 
 // Pages without ads
 const NO_AD_PAGES = ['/impressum', '/datenschutz', '/ueber-uns', '/about'];
@@ -34,10 +34,11 @@ export default function Footer() {
         </div>
       </div>
       
+      <RemainingContentAds />
       {/* Ad above footer */}
       {showAds && (
         <div className="bg-[#e8e8e8] py-3 flex justify-center">
-          <AboveFooterAd />
+          <FreestarSlot name="leaderboard_2" />
         </div>
       )}
       
@@ -73,6 +74,7 @@ export default function Footer() {
               <h4 className="text-sm font-bold text-white uppercase mb-3 tracking-wider">Rechtliches</h4>
               <ul className="space-y-2">
                 <li><Link to="/impressum" className="text-sm text-gray-400 hover:text-white transition-colors">Impressum</Link></li>
+                <li><button type="button" onClick={() => window.__tcfapi?.('displayConsentUi', 2, () => {})} className="text-sm text-gray-400 hover:text-white transition-colors">Datenschutzeinstellungen</button></li>
                 <li><Link to="/datenschutz" className="text-sm text-gray-400 hover:text-white transition-colors">Datenschutz</Link></li>
                 <li><Link to="/ueber-uns" className="text-sm text-gray-400 hover:text-white transition-colors">Über uns</Link></li>
               </ul>

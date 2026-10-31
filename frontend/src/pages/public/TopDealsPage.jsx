@@ -1,3 +1,4 @@
+import { AdFeed } from "@/components/FreestarAds";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import PageLayout from "@/components/PageLayout";
@@ -116,7 +117,7 @@ export default function TopDealsPage() {
   const avgFee = transfers.length > 0 ? totalFees / transfers.length : 0;
 
   return (
-    <PageLayout>
+    <PageLayout ads={!loading && transfers.length > 0}>
       <Helmet>
         <title>Top-Transfers | Die teuersten Transfers | TransferNews.de</title>
         <meta name="description" content="Die teuersten Fußball-Transfers aller Zeiten - sortiert nach Ablösesumme." />
@@ -177,9 +178,9 @@ export default function TopDealsPage() {
             </div>
           ) : transfers.length > 0 ? (
             <div>
-              {transfers.map((transfer, idx) => (
+              {<AdFeed>{transfers.map((transfer, idx) => (
                 <TopDealRow key={transfer.id} transfer={transfer} rank={idx + 1} />
-              ))}
+              ))}</AdFeed>}
             </div>
           ) : (
             <div className="p-8 text-center text-gray-500 text-[13px]">

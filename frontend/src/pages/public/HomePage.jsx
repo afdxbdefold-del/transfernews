@@ -1,8 +1,9 @@
+import { AdFeed } from "@/components/FreestarAds";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import PageLayout from "@/components/PageLayout";
 import { SidebarAd } from "@/components/AdSlot";
-import { MrecAd, MrecAd2 } from "@/components/TheMoneytizerAds";
+import { MrecAd, MrecAd2 } from "@/components/EditorialAds";
 import { useCallback, useEffect, useState } from "react";
 import { getPublishedArticles, getAllTrending } from "@/api";
 import { useArticlePagination } from "@/lib/useArticlePagination";
@@ -213,7 +214,7 @@ export default function HomePage() {
   }, [activeFilter, articles]);
 
   return (
-    <PageLayout>
+    <PageLayout ads={!loading && !loadError && filteredArticles.length > 0}>
       <Helmet>
         <title>TransferNews.de - Fußball-Transfers & Gerüchte</title>
         <meta name="description" content="Die neuesten Fußball-Transfer-News, Gerüchte und offizielle Wechsel. Bundesliga, Premier League, La Liga und mehr." />
@@ -267,9 +268,9 @@ export default function HomePage() {
                     <button onClick={fetchData} className="mt-3 text-[#79B92A] underline">Erneut versuchen</button>
                   </div>
                 ) : filteredArticles.length > 0 ? (
-                  filteredArticles.map((article) => (
+                  <AdFeed>{filteredArticles.map((article) => (
                     <NewsRow key={article.id} article={article} />
-                  ))
+                  ))}</AdFeed>
                 ) : (
                   <div className="p-8 text-center text-gray-500 text-[13px]">
                     Keine Artikel in dieser Kategorie
@@ -320,7 +321,7 @@ export default function HomePage() {
               </div>
             </div>
             
-            {/* TheMonetizer MREC 300x250 */}
+            {/* Advertisement */}
             <div className="mx-auto w-full max-w-[300px]">
               <MrecAd />
             </div>

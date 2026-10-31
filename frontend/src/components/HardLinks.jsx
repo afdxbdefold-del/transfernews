@@ -1,5 +1,4 @@
-// Hard link components for TheMoneytizer compatibility
-// These force full page reloads to ensure ads load correctly
+// Normal document links used by editorial cards and profiles.
 
 export function ArticleLink({ to, children, className, ...props }) {
   return (

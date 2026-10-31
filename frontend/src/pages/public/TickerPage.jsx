@@ -1,3 +1,4 @@
+import { AdFeed } from "@/components/FreestarAds";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import PageLayout from "@/components/PageLayout";
@@ -122,7 +123,7 @@ export default function TickerPage() {
   }, {});
 
   return (
-    <PageLayout>
+    <PageLayout ads={!loading && articles.length > 0}>
       <Helmet>
         <title>News-Ticker - Live Updates | TransferNews.de</title>
         <meta name="description" content="Alle Transfer-News im Live-Ticker." />
@@ -172,7 +173,7 @@ export default function TickerPage() {
                   ))}
                 </div>
               ) : (
-                Object.entries(groupedArticles).map(([dateKey, dateArticles]) => (
+                <AdFeed>{Object.entries(groupedArticles).map(([dateKey, dateArticles]) => (
                   <div key={dateKey}>
                     {/* Date Header */}
                     <div className="bg-gray-100 px-3 py-1.5 border-b border-gray-200 sticky top-0">
@@ -189,7 +190,7 @@ export default function TickerPage() {
                       <TickerRow key={article.id} article={article} isNew={isNew(article.published_at)} />
                     ))}
                   </div>
-                ))
+                ))}</AdFeed>
               )}
             </div>
           </div>

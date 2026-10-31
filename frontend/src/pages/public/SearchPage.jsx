@@ -1,3 +1,4 @@
+import { AdFeed } from "@/components/FreestarAds";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import PageLayout from "@/components/PageLayout";
@@ -51,7 +52,7 @@ export default function SearchPage() {
     : 0;
 
   return (
-    <PageLayout>
+    <PageLayout ads={!loading && totalResults > 0}>
       <Helmet><title>Suche | TransferNews.de</title><meta name="robots" content="noindex, follow" /></Helmet>
       <Header />
 
@@ -145,7 +146,7 @@ export default function SearchPage() {
                   <span className="text-white text-sm font-bold">News ({results.articles.length})</span>
                 </div>
                 <div className="divide-y">
-                  {results.articles.map((article) => (
+                  {<AdFeed>{results.articles.map((article) => (
                     <a
                       key={article.id}
                       href={`/news/${article.slug}`}
@@ -153,7 +154,7 @@ export default function SearchPage() {
                     >
                       <span className="font-medium">{article.title}</span>
                     </a>
-                  ))}
+                  ))}</AdFeed>}
                 </div>
               </div>
             )}

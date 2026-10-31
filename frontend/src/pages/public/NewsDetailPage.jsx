@@ -13,11 +13,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Helmet } from "react-helmet-async";
 import { SITE_URL, articleImage, articleAuthorPath, articleCanonical, articleAuthorName, articleHasNamedAuthor } from "@/lib/articleSeo";
 import NotFoundPage from "./NotFoundPage";
+import { articleSources } from '@/lib/articleSources';
 
 // Source Trust Badge Komponente
 function SourceBadge({ article }) {
-  const source = article.primary_source || article.source_name;
-  const secondarySources = article.secondary_sources || [];
+  const { primary: source, previous: secondarySources } = articleSources(article);
   
   if (!source) return null;
   
@@ -27,7 +27,7 @@ function SourceBadge({ article }) {
   
   let tier = 3;
   let tierColor = "bg-orange-100 text-orange-700 border-orange-200";
-  let tierLabel = "Gerücht";
+  let tierLabel = "Quelle";
   
   if (tier1Sources.some(s => source.includes(s))) {
     tier = 1;
@@ -55,6 +55,7 @@ function SourceBadge({ article }) {
         </div>
         
         {/* Secondary Sources */}
+        {secondarySources.length > 0 && <span className="basis-full text-xs text-gray-500 mt-2">Weitere bisherige Quellen</span>}
         {secondarySources.slice(0, 2).map((sec, i) => (
           <div key={i} className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-600 rounded-full text-xs">
             <span>+{sec}</span>
@@ -329,7 +330,7 @@ export default function NewsDetailPage() {
 
   if (loading) {
     return (
-      <PageLayout>
+      <PageLayout ads={false}>
         <Header />
         <main className="flex-1 py-3 px-3">
             <div className="bg-white p-6">
@@ -345,7 +346,7 @@ export default function NewsDetailPage() {
     );
   }
 
-  if (loadError && !article) return <PageLayout>
+  if (loadError && !article) return <PageLayout ads={false}>
     <Helmet><title>Artikel nicht verfügbar | TransferNews.de</title><meta name="robots" content="noindex, follow" /></Helmet>
     <Header />
     <main className="p-12 text-center" role="alert"><h1 className="text-2xl font-bold mb-3">Artikel konnte nicht geladen werden</h1><button className="text-[#79B92A] underline" onClick={() => window.location.reload()}>Erneut versuchen</button></main>

@@ -1,3 +1,4 @@
+import { AdFeed } from "@/components/FreestarAds";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { SidebarAdSlots } from "@/components/StandardSidebar";
@@ -153,7 +154,7 @@ export default function PlayerPage() {
 
   if (loading) {
     return (
-      <PageLayout>
+      <PageLayout ads={false}>
         <Header />
         <main className="flex-1 py-3 px-3">
           <div className="bg-white border border-gray-300 rounded-sm animate-pulse">
@@ -171,7 +172,7 @@ export default function PlayerPage() {
 
   if (!player) {
     return (
-      <PageLayout>
+      <PageLayout ads={false}>
         <Header />
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center bg-white p-8 rounded-sm border border-gray-300">
@@ -379,9 +380,9 @@ export default function PlayerPage() {
                   {activeTab === 'news' && (
                     <div>
                       {articles.length > 0 ? (
-                        articles.map((article) => (
+                        <AdFeed>{articles.map((article) => (
                           <NewsRow key={article.id} article={article} />
-                        ))
+                        ))}</AdFeed>
                       ) : (
                         <div className="p-8 text-center text-gray-500 text-[13px]">
                           Keine News vorhanden

@@ -2,7 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import { MagnifyingGlass, List, X, CaretDown } from "@phosphor-icons/react";
 import { useState, useEffect, useRef } from "react";
 import { autosuggest } from "@/api";
-import { BillboardAd } from "./TheMoneytizerAds";
+import { BillboardAd } from "./EditorialAds";
 
 const LEAGUES = [
   { slug: 'bundesliga', name: 'Bundesliga', country: '🇩🇪' },
@@ -15,7 +15,7 @@ const LEAGUES = [
 // Pages without ads
 const NO_AD_PAGES = ['/impressum', '/datenschutz', '/ueber-uns', '/about'];
 
-// Hard link component for main navigation - forces full page reload to fix TheMoneytizer ads
+// Main navigation retains normal links and independent document loads.
 function NavLink({ to, children, className, ...props }) {
   return (
     <a 

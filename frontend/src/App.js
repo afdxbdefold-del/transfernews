@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-route
 import { Toaster } from "@/components/ui/sonner";
 import { HelmetProvider } from "react-helmet-async";
 import { useEffect } from "react";
-import { AdSlotsProvider } from "@/components/DynamicAds";
+import { isAdvertisingPage } from "@/lib/freestar";
 
 // Scroll to top on route change
 function ScrollToTop() {
@@ -56,19 +56,24 @@ const isAdsEditor = pathname => /^\/ads-txt-editor\/?$/.test(pathname);
 const editorDocument = isAdsEditor(window.location.pathname);
 
 function ApplicationContent() {
-  const { pathname } = useLocation();
-  const reloadDocument = isAdsEditor(pathname) !== editorDocument;
+  const { pathname, search } = useLocation();
+  const reloadDocument = isAdsEditor(pathname) !== editorDocument || Boolean(document.getElementById('transfernews-freestar-loader') && !isAdvertisingPage(pathname));
   useEffect(() => {
     // Entering the editor must load its restrictive CSP and discard ad scripts.
     if (reloadDocument) window.location.reload();
   }, [reloadDocument]);
+  useEffect(() => {
+    const revoke = () => window.location.reload();
+    window.addEventListener('transfernews-ad-consent-revoked', revoke);
+    return () => window.removeEventListener('transfernews-ad-consent-revoked', revoke);
+  }, []);
   if (reloadDocument) return null;
   if (isAdsEditor(pathname)) return <AdsTxtEditor />;
 
   return (
-      <AdSlotsProvider>
+      <>
         <div className="App min-h-screen">
-            <Routes>
+            <Routes key={pathname + search}>
             {/* Public Routes */}
             <Route path="/" element={<HomePage />} />
             <Route path="/news" element={<Navigate to="/" replace />} />
@@ -108,7 +113,7 @@ function ApplicationContent() {
           </Routes>
           <Toaster position="top-right" />
         </div>
-      </AdSlotsProvider>
+      </>
   );
 }
 
