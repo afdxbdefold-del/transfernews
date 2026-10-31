@@ -38,12 +38,16 @@ def confirmed_french_renewal(headline, summary, player, club):
                  r"(?:(?:ce |le )?(?:lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche) )?"
                  r"la prolongation (?:de |du )?contrat ")
     named_player = rf"(?:de |d'){person}"
+    # An adjective can change the referent ("le club rival"). Accept a bare
+    # anaphor or a geographical description known to fit the already named club.
+    club_reference = (r"le club(?: lombard| milanais)?" if normalized(club) in {"ac milan", "inter milan"}
+                      else r"le club")
     # A reference to "the club" or "the international" needs the preceding
     # official statement identifying both parties. Neither a date nor an
     # isolated "officiel" in an RSS teaser establishes this link.
     identified = (rf"c'est (?:desormais )?officiel\s*:\s*{person} (?:poursuit|continue) "
-                  rf"son aventure avec {named_club}\. le club(?: [a-z-]+)? {announced}"
-                  rf"(?:{named_player}|du joueur|de l'international(?:e)? [a-z-]+)")
+                  rf"son aventure avec {named_club}\. {club_reference} {announced}"
+                  rf"(?:{named_player}|du joueur|de l'international americain|de l'internationale americaine)")
     direct = rf"{named_club} {announced}{named_player}"
     return bool(re.fullmatch(rf"(?:{direct}|{identified}) {until}[.!]?(?:\s*\(\.\.\.\))?",
                              normalized(summary)))

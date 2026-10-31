@@ -30,6 +30,8 @@ class ConfirmedFrenchRenewalTests(unittest.TestCase):
 
     def test_actual_announcement_supports_completed_renewal(self):
         self.assertEqual(self.check(TITLE, INTRO), ("official", (True, "OK")))
+        self.assertEqual(self.check(TITLE, INTRO.replace("Le club lombard", "Le club")),
+                         ("official", (True, "OK")))
         self.assertEqual(self.check(
             "Lyon : Marie Dupont prolonge son contrat jusqu'en 2029",
             "Lyon a confirmé la prolongation du contrat de Marie Dupont jusqu’en 2029.",
@@ -47,6 +49,10 @@ class ConfirmedFrenchRenewalTests(unittest.TestCase):
             (TITLE, INTRO.replace("a annoncé", "annoncera")),
             (TITLE, INTRO.replace("Christian Pulisic", "Harry Kane")),
             (TITLE, INTRO.replace("AC Milan", "Inter Milan")),
+            (TITLE, INTRO.replace("club lombard", "club rival")),
+            (TITLE, INTRO.replace("club lombard", "club adverse")),
+            (TITLE, INTRO.replace("club lombard", "club parisien")),
+            (TITLE, INTRO.replace("international américain", "international adverse")),
             (TITLE, INTRO.replace("30 juin 2031", "30 juin 2029")),
             (TITLE, INTRO + " Son agent dément la prolongation."),
             (TITLE, INTRO.split(". ")[0] + "."),
@@ -55,6 +61,14 @@ class ConfirmedFrenchRenewalTests(unittest.TestCase):
         for title, summary in cases:
             with self.subTest(title=title, summary=summary):
                 self.assertEqual(self.check(title, summary), (None, (False, "unsupported_completion_claim")))
+
+    def test_regional_club_label_must_fit_the_named_club(self):
+        title = TITLE.replace(CLUB, "Liverpool")
+        summary = INTRO.replace("l’AC Milan", "Liverpool")
+        self.assertEqual(self.check(title, summary, club="Liverpool"), (None, (False, "unsupported_completion_claim")))
+        self.assertEqual(self.check(title, summary.replace("Le club lombard", "Le club"), club="Liverpool",
+                                    rewrite="Laut Foot Mercato hat Liverpool den Vertrag mit Christian Pulisic verlängert."),
+                         ("official", (True, "OK")))
 
     def test_completion_does_not_justify_a_signature_or_a_new_club(self):
         for addition, reason in ((" Er hat den Vertrag unterschrieben.", "unsupported_signature_claim"),
