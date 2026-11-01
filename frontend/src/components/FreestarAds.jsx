@@ -1,9 +1,11 @@
 import { createContext, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, Children, Fragment } from 'react';
 import { useLocation } from 'react-router-dom';
 import { FREESTAR_SLOTS, createPlacementRegistry, isAdvertisingPage, mountFreestarSlot } from '../lib/freestar';
+import { consentAllowsPrimis, loadedPrimisPage, mountPrimis } from '../lib/primis';
 import './FreestarAds.css';
 
 const PageAds = createContext(null);
+const PrimisPage = createContext(null);
 
 export function consentAllowsFreestar(data, success) {
   if (!success || !data || !['tcloaded', 'useractioncomplete'].includes(data.eventStatus)) return false;
@@ -15,8 +17,12 @@ export function FreestarPage({ children, enabled = true }) {
   const { pathname, search } = useLocation();
   const eligible = enabled && isAdvertisingPage(pathname);
   const registry = useMemo(() => createPlacementRegistry(`${pathname}${search}:${eligible}`), [pathname, search, eligible]);
-  const [consent, setConsent] = useState({ registry: null, allowed: false });
+  const [consent, setConsent] = useState({ registry: null, allowed: false, primis: false });
   const consented = consent.registry === registry && consent.allowed;
+  const page = pathname + search;
+  useEffect(() => {
+    if (!eligible && loadedPrimisPage() === page) window.dispatchEvent(new Event('transfernews-ad-consent-revoked'));
+  }, [eligible, page]);
   useEffect(() => {
     if (!eligible) return;
     let disposed = false;
@@ -27,14 +33,20 @@ export function FreestarPage({ children, enabled = true }) {
       if (subscribed || typeof window.__tcfapi !== 'function') return;
       subscribed = true;
       window.__tcfapi('addEventListener', 2, (data, success) => {
-        listenerId = data?.listenerId;
+        listenerId = data?.listenerId ?? listenerId;
         if (disposed) return;
-        if (success && data && !['tcloaded', 'useractioncomplete'].includes(data.eventStatus)) return;
+        if (success && data && data.cmpStatus !== 'error' && !['tcloaded', 'useractioncomplete'].includes(data.eventStatus)) return;
         const allowed = consentAllowsFreestar(data, success);
-        setConsent({ registry, allowed });
-        // Discard provider-owned refresh timers and automatically inserted
-        // products as well as our own slots after an explicit withdrawal.
-        if (previouslyAllowed && !allowed) window.dispatchEvent(new Event('transfernews-ad-consent-revoked'));
+        const primis = consentAllowsPrimis(data, success);
+        // The new document handles any simultaneous grant. Starting another
+        // provider here would request the placement twice during the reload.
+        if ((previouslyAllowed && !allowed) || (loadedPrimisPage() && !primis)) {
+          disposed = true;
+          setConsent({ registry, allowed: false, primis: false });
+          window.dispatchEvent(new Event('transfernews-ad-consent-revoked'));
+          return;
+        }
+        setConsent({ registry, allowed, primis });
         previouslyAllowed = allowed;
       });
     };
@@ -57,7 +69,20 @@ export function FreestarPage({ children, enabled = true }) {
     });
     return () => { disposed = true; };
   }, [pathname, search, eligible, consented]);
-  return <PageAds.Provider value={eligible && consented ? registry : null}>{children}</PageAds.Provider>;
+  return <PageAds.Provider value={eligible && consented ? registry : null}>
+    <PrimisPage.Provider value={eligible && consent.registry === registry && consent.primis ? page : null}>{children}</PrimisPage.Provider>
+  </PageAds.Provider>;
+}
+
+export function PrimisPlacement() {
+  const page = useContext(PrimisPage);
+  const container = useRef(null);
+  useEffect(() => { if (page) mountPrimis(container.current, page); }, [page]);
+  if (!page) return null;
+  return <aside aria-label="Videoanzeige" className="mx-auto w-full max-w-[310px]">
+    <span className="freestar-label">Anzeige</span>
+    <div ref={container} id="transfernews-primis-placement" />
+  </aside>;
 }
 
 function OwnedSlot({ slot, registry, priority, className }) {

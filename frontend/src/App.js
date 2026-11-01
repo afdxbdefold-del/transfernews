@@ -4,6 +4,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { HelmetProvider } from "react-helmet-async";
 import { useEffect } from "react";
 import { isAdvertisingPage } from "@/lib/freestar";
+import { loadedPrimisPage } from "@/lib/primis";
 
 // Scroll to top on route change
 function ScrollToTop() {
@@ -57,9 +58,12 @@ const editorDocument = isAdsEditor(window.location.pathname);
 
 function ApplicationContent() {
   const { pathname, search } = useLocation();
-  const reloadDocument = isAdsEditor(pathname) !== editorDocument || Boolean(document.getElementById('transfernews-freestar-loader') && !isAdvertisingPage(pathname));
+  const primisPage = loadedPrimisPage();
+  const reloadDocument = isAdsEditor(pathname) !== editorDocument ||
+    Boolean(primisPage && primisPage !== pathname + search) ||
+    Boolean(document.getElementById('transfernews-freestar-loader') && !isAdvertisingPage(pathname));
   useEffect(() => {
-    // Entering the editor must load its restrictive CSP and discard ad scripts.
+    // Load the editor's CSP and discard any provider-owned sliders and timers.
     if (reloadDocument) window.location.reload();
   }, [reloadDocument]);
   useEffect(() => {

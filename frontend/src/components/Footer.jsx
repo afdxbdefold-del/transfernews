@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { FreestarSlot, RemainingContentAds } from "./FreestarAds";
+import { FreestarSlot, PrimisPlacement, RemainingContentAds } from "./FreestarAds";
 
 // Pages without ads
 const NO_AD_PAGES = ['/impressum', '/datenschutz', '/ueber-uns', '/about'];
@@ -10,6 +10,7 @@ export default function Footer() {
 
   return (
     <>
+      <PrimisPlacement />
       {/* Was ist transfernews.de - SEO/Programmatic Section */}
       <div className="bg-[#f5f5f5] py-6 px-4 border-t border-gray-200">
         <div className="max-w-[900px] mx-auto">

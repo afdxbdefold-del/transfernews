@@ -142,6 +142,15 @@ export default function DatenschutzPage() {
               Datenverarbeitung und Übermittlungen in die USA finden Sie in der{' '}
               <a href="https://freestar.com/privacy-policy/" target="_blank" rel="noopener noreferrer" className="text-[#79B92A] underline">Datenschutzerklärung von Freestar</a>.
             </p>
+            <h3 className="font-bold text-gray-800 mt-4 mb-2">Videoanzeigen von Primis</h3>
+            <p className="text-gray-600 mb-4">
+              Auf unseren Inhaltsseiten verwenden wir den Videoplayer von M.D. Primis Technologies Ltd.
+              In Ländern, in denen die DSGVO gilt, laden wir ihn erst nach Ihrer Einwilligung für Primis.
+              Primis kann dabei unter anderem IP-Adresse, Geräteinformationen und Cookie-Kennungen
+              zur Auslieferung und Messung von Videoanzeigen verarbeiten. Ihre Auswahl können Sie über
+              „Datenschutzeinstellungen“ im Seitenfuß ändern. Weitere Informationen finden Sie in der{' '}
+              <a href="https://www.primis.tech/primis-video-platform-privacy-policy/" target="_blank" rel="noopener noreferrer" className="text-[#79B92A] underline">Datenschutzerklärung von Primis</a>.
+            </p>
             <h3 className="font-bold text-gray-800 mt-4 mb-2">Einwilligungsverwaltung (InMobi Choice)</h3>
             <p className="text-gray-600 mb-4">
               Für den Einwilligungsdialog verwenden wir weiterhin InMobi Choice. Die bestehende
