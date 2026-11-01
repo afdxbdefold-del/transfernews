@@ -415,6 +415,67 @@ def _reported_french_interest(title, summary, catalogues):
             "evidence_spans": spans, "evidence_headline": "\n".join(s["text"] for s in spans), "evidence_summary": ""}
 
 
+# A short signing headline can identify the same move as a full-name lead even
+# when the latter also names the player's former clubs and a future opponent.
+_TEAM_WORD = r"(?:[A-ZÀ-ÖØ-Þ][^\W\d_]*(?:[-’'][^\W\d_]+)*)"
+_TEAM = _TEAM_WORD + r"(?:[ ]+(?:&[ ]+)?" + _TEAM_WORD + r"){0,5}"
+_SIGNING_TITLE = re.compile(
+    r"(?:(?:Retired|Former) " + _TEAM + r" (?:legend|striker|midfielder|defender|goalkeeper) )?"
+    r"(?P<player>" + _NAME_WORD + r"(?: " + _NAME_WORD + r"){0,3}) signs for (?P<club>" + _TEAM + r")[.!]?"
+)
+_SIGNING_LEAD = re.compile(
+    r"(?:Former " + _TEAM + r"(?: and " + _TEAM + r")? (?:striker|midfielder|defender|goalkeeper) )?"
+    r"(?P<claim>(?P<player>" + _NAME_WORD + r"(?: " + _NAME_WORD + r"){1,3}) "
+    r"(?:comes out of retirement to join|has come out of retirement to join|has signed for|signs for|joins) "
+    r"(?:(?:" + _TEAM_WORD + r" ){1,4}side )?(?P<club>" + _TEAM + r"))"
+    r"(?: as they prepare for their " + _TEAM + r" match against " + _TEAM + r")?[.]?"
+)
+
+
+def corroborated_english_signing(title, summary, catalogues=None):
+    headline = _SIGNING_TITLE.fullmatch(title)
+    lead = _SIGNING_LEAD.fullmatch(summary)
+    if not headline or not lead:
+        return None
+    catalogues = _catalogues(catalogues)
+    player, club = lead["player"], lead["club"]
+    short_player, short_club = headline["player"], headline["club"]
+    if (short_player not in {player, player.split()[-1]} or
+            any(word.casefold() in _NAME_STOP or word.isupper() for word in player.split())):
+        return {"reason": "ambiguous_players"}
+    # New club identities must carry an explicit football-club designator.
+    # An unidentified capitalized place or nickname is insufficient.
+    clubs = catalogues["clubs"]
+    club_alias = normalize_alias(club)
+    prefixless = re.sub(r"^(?:AFC|FC|SC|CF|AC) ", "", club)
+    if (club_alias not in clubs and prefixless == club
+            or set(club_alias.split()) & {"unknown", "unnamed", "unbekannt", "undisclosed"}):
+        return {"reason": "unresolved_entities"}
+    if short_club != club and not (
+            len(short_club) >= 4 and short_club.casefold() not in {"city", "town", "rovers", "united"}
+            and prefixless.split()[0] == short_club):
+        return {"reason": "ambiguous_transfer_direction"}
+    for name, short, names, conflicts in (
+        (player, short_player, catalogues["players"], catalogues.get("ambiguous_players", ())),
+        (club, short_club, clubs, catalogues.get("ambiguous_clubs", ())),
+    ):
+        full_alias, short_alias = normalize_alias(name), normalize_alias(short)
+        if full_alias in conflicts or short_alias in conflicts:
+            return {"reason": "ambiguous_transfer_direction"}
+        full_identity = names.get(full_alias, {}).get("name", name)
+        if short_alias in names and names[short_alias]["name"] != full_identity:
+            return {"reason": "ambiguous_transfer_direction"}
+    start, end = headline.start("player"), headline.end("club")
+    spans = [
+        {"field": "headline", "start": start, "end": end, "text": title[start:end]},
+        {"field": "summary", "start": lead.start("claim"), "end": lead.end("claim"), "text": lead["claim"]},
+    ]
+    return {"player": player, "club": club, "from_club": None, "confidence": 1.0, "reason": None,
+            "relation": "signing", "verified_stage": "done", "evidence_scope": "claim",
+            "evidence_headline": "\n".join(span["text"] for span in spans), "evidence_summary": "",
+            "evidence_spans": spans}
+
+
 def _unit_relation(unit, catalogues):
     """Recognize complete relations, never choose an entity by popularity."""
     text = unit["text"]
@@ -567,6 +628,10 @@ def assess_transfer_evidence(title, summary="", catalogues=None):
     french_interest = _reported_french_interest(title, summary, source_catalogues)
     if french_interest is not None:
         return french_interest
+    if result.get("reason") not in {"non_transfer_topic", "negated_transfer"}:
+        signing = corroborated_english_signing(title, summary, catalogues)
+        if signing is not None:
+            return signing
     if not result.get("reason"):
         return {**result, "evidence_scope": "full" if summary else "headline"}
     if result["reason"] not in {"ambiguous_players", "ambiguous_clubs", "ambiguous_transfer_direction"}:

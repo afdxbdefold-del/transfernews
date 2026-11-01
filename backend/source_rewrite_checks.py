@@ -7,6 +7,7 @@ Only source_headline/source_summary are evidence; prior generated bodies are not
 """
 import re
 import unicodedata
+from transfer_evidence import corroborated_english_signing
 
 
 def _text(value):
@@ -160,6 +161,23 @@ def _attributed(text, publisher):
         or re.search(r"\bwie\s+" + escaped + r"\b.{0,50}\b(?:berichtet|meldet|schreibt)\b", words))
 
 
+def _confirmed_signing_claim(article):
+    """Recheck the two affirmative source clauses before allowing completion language."""
+    if article.get("evidence_scope") != "claim":
+        return False
+    spans = article.get("evidence_spans") or []
+    if (not isinstance(spans, list) or len(spans) != 2 or not all(isinstance(span, dict) for span in spans)
+            or [span.get("field") for span in spans] != ["headline", "summary"]
+            or not all(isinstance(span.get("text"), str) for span in spans)):
+        return False
+    title, lead = (span["text"] for span in spans)
+    if title + "\n" + lead != article.get("source_headline"):
+        return False
+    claim = corroborated_english_signing(title, lead)
+    return bool(claim and not claim.get("reason")
+                and claim["player"] == article.get("player_name") and claim["club"] == article.get("club_name"))
+
+
 def validate_source_rewrite(rewrite, article):
     """Return (accepted, reason) without network, database, or model calls."""
     headline = article.get("source_headline") or ""
@@ -177,12 +195,22 @@ def validate_source_rewrite(rewrite, article):
     if stage not in {"rumor", "advanced", "near_done", "done", "official"}:
         return False, "missing_source_stage"
     claims = list(_asserted_completions(text))
+    signing = stage == "done" and _confirmed_signing_claim(article)
+    if signing:
+        words = " " + _words(rewrite) + " "
+        if any(" " + _words(article[key]) + " " not in words for key in ("player_name", "club_name")):
+            return False, "missing_signing_identity"
+        # The two matching signing clauses support a reported move. They do not
+        # attribute a separate confirmation or public announcement to the club.
+        if re.search(r"\b(?:offiziell\w*|bestatigt\w*|bestaetigt\w*|official\w*|confirmed|announced)\b", text):
+            return False, "unsupported_official_announcement"
     if stage in {"rumor", "advanced", "near_done"}:
         if claims:
             return False, "unsupported_completion_claim"
         if not UNCERTAIN.search(text) and not IN_PROGRESS.search(text):
             return False, "missing_transfer_uncertainty"
     elif claims and not (list(_asserted_completions(evidence)) or
+                         signing or
                          (stage == "official" and article.get("transfer_type") == "extension"
                           and confirmed_french_renewal(headline, summary, article.get("player_name"),
                                                        article.get("club_name")))):
