@@ -437,7 +437,8 @@ def corroborated_english_signing(title, summary, catalogues=None):
     lead = _SIGNING_LEAD.fullmatch(summary)
     if not headline or not lead:
         return None
-    catalogues = _catalogues(catalogues)
+    # The rewrite pass also receives source spans, not a persisted alias map.
+    catalogues = _with_source_players(title, summary, catalogues)
     player, club = lead["player"], lead["club"]
     short_player, short_club = headline["player"], headline["club"]
     if (short_player not in {player, player.split()[-1]} or

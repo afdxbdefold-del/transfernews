@@ -1053,7 +1053,7 @@ NUR OUTPUT: Der Artikel-Text mit H2-Überschriften."""
                 self.evidence_catalogues = await load_entity_catalogues(self.db)
             source_article = {**article, **article.get("pending_publication", {})}
             source_constraints = self._source_constraints(source_article)
-            source_constraints += signing_rewrite_guidance(source_article)
+            source_constraints += signing_rewrite_guidance(source_article, self.evidence_catalogues)
 
             headline_only = article.get("evidence_scope") in {"headline", "claim"}
             source_headline = article.get("source_headline", "")
@@ -1153,7 +1153,7 @@ Liefere NUR den Artikel-Text."""
             is_valid, reason = self.validate_rewrite(original_body, rewrite, evidence=validation_source,
                                                       evidence_scope=validation_scope, catalogues=self.evidence_catalogues)
             if is_valid and source_grounded:
-                is_valid, reason = validate_source_rewrite(rewrite, source_article)
+                is_valid, reason = validate_source_rewrite(rewrite, source_article, self.evidence_catalogues)
             
             if not is_valid:
                 logger.warning(f"[GPT] REJECTED: {reason} - {title[:30]}")
@@ -1203,7 +1203,7 @@ Bewahre Unsicherheit und Quellenangabe. Keine weiteren Fakten oder Hintergründe
                     is_valid, reason = self.validate_rewrite(original_body, rewrite, evidence=validation_source,
                                                               evidence_scope=validation_scope, catalogues=self.evidence_catalogues)
                     if is_valid and source_grounded:
-                        is_valid, reason = validate_source_rewrite(rewrite, source_article)
+                        is_valid, reason = validate_source_rewrite(rewrite, source_article, self.evidence_catalogues)
                 
                 if not is_valid:
                     logger.error(f"[GPT] FINAL REJECT: {reason}")

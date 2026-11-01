@@ -87,6 +87,7 @@ class EnglishSigningEvidenceTests(unittest.TestCase):
         title = "## Robin Keller wechselt zu AFC Riverton & Vale"
         body = "Laut BBC Sport schließt sich Robin Keller dem AFC Riverton & Vale an."
         self.assertIn("AFC Riverton & Vale", signing_rewrite_guidance(article))
+        self.assertIn("kehrt aus dem Ruhestand zurück", signing_rewrite_guidance(article))
         for good in (title + "\n" + body, title + "\n" + body + " Robin Keller beendet seinen Ruhestand.",
                      "## AFC Riverton & Vale verpflichtet Robin Keller\n" + body,
                      "## Wechsel von Robin Keller zu AFC Riverton & Vale\n"
@@ -110,6 +111,24 @@ class EnglishSigningEvidenceTests(unittest.TestCase):
         ):
             with self.subTest(rewrite=bad):
                 self.assertEqual(validate_source_rewrite(bad, article), (False, "unsupported_signing_claim"))
+
+    def test_dynamic_club_stays_subject_to_role_checks_and_new_ambiguity_holds(self):
+        cats = build_entity_catalogues(clubs=[{"name": "Riverton Athletic"}])
+        title, lead = "Robin Keller signs for Riverton", "Robin Keller joins Riverton Athletic."
+        result = assess_transfer_evidence(title, lead, cats)
+        article = {"evidence_scope": "claim", "transfer_status": "done", "source_name": "BBC Sport",
+                   "transfer_type": "permanent", "source_headline": result["evidence_headline"],
+                   "evidence_spans": result["evidence_spans"], "player_name": "Robin Keller",
+                   "club_name": "Riverton Athletic"}
+        good = "Laut BBC Sport wechselt Robin Keller zu Riverton Athletic."
+        self.assertNotIn("Ruhestand", signing_rewrite_guidance(article, cats))
+        self.assertTrue(validate_source_rewrite(good, article, cats)[0])
+        confused = good + " Robin Keller wechselt von Riverton Athletic zu Burton Albion."
+        self.assertFalse(validate_source_rewrite(confused, article, cats)[0])
+        for updated in (build_entity_catalogues(),
+                        build_entity_catalogues(clubs=[{"name": "Riverton Athletic"},
+                                                       {"name": "Riverton Vale", "short_name": "Riverton"}])):
+            self.assertEqual(validate_source_rewrite(good, article, updated), (False, "unverified_signing_identity"))
 
 
 if __name__ == "__main__":

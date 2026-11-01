@@ -161,33 +161,37 @@ def _attributed(text, publisher):
         or re.search(r"\bwie\s+" + escaped + r"\b.{0,50}\b(?:berichtet|meldet|schreibt)\b", words))
 
 
-def _confirmed_signing_claim(article):
-    """Recheck the two affirmative source clauses before allowing completion language."""
+def _confirmed_signing_claim(article, catalogues=None):
+    """Return None for other evidence formats, False for a now-ambiguous signing."""
     if article.get("evidence_scope") != "claim":
-        return False
+        return None
     spans = article.get("evidence_spans") or []
     if (not isinstance(spans, list) or len(spans) != 2 or not all(isinstance(span, dict) for span in spans)
             or [span.get("field") for span in spans] != ["headline", "summary"]
             or not all(isinstance(span.get("text"), str) for span in spans)):
-        return False
+        return None
     title, lead = (span["text"] for span in spans)
+    claim = corroborated_english_signing(title, lead, catalogues)
+    if claim is None:
+        return None
     if title + "\n" + lead != article.get("source_headline"):
         return False
-    claim = corroborated_english_signing(title, lead)
     return bool(claim and not claim.get("reason")
                 and claim["player"] == article.get("player_name") and claim["club"] == article.get("club_name"))
 
 
-def signing_rewrite_guidance(article):
-    if article.get("transfer_status") != "done" or not _confirmed_signing_claim(article):
+def signing_rewrite_guidance(article, catalogues=None):
+    if article.get("transfer_status") != "done" or not _confirmed_signing_claim(article, catalogues):
         return ""
     player, club = article["player_name"], article["club_name"]
     publisher = article.get("source_name") or article.get("primary_source")
     if not publisher:
         return ""
+    retirement = (f" Ein belegter zweiter Satz ist »{player} kehrt aus dem Ruhestand zurück.«"
+                  if "out of retirement to join" in article["source_headline"] else "")
     return (f" Nenne nur die belegte Verpflichtung. Form der H2: »{player} wechselt zu {club}«. "
             f"Form des Kernsatzes: »Laut {publisher} schließt sich {player} dem {club} an.« "
-            "Keine weiteren Vertragsdetails oder Vereine ergänzen.")
+            "Keine weiteren Vertragsdetails oder Vereine ergänzen." + retirement)
 
 
 def _signing_sentences_supported(rewrite, article):
@@ -218,7 +222,7 @@ def _signing_sentences_supported(rewrite, article):
     return witnessed_move and "?" not in rewrite
 
 
-def validate_source_rewrite(rewrite, article):
+def validate_source_rewrite(rewrite, article, catalogues=None):
     """Return (accepted, reason) without network, database, or model calls."""
     headline = article.get("source_headline") or ""
     summary = "" if article.get("evidence_scope") in {"headline", "claim"} else article.get("source_summary") or ""
@@ -235,7 +239,10 @@ def validate_source_rewrite(rewrite, article):
     if stage not in {"rumor", "advanced", "near_done", "done", "official"}:
         return False, "missing_source_stage"
     claims = list(_asserted_completions(text))
-    signing = stage == "done" and _confirmed_signing_claim(article)
+    pairing = _confirmed_signing_claim(article, catalogues)
+    if pairing is False or (pairing and (stage != "done" or article.get("transfer_type") != "permanent")):
+        return False, "unverified_signing_identity"
+    signing = pairing is True
     if signing and not _signing_sentences_supported(rewrite, article):
         return False, "unsupported_signing_claim"
     if stage in {"rumor", "advanced", "near_done"}:
