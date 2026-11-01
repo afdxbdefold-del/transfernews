@@ -26,7 +26,7 @@ from pipeline_state import utcnow, parse_source_time, review_reason, retry_at, d
 from transfer_evidence import assess_transfer_evidence, unsupported_headline_detail
 from entity_catalogue import load_entity_catalogues
 from publication_policy import PIPELINE_VERSION, RECONSIDER_REASONS, editorial_eligibility, can_publish_rewrite
-from source_rewrite_checks import validate_source_rewrite
+from source_rewrite_checks import signing_rewrite_guidance, validate_source_rewrite
 from source_scope import apply_evidence_scope
 from rewrite_errors import (PROVIDER_ID, RewriteFailure, RewriteProviderError,
                             classify_rewrite_error, get_rewrite_provider_pause,
@@ -1053,6 +1053,7 @@ NUR OUTPUT: Der Artikel-Text mit H2-Überschriften."""
                 self.evidence_catalogues = await load_entity_catalogues(self.db)
             source_article = {**article, **article.get("pending_publication", {})}
             source_constraints = self._source_constraints(source_article)
+            source_constraints += signing_rewrite_guidance(source_article)
 
             headline_only = article.get("evidence_scope") in {"headline", "claim"}
             source_headline = article.get("source_headline", "")

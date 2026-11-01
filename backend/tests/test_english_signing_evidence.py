@@ -5,7 +5,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from entity_catalogue import build_entity_catalogues
-from source_rewrite_checks import validate_source_rewrite
+from source_rewrite_checks import signing_rewrite_guidance, validate_source_rewrite
 from source_scope import apply_evidence_scope
 from transfer_evidence import assess_transfer_evidence
 
@@ -77,6 +77,39 @@ class EnglishSigningEvidenceTests(unittest.TestCase):
                        {"source_headline": result["evidence_headline"].replace("signs", "might sign")}):
             with self.subTest(change=change):
                 self.assertFalse(validate_source_rewrite(body, {**article, **change})[0])
+
+    def test_signing_checks_every_headline_and_body_claim(self):
+        result = assess_transfer_evidence(TITLE, SUMMARY)
+        article = {"evidence_scope": "claim", "transfer_status": "done", "source_name": "BBC Sport",
+                   "transfer_type": "permanent", "source_headline": result["evidence_headline"],
+                   "evidence_spans": result["evidence_spans"], "player_name": "Robin Keller",
+                   "club_name": "AFC Riverton & Vale"}
+        title = "## Robin Keller wechselt zu AFC Riverton & Vale"
+        body = "Laut BBC Sport schließt sich Robin Keller dem AFC Riverton & Vale an."
+        self.assertIn("AFC Riverton & Vale", signing_rewrite_guidance(article))
+        for good in (title + "\n" + body, title + "\n" + body + " Robin Keller beendet seinen Ruhestand.",
+                     "## AFC Riverton & Vale verpflichtet Robin Keller\n" + body,
+                     "## Wechsel von Robin Keller zu AFC Riverton & Vale\n"
+                     "Wie BBC Sport berichtet, unterschreibt Robin Keller beim AFC Riverton & Vale."):
+            with self.subTest(rewrite=good):
+                self.assertTrue(validate_source_rewrite(good, article)[0])
+        for bad in (
+            "## Robin Keller wechselt zu Burton Albion\n" + body,
+            title + "\nLaut BBC Sport wechselt Robin Keller von AFC Riverton & Vale zu Burton Albion.",
+            "## Leihe für Robin Keller\n" + body,
+            title + "\nLaut BBC Sport wechselt Robin Keller auf Leihbasis zu AFC Riverton & Vale.",
+            title + "\n" + body + " Der Wechsel erfolgt auf Leihbasis.",
+            title + "\n" + body + " Der Verein besitzt eine Kaufoption.",
+            title + "\n" + body + " Riverton muss den Spieler im Anschluss kaufen.",
+            title + "\n" + body + " Der Vertrag läuft bis Ende Juni.",
+            title + "\n" + body + " Er unterschreibt für drei Jahre.",
+            title + "\n" + body + " Auch sein Bruder schließt sich dem Verein an.",
+            title + "\n" + body + " Der Klub bestätigt dies offiziell.",
+            title + "\n" + body + " Der Spieler wechselt allerdings nicht.",
+            title + "\n" + body + " Er spielt gegen West Ham United.",
+        ):
+            with self.subTest(rewrite=bad):
+                self.assertEqual(validate_source_rewrite(bad, article), (False, "unsupported_signing_claim"))
 
 
 if __name__ == "__main__":

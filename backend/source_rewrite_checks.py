@@ -178,6 +178,46 @@ def _confirmed_signing_claim(article):
                 and claim["player"] == article.get("player_name") and claim["club"] == article.get("club_name"))
 
 
+def signing_rewrite_guidance(article):
+    if article.get("transfer_status") != "done" or not _confirmed_signing_claim(article):
+        return ""
+    player, club = article["player_name"], article["club_name"]
+    publisher = article.get("source_name") or article.get("primary_source")
+    if not publisher:
+        return ""
+    return (f" Nenne nur die belegte Verpflichtung. Form der H2: »{player} wechselt zu {club}«. "
+            f"Form des Kernsatzes: »Laut {publisher} schließt sich {player} dem {club} an.« "
+            "Keine weiteren Vertragsdetails oder Vereine ergänzen.")
+
+
+def _signing_sentences_supported(rewrite, article):
+    """Every clause, including the H2, must express the roles in this short signing claim."""
+    player = re.escape(_words(article["player_name"]))
+    club = r"(?:(?:der|dem|den|des) )?" + re.escape(_words(article["club_name"]))
+    publisher = re.escape(_words(article.get("source_name") or article.get("primary_source")))
+    attribution = re.compile(rf"\b(?:laut {publisher}|nach (?:angaben|informationen) von {publisher}|"
+                             rf"wie {publisher} berichtet|{publisher} zufolge)\b")
+    signing = re.compile(
+        rf"(?:{player} wechselt|wechselt {player}) (?:zu|zum) {club}"
+        rf"|(?:{player} unterschreibt|unterschreibt {player}) (?:bei|beim|fur) {club}"
+        rf"|(?:{player} schliesst sich|schliesst sich {player}) {club} an"
+        rf"|(?:{club} verpflichtet|verpflichtet {club}) {player}"
+        rf"|wechsel von {player} zu {club}")
+    retirement = re.compile(rf"{player} (?:kehrt aus dem ruhestand zuruck|beendet seinen ruhestand)")
+    returned = "out of retirement to join" in article["source_headline"]
+    witnessed_move = False
+    for clause in re.split(r"[.!?;\n]", rewrite):
+        words = _words(clause)
+        if not words:
+            continue
+        words = " ".join(attribution.sub(" ", words).split())
+        if signing.fullmatch(words):
+            witnessed_move = True
+        elif not (returned and retirement.fullmatch(words)):
+            return False
+    return witnessed_move and "?" not in rewrite
+
+
 def validate_source_rewrite(rewrite, article):
     """Return (accepted, reason) without network, database, or model calls."""
     headline = article.get("source_headline") or ""
@@ -196,14 +236,8 @@ def validate_source_rewrite(rewrite, article):
         return False, "missing_source_stage"
     claims = list(_asserted_completions(text))
     signing = stage == "done" and _confirmed_signing_claim(article)
-    if signing:
-        words = " " + _words(rewrite) + " "
-        if any(" " + _words(article[key]) + " " not in words for key in ("player_name", "club_name")):
-            return False, "missing_signing_identity"
-        # The two matching signing clauses support a reported move. They do not
-        # attribute a separate confirmation or public announcement to the club.
-        if re.search(r"\b(?:offiziell\w*|bestatigt\w*|bestaetigt\w*|official\w*|confirmed|announced)\b", text):
-            return False, "unsupported_official_announcement"
+    if signing and not _signing_sentences_supported(rewrite, article):
+        return False, "unsupported_signing_claim"
     if stage in {"rumor", "advanced", "near_done"}:
         if claims:
             return False, "unsupported_completion_claim"
