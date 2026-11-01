@@ -482,6 +482,23 @@ def is_french_interest_claim(article):
     return article.get("evidence_scope") == "claim" and " se positionne sur " in title
 
 
+def french_interest_guidance(article, catalogues=None):
+    if not is_french_interest_claim(article):
+        return ""
+    title, _, source = article["source_headline"].partition("\n")
+    claim = _reported_french_interest(title, source, _catalogues(catalogues))
+    if not claim or claim["reason"]:
+        return ""
+    player, club = claim["player"], claim["club"]
+    publisher = article.get("source_name") or article.get("primary_source")
+    guidance = (f' Die Quelle berichtet ausschließlich Interesse. Passende H2: „{player} im Fokus von {club}“. '
+                f'Kernsatz: „Laut {publisher} soll {club} an {player} interessiert sein.“ '
+                'Der Verein ist der Interessent, der Spieler das Ziel.')
+    if claim["source_employer"]:
+        guidance += f' Die Quelle belegt auch: „Dem Bericht zufolge spielt {player} bei {claim["source_employer"]}.“'
+    return guidance
+
+
 def validate_french_interest_roles(rewrite, article, catalogues=None):
     """Only express the corroborated club's interest and the reported player's affiliation."""
     title, _, source = article["source_headline"].partition("\n")

@@ -6,7 +6,7 @@ import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from entity_catalogue import build_entity_catalogues
 from source_rewrite_checks import validate_source_rewrite
-from transfer_evidence import assess_transfer_evidence, unsupported_headline_detail
+from transfer_evidence import assess_transfer_evidence, french_interest_guidance, unsupported_headline_detail
 
 
 class FrenchInterestTests(unittest.TestCase):
@@ -42,6 +42,11 @@ class FrenchInterestTests(unittest.TestCase):
         heading = "## Abdoul Koné im Fokus von Al-Ittihad"
         sentence = "Laut Foot Mercato soll Al-Ittihad an Abdoul Koné interessiert sein."
         correct = heading + "\n\n" + sentence
+        guidance = french_interest_guidance(article)
+        self.assertIn("Dem Bericht zufolge spielt Abdoul Koné bei RB Leipzig.", guidance)
+        self.assertTrue(validate_source_rewrite(correct + " Dem Bericht zufolge spielt Abdoul Koné bei RB Leipzig.", article)[0])
+        direct = assess_transfer_evidence(self.title, "Al-Ittihad est intéressé par Abdoul Koné.")
+        self.assertNotIn("spielt", french_interest_guidance({**article, "source_headline": direct["evidence_headline"]}))
         self.assertTrue(validate_source_rewrite(correct, article)[0])
         self.assertTrue(validate_source_rewrite(correct + " Dem Bericht zufolge spielt der Verteidiger bei RB Leipzig.", article)[0])
         for output in (
