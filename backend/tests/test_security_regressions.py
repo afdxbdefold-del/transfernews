@@ -248,6 +248,29 @@ def test_article_html_is_publication_checked_escaped_and_preserves_shell(app,mon
     assert request(app,'GET','/api/ssr/news/encoded%22marker').status_code == 404
 
 
+@pytest.mark.parametrize(("body", "rendered"), [
+    ("## Billy Sharp wechselt zu AFC Rushden & Diamonds  \n"
+     "Laut BBC Sport schließt sich Billy Sharp dem AFC Rushden & Diamonds an. "
+     "Billy Sharp kehrt aus dem Ruhestand zurück.",
+     "<h2>Billy Sharp wechselt zu AFC Rushden &amp; Diamonds</h2>"
+     "<p>Laut BBC Sport schließt sich Billy Sharp dem AFC Rushden &amp; Diamonds an. "
+     "Billy Sharp kehrt aus dem Ruhestand zurück.</p>"),
+    ("Erster Absatz\r\nzweite Zeile\r\n \r\n## Titel <em> & Text\r\n\r\n"
+     "Nächster Absatz mit <img src=x onerror=alert(1)>.",
+     "<p>Erster Absatz<br>zweite Zeile</p><h2>Titel &lt;em&gt; &amp; Text</h2>"
+     "<p>Nächster Absatz mit &lt;img src=x onerror=alert(1)&gt;.</p>"),
+])
+def test_article_html_headings_end_at_the_next_line(app,monkeypatch,body,rendered):
+    import prerender
+    async def shell(): return ""
+    monkeypatch.setattr(prerender, "get_frontend_shell", shell)
+    app.db.articles.rows[0]["body"] = body
+    response = request(app, "GET", "/api/ssr/news/published-fixture")
+    assert response.status_code == 200
+    assert rendered in response.text
+    assert app.db.articles.rows[0]["body"] == body
+
+
 def test_profile_dispatch_and_player_aliases_return_real_status_and_safe_redirects(app,monkeypatch):
     import prerender
     async def shell(): return '<!doctype html><html><head><title>Generic</title></head><body><div id="root"></div><script src="/static/app.js"></script></body></html>'

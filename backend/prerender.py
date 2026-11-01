@@ -117,12 +117,17 @@ def article_html_parts(article):
     head = re.sub(r"<(title|meta|link)\b", r'<\1 data-rh="true"', head)
     structured_data = '<script type="application/ld+json">' + safe_json_ld(schema) + '</script>'
     paragraphs = []
-    for block in re.split(r"\n\s*\n", str(article.get("body") or "")):
-        if not block.strip(): continue
-        if block.lstrip().startswith("## "):
-            paragraphs.append("<h2>" + escape(block.strip()[3:]) + "</h2>")
-        else:
-            paragraphs.append("<p>" + escape(block).replace("\n", "<br>") + "</p>")
+    lines = []
+    for line in [*str(article.get("body") or "").splitlines(), ""]:
+        stripped = line.strip()
+        if stripped and not stripped.startswith("## "):
+            lines.append(line)
+            continue
+        if lines:
+            paragraphs.append("<p>" + "<br>".join(escape(text) for text in lines) + "</p>")
+            lines.clear()
+        if stripped:
+            paragraphs.append("<h2>" + escape(stripped[3:].strip()) + "</h2>")
     body = '<main id="server-article"><article><a href="/">transfernews.de</a>'
     body += f'<h1>{escape(title)}</h1><p>{escape(description)}</p><p>Von <a href="{escape(author_url, quote=True)}">{escape(author_name)}</a></p>'
     if published: body += f'<time datetime="{escape(str(published), quote=True)}">{escape(str(published))}</time>'
