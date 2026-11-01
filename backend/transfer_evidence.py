@@ -120,6 +120,11 @@ def unsupported_headline_detail(rewrite, evidence, catalogues=None):
                 return f"Unbelegte biografische Angabe in Überschriftenmeldung: {detail[0]}"
     # Do not add a former/current club just because it exists in the name catalogue.
     resolved = _with_source_players(evidence, "", catalogues)
+    headline, _, report = evidence.partition("\n")
+    interest = _reported_french_interest(headline, report, _catalogues(catalogues))
+    if interest and not interest["reason"]:
+        name = interest["player"]
+        resolved = {**resolved, "players": {**resolved["players"], normalize_alias(name): {"name": name}}}
     resolved = _with_source_players(rewrite, "", resolved)
     for reported_mentions, rewritten_mentions in zip(_resolved_mentions(evidence, resolved),
                                                      _resolved_mentions(rewrite, resolved)):
@@ -346,6 +351,70 @@ def _source_units(title, summary):
     return units
 
 
+def _reported_french_interest(title, summary, catalogues):
+    """An explicit interest headline and corroborating report identify the same pair."""
+    match = re.fullmatch(r"(.+?) se positionne sur (.+?)[.!]?", title)
+    if not match:
+        return None
+    hold = {"reason": "ambiguous_transfer_direction"}
+    club_text, player = match.groups()
+    club_alias, player_alias = normalize_alias(club_text), normalize_alias(player)
+    club = catalogues["clubs"].get(club_alias)
+    known_player = catalogues["players"].get(player_alias)
+    exact_mononym = known_player and known_player["name"] == player and re.fullmatch(_NAME_WORD, player)
+    if (not club or club_alias in catalogues.get("ambiguous_clubs", ())
+            or player_alias in catalogues.get("ambiguous_players", ())
+            or not (_FULL_NAME.fullmatch(player) or exact_mononym)
+            or any(word.casefold() in _NAME_STOP or word.isupper() for word in player.split())
+            or _mentions(player, catalogues["clubs"])):
+        return hold
+
+    # Resolve the whole player name before considering any shared surname.
+    identity = known_player["name"] if known_player else player
+    if NEGATED_MOVE.search(summary) or OFF_TOPIC.search(title + "\n" + summary) or NON_TRANSFER_HEADLINE.search(title):
+        return hold
+    units = _source_units(title, summary)
+    report = units[1:]
+    if " ".join(summary.split()) != " ".join(" ".join(unit["text"] for unit in report).split()):
+        return hold
+    player_pattern = re.escape(player)
+    subject_repeated = bool(report and re.fullmatch(
+        player_pattern + r" plaît (?:en|au|aux|à) [A-ZÀ-ÖØ-Þ][\w’-]+(?: [a-zà-öø-ÿ’-]+){0,2}\.",
+        report[0]["text"]) and not re.search(r"\b(?:mais|ou|et|si|pas|non)\b", report[0]["text"], re.I))
+    if subject_repeated:
+        report = report[1:]
+    if not report:
+        return hold
+    # A role without the player's name is usable only after a sentence about
+    # that same player. The employer in “défenseur du …” is never the buyer.
+    subject = player_pattern
+    if subject_repeated:
+        subject += (r"|(?:le (?:défenseur(?: central)?|milieu(?: de terrain)?|gardien(?: de but)?)"
+                    r"|l['’]attaquant) (?:du |de la |de l['’])(?P<employer>[\w’' -]+?)")
+    corroboration = (r"(?:Selon nos informations,\s*)?" + re.escape(club_text)
+                     + r" est intéressé par (?:" + subject + r")"
+                     + r"(?: en vue du prochain mercato(?: hivernal| estival)?)?\.")
+    interest = re.fullmatch(corroboration, report[0]["text"], re.I)
+    if not interest:
+        return hold
+    employer = interest.groupdict().get("employer")
+    if employer:
+        employer_alias = normalize_alias(employer)
+        known = catalogues["clubs"].get(employer_alias)
+        if not known or employer_alias in catalogues.get("ambiguous_clubs", ()) or known["name"] == club["name"]:
+            return hold
+    # Ignore only an incomplete training-history aside from a truncated feed.
+    # Other sentences can qualify, deny or contradict the claimed interest.
+    if len(report) > 1 and (len(report) != 2 or not re.fullmatch(
+            r"Formé (?:au|aux|à|chez) [\w’' -]+, (?:le joueur|le défenseur|l['’]attaquant)"
+            r"(?: de(?: \d+ ans)?)?\s*\((?:…|\.\.\.)\)", report[1]["text"], re.I)):
+        return hold
+    spans = units[:3] if subject_repeated else units[:2]
+    return {"player": identity, "club": club["name"], "from_club": None, "confidence": 1.0,
+            "reason": None, "relation": "interest", "verified_stage": "rumor", "evidence_scope": "claim",
+            "evidence_spans": spans, "evidence_headline": "\n".join(s["text"] for s in spans), "evidence_summary": ""}
+
+
 def _unit_relation(unit, catalogues):
     """Recognize complete relations, never choose an entity by popularity."""
     text = unit["text"]
@@ -485,7 +554,8 @@ def assess_transfer_evidence(title, summary="", catalogues=None):
     This exception uses a complete grammatical claim, not the most popular entity
     or the first sentence of a summary. Its excluded summary is never evidence.
     """
-    catalogues = _with_source_players(title, summary, catalogues)
+    source_catalogues = _catalogues(catalogues)
+    catalogues = _with_source_players(title, summary, source_catalogues)
     result = _assess_evidence(title, summary, catalogues)
     # Every output scope must preserve source-level contradiction/conditions.
     # In particular, newly resolved full names must not bypass these safeguards
@@ -494,6 +564,9 @@ def assess_transfer_evidence(title, summary="", catalogues=None):
         return {"reason": "negated_transfer"}
     if CONDITIONAL_MOVE.search(title + "\n" + summary):
         return {"reason": "ambiguous_transfer_direction"}
+    french_interest = _reported_french_interest(title, summary, source_catalogues)
+    if french_interest is not None:
+        return french_interest
     if not result.get("reason"):
         return {**result, "evidence_scope": "full" if summary else "headline"}
     if result["reason"] not in {"ambiguous_players", "ambiguous_clubs", "ambiguous_transfer_direction"}:
