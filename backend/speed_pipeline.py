@@ -23,7 +23,7 @@ import os
 from uuid import uuid4, uuid5, NAMESPACE_URL
 from pymongo import ReturnDocument
 from pipeline_state import utcnow, parse_source_time, review_reason, retry_at, due_query, story_lease, StoryBusy
-from transfer_evidence import assess_transfer_evidence, unsupported_headline_detail
+from transfer_evidence import assess_transfer_evidence, is_french_interest_claim, unsupported_headline_detail
 from entity_catalogue import load_entity_catalogues
 from publication_policy import PIPELINE_VERSION, RECONSIDER_REASONS, editorial_eligibility, can_publish_rewrite
 from source_rewrite_checks import signing_rewrite_guidance, validate_source_rewrite
@@ -1054,6 +1054,13 @@ NUR OUTPUT: Der Artikel-Text mit H2-Überschriften."""
             source_article = {**article, **article.get("pending_publication", {})}
             source_constraints = self._source_constraints(source_article)
             source_constraints += signing_rewrite_guidance(source_article, self.evidence_catalogues)
+            if is_french_interest_claim(source_article):
+                player, club = source_article.get("player_name", ""), source_article.get("club_name", "")
+                publisher = source_article.get("source_name") or source_article.get("primary_source")
+                source_constraints += (
+                    f' Die Quelle berichtet ausschließlich Interesse. Passende H2: „{player} im Fokus von {club}“. '
+                    f'Kernsatz: „Laut {publisher} soll {club} an {player} interessiert sein.“ '
+                    'Halte den Verein als Interessenten und den Spieler als Ziel auseinander. Ein Kernsatz genügt.')
 
             headline_only = article.get("evidence_scope") in {"headline", "claim"}
             source_headline = article.get("source_headline", "")

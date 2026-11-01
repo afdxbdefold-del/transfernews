@@ -410,7 +410,7 @@ def _reported_french_interest(title, summary, catalogues):
             r"(?: de(?: \d+ ans)?)?\s*\((?:…|\.\.\.)\)", report[1]["text"], re.I)):
         return hold
     spans = units[:3] if subject_repeated else units[:2]
-    return {"player": identity, "club": club["name"], "from_club": None, "confidence": 1.0,
+    return {"player": identity, "club": club["name"], "from_club": None, "source_employer": employer, "confidence": 1.0,
             "reason": None, "relation": "interest", "verified_stage": "rumor", "evidence_scope": "claim",
             "evidence_spans": spans, "evidence_headline": "\n".join(s["text"] for s in spans), "evidence_summary": ""}
 
@@ -475,6 +475,54 @@ def corroborated_english_signing(title, summary, catalogues=None):
             "relation": "signing", "verified_stage": "done", "evidence_scope": "claim",
             "evidence_headline": "\n".join(span["text"] for span in spans), "evidence_summary": "",
             "evidence_spans": spans}
+
+
+def is_french_interest_claim(article):
+    title = (article.get("source_headline") or "").partition("\n")[0]
+    return article.get("evidence_scope") == "claim" and " se positionne sur " in title
+
+
+def validate_french_interest_roles(rewrite, article, catalogues=None):
+    """Only express the corroborated club's interest and the reported player's affiliation."""
+    title, _, source = article["source_headline"].partition("\n")
+    claim = _reported_french_interest(title, source, _catalogues(catalogues))
+    spans = article.get("evidence_spans")
+    if (not claim or claim["reason"] or article.get("original_source_headline") != title
+            or article.get("transfer_status") != "rumor" or claim["player"] != article.get("player_name")
+            or claim["club"] != article.get("club_name")):
+        return False
+    if (not isinstance(spans, list) or len(spans) != len(claim["evidence_spans"])
+            or any(not isinstance(stored, dict) or stored.get("field") != checked["field"]
+                   or stored.get("text") != checked["text"] for stored, checked in zip(spans, claim["evidence_spans"]))):
+        return False
+    player, club = re.escape(claim["player"]), re.escape(claim["club"])
+    publisher = re.escape(article.get("source_name") or article.get("primary_source") or "")
+    prefix = rf"(?:laut {publisher}|nach (?:angaben|informationen) von {publisher}|wie {publisher} berichtet,?)\s+"
+    relation = (rf"(?:{club} (?:zeigt|hat|bekundet) interesse an {player}|(?:zeigt|hat|bekundet) {club} interesse an {player}"
+                rf"|{club} interessiert sich für {player}|interessiert sich {club} für {player}"
+                rf"|{club} (?:soll an {player} interessiert sein|ist an {player} interessiert)"
+                rf"|(?:soll {club} an {player} interessiert sein|ist {club} an {player} interessiert)"
+                rf"|{club} (?:soll )?interesse an {player}(?: haben)?|interesse von {club} an {player}"
+                rf"|{player} im (?:fokus|visier) (?:von|des) {club})")
+    employer = claim["source_employer"]
+    affiliation = None
+    if employer:
+        defender = "|der verteidiger" if re.search(r"\ble défenseur\b", source, re.I) else ""
+        actor = rf"(?:{player}|der spieler{defender})"
+        affiliation = rf"(?:dem bericht zufolge )?(?:{actor} spielt bei|spielt {actor} bei) {re.escape(employer)}"
+    interest_in_body = False
+    for line in rewrite.splitlines():
+        heading = line.lstrip().startswith("#")
+        for sentence in re.split(r"(?<=[.!?])\s+", line.strip().lstrip("# ").strip()):
+            statement = sentence.strip().removesuffix(".")
+            if not statement:
+                continue
+            statement = re.sub(rf"^{prefix}", "", statement, flags=re.I)
+            if re.fullmatch(relation, statement, re.I):
+                interest_in_body |= not heading
+            elif not affiliation or not re.fullmatch(affiliation, statement, re.I):
+                return False
+    return interest_in_body
 
 
 def _unit_relation(unit, catalogues):

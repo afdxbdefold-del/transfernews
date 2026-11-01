@@ -5,6 +5,7 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from entity_catalogue import build_entity_catalogues
+from source_rewrite_checks import validate_source_rewrite
 from transfer_evidence import assess_transfer_evidence, unsupported_headline_detail
 
 
@@ -29,6 +30,33 @@ class FrenchInterestTests(unittest.TestCase):
         title = "Arsenal se positionne sur Karim Dubois"
         result = assess_transfer_evidence(title, "Selon nos informations, Arsenal est intéressé par Karim Dubois.")
         self.assertEqual((result["player"], result["club"], result["verified_stage"]), ("Karim Dubois", "FC Arsenal", "rumor"))
+
+    def test_german_copy_keeps_player_interested_club_and_employer_in_their_source_roles(self):
+        body = ("Abdoul Koné plaît en Arabie saoudite. Selon nos informations, Al-Ittihad est intéressé "
+                "par le défenseur du RB Leipzig.")
+        result = assess_transfer_evidence(self.title, body)
+        article = {"evidence_scope": "claim", "transfer_status": "rumor", "source_name": "Foot Mercato",
+                   "original_source_headline": self.title, "source_headline": result["evidence_headline"],
+                   "evidence_spans": result["evidence_spans"],
+                   "player_name": result["player"], "club_name": result["club"], "transfer_type": "permanent"}
+        heading = "## Abdoul Koné im Fokus von Al-Ittihad"
+        sentence = "Laut Foot Mercato soll Al-Ittihad an Abdoul Koné interessiert sein."
+        correct = heading + "\n\n" + sentence
+        self.assertTrue(validate_source_rewrite(correct, article)[0])
+        self.assertTrue(validate_source_rewrite(correct + " Dem Bericht zufolge spielt der Verteidiger bei RB Leipzig.", article)[0])
+        for output in (
+            heading + "\n\nLaut Foot Mercato soll Abdoul Koné an Al-Ittihad interessiert sein.",
+            heading + "\n\nLaut Foot Mercato hat RB Leipzig Interesse an Abdoul Koné.",
+            correct + " Auch RB Leipzig hat Interesse an Abdoul Koné.", correct + " Er wechselt zu Al-Ittihad.",
+            correct + " Al-Ittihad verhandelt über die Ablöse.", correct + " Der Spieler unterschreibt einen Vertrag.",
+            correct + " Al-Ittihad beabsichtigt eine Leihe.", correct + " Dem Bericht zufolge spielt der Verteidiger bei Al-Ittihad.",
+            "## Abdoul Koné zeigt Interesse an Al-Ittihad\n\n" + sentence,
+        ):
+            with self.subTest(output=output):
+                self.assertFalse(validate_source_rewrite(output, article)[0])
+        self.assertFalse(validate_source_rewrite(correct, {**article, "club_name": "RB Leipzig"})[0])
+        self.assertFalse(validate_source_rewrite(correct, {**article, "original_source_headline": "Changed"})[0])
+        self.assertFalse(validate_source_rewrite(correct, {**article, "evidence_spans": []})[0])
 
     def test_unsupported_interest_stays_in_review(self):
         direct = "Al-Ittihad est intéressé par Abdoul Koné."
