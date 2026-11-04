@@ -23,7 +23,8 @@ import os
 from uuid import uuid4, uuid5, NAMESPACE_URL
 from pymongo import ReturnDocument
 from pipeline_state import utcnow, parse_source_time, review_reason, retry_at, due_query, story_lease, StoryBusy
-from transfer_evidence import assess_transfer_evidence, french_interest_guidance, unsupported_headline_detail
+from transfer_evidence import (assess_transfer_evidence, french_interest_guidance,
+                               unsupported_headline_detail, article_source_identity)
 from entity_catalogue import load_entity_catalogues
 from publication_policy import PIPELINE_VERSION, RECONSIDER_REASONS, editorial_eligibility, can_publish_rewrite
 from source_rewrite_checks import signing_rewrite_guidance, validate_source_rewrite
@@ -1052,6 +1053,17 @@ NUR OUTPUT: Der Artikel-Text mit H2-Überschriften."""
             if self.evidence_catalogues is None:
                 self.evidence_catalogues = await load_entity_catalogues(self.db)
             source_article = {**article, **article.get("pending_publication", {})}
+            if source_grounded:
+                valid, reason = article_source_identity(source_article, self.evidence_catalogues)
+                if not valid:
+                    selector = {"id": article_id, "content_revision": article.get("content_revision")}
+                    if article.get("rewrite_token"):
+                        selector["rewrite_token"] = article["rewrite_token"]
+                    await self.db.articles.update_one(selector, {"$set": {
+                        "needs_gpt_rewrite": False, "rewrite_failed": True, "rewrite_status": "review",
+                        "rewrite_review_reason": reason,
+                    }})
+                    return False
             source_constraints = self._source_constraints(source_article)
             source_constraints += signing_rewrite_guidance(source_article, self.evidence_catalogues)
             source_constraints += french_interest_guidance(source_article, self.evidence_catalogues)

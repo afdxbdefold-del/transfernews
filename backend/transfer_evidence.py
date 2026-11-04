@@ -22,13 +22,35 @@ CONTEXT = re.compile(
     r"surveille|convoite|veut recruter|intérêt pour|prolongation|renovación|renueva|renovar|renovará|"
     r"neuzugang|unterschreibt|unterzeichnet|piste|rinnovo)\b", re.I)
 OFF_TOPIC = re.compile(
-    r"\b(?:darts?|golf|tennis|snooker|cricket|handball|charity|benefiz\w*|wohltätig\w*|"
+    r"\b(?:darts?|golf|tennis\w*|ténis\w*|tenista\w*|snooker|cricket|handball|charity|benefiz\w*|wohltätig\w*|"
     r"benéfico|beneficenza|caritatif|solidario)\b", re.I)
 NON_TRANSFER_HEADLINE = re.compile(
     r"\b(?:injur\w*|verletz\w*|blessure\w*|lesión|lesionado|infortunio|"
     r"match report|spielbericht|spieltag|matchday|scores?|scored|scoring|"
     r"gewinnt|besiegt|sieg|niederlage|defeats?|beats?|medical update|"
     r"geldstrafe\w*|multa\w*|fined|sanction\w*|sanktion\w*|disziplinar\w*|disciplinar\w*)\b", re.I)
+# Appointment to a club's management is not a player transfer. A sporting
+# director merely announcing a player's signing must remain usable evidence.
+_BOARD_ROLE = (r"\b(?:conseil\s+d['’]administration|board(?:\s+of\s+directors|\s+member)?|"
+               r"consejo\s+de\s+administraci[oó]n|junta\s+directiva|consiglio\s+di\s+amministrazione|"
+               r"vorstand|vorstandsmitglied|aufsichtsrat|aufsichtsratsmitglied)\b")
+BOARD_HEADLINE = re.compile(_BOARD_ROLE, re.I)
+NON_PLAYER_APPOINTMENT = re.compile(
+    r"\b(?:joins?|joined|rejoint|rejoindra|intègre|integrera|rejoindre|becomes?|entra|entre|tritt|wechselt)\b"
+    r"[^.!?;\n]{0,100}" + _BOARD_ROLE
+    + "|" + _BOARD_ROLE + r"[^.!?;\n]{0,80}\b(?:beitreten|eintreten|wechseln)\b"
+    + r"|\b(?:joins?|joined|signs?|signed|appointed|wechselt|unterschreibt|verpflichtet|"
+    r"rejoint|rejoindra|recrute|nommé|nomme|ficha)\b[^.!?;\n]{0,100}"
+    r"\b(?:as|als|como|comme|en\s+tant\s+que)\s+"
+    r"(?:(?:the|a|an|new|head|neuer|neuen|neue|neuem|nuevo|nouveau)\s+){0,3}"
+    r"(?:coach|manager|trainer\w*|entrenador|entra[iî]neur|director|directeur|president|président|chairman)\b",
+    re.I)
+
+
+def non_player_topic(title, summary=""):
+    """A named person and a club alone do not establish a football-player role."""
+    return bool(OFF_TOPIC.search(title + "\n" + summary) or BOARD_HEADLINE.search(title)
+                or NON_PLAYER_APPOINTMENT.search(title + "\n" + summary))
 NEGATED_MOVE = re.compile(
     r"\b(?:not|never|kein\w*|nicht|no|non|ne|pas|denies|denied|dismissed)\b.{0,35}"
     r"\b(?:join\w*|sign\w*|transfer\w*|wechsel\w*|verpflicht\w*|fich\w*|moves?|"
@@ -235,7 +257,7 @@ def source_player_candidates(title, summary="", catalogues=None):
     """Find transient full player names; no surname guessing or database writes."""
     catalogues = _catalogues(catalogues)
     text = f"{title}\n{summary}"
-    if not CONTEXT.search(text):
+    if non_player_topic(title, summary) or not CONTEXT.search(text):
         return []
     known_players = _mentions(text, catalogues["players"])
     known_clubs = _mentions(text, catalogues["clubs"])
@@ -681,6 +703,8 @@ def assess_transfer_evidence(title, summary="", catalogues=None):
     This exception uses a complete grammatical claim, not the most popular entity
     or the first sentence of a summary. Its excluded summary is never evidence.
     """
+    if non_player_topic(title, summary):
+        return {"reason": "non_transfer_topic"}
     source_catalogues = _catalogues(catalogues)
     catalogues = _with_source_players(title, summary, source_catalogues)
     result = _assess_evidence(title, summary, catalogues)
@@ -802,3 +826,72 @@ def _assess_evidence(title, summary="", catalogues=None):
     return {"player": next(iter(player_names)), "club": target,
             "from_club": next(iter(origins), None), "confidence": 1.0, "reason": None,
             **({"transfer_type": "extension"} if renewal else {})}
+
+
+def _article_source_fields(article):
+    headline = article.get("source_headline") or ""
+    summary = "" if article.get("evidence_scope") in {"headline", "claim"} else article.get("source_summary") or ""
+    if article.get("evidence_scope") == "claim" and article.get("evidence_spans"):
+        spans = article["evidence_spans"]
+        if (not isinstance(spans, list) or not all(isinstance(span, dict)
+                and span.get("field") in {"headline", "summary"} and isinstance(span.get("text"), str)
+                for span in spans) or "\n".join(span["text"] for span in spans) != headline):
+            return None
+        # Paired headline/lead grammars must be reconstructed in their original
+        # fields, not reparsed as a single multi-line headline.
+        return tuple("\n".join(span["text"] for span in spans if span["field"] == field)
+                     for field in ("headline", "summary"))
+    return headline, summary
+
+
+def article_source_identity(article, catalogues=None):
+    """Recheck a stored draft against its source, not its old confidence flag."""
+    fields = _article_source_fields(article)
+    if fields is None:
+        return False, "source_identity_unverified"
+    headline, summary = fields
+    result = assess_transfer_evidence(headline, summary, catalogues)
+    if result.get("reason"):
+        return False, "source_identity_unverified"
+    for source_key, article_key in (("player", "player_name"), ("club", "club_name"), ("from_club", "from_club")):
+        if normalize_alias(result.get(source_key)) != normalize_alias(article.get(article_key)):
+            return False, "source_identity_mismatch"
+    if result.get("transfer_type") and result["transfer_type"] != article.get("transfer_type"):
+        return False, "source_transaction_mismatch"
+    return True, "OK"
+
+
+def rewrite_article_identity(rewrite, article, catalogues=None):
+    """Reject missing actors, non-player roles, and recognizably reversed moves.
+
+    This is a bounded identity check, not general semantic entailment. The
+    existing signing/interest/renewal checks still validate their claim types.
+    """
+    valid, reason = article_source_identity(article, catalogues)
+    if not valid:
+        return valid, reason
+    headings = "\n".join(line for line in rewrite.splitlines() if line.lstrip().startswith("#"))
+    if non_player_topic(headings, rewrite):
+        return False, "non_player_rewrite"
+    headline, summary = _article_source_fields(article)
+    resolved = _with_source_players(headline, summary, catalogues)
+    # Only identities that were just verified from these source spans may be
+    # added. Paired grammars can establish a full name absent from the catalogue.
+    resolved = {**resolved,
+                "players": {**resolved["players"], normalize_alias(article["player_name"]): {"name": article["player_name"]}},
+                "clubs": {**resolved["clubs"], normalize_alias(article["club_name"]): {"name": article["club_name"]}}}
+    players, clubs = _resolved_mentions(rewrite, resolved)
+    if article["player_name"] not in {item[2] for item in players} or article["club_name"] not in {item[2] for item in clubs}:
+        return False, "missing_rewrite_identity"
+    # A parsed different destination is a contradiction even when both clubs
+    # already occur somewhere in the source. An unparsed sentence gains no new
+    # identity permission here; other source/rewrite guards continue to apply.
+    # Also check each statement: a correct H2 must not mask a contradictory
+    # destination in the body by making the combined text merely ambiguous.
+    for statement in [rewrite, *re.split(r"[.!?;\n]", rewrite)]:
+        output = assess_transfer_evidence(statement, "", resolved)
+        if not output.get("reason") and (
+                output["player"] != article["player_name"] or output["club"] != article["club_name"]
+                or (output.get("from_club") and output["from_club"] != article.get("from_club"))):
+            return False, "rewrite_identity_mismatch"
+    return True, "OK"

@@ -1,0 +1,105 @@
+[
+  {
+    "id": "6f468e79-e5f9-5479-8a2e-f255d0375acc",
+    "source_headline": "El FC Barcelona confirmó oficialmente l o que ya apuntamos esta mañana : que Raphinha firmará mañana su nuevo contrato una vez quedaron cerrados todos los flecos del mismo.",
+    "source_summary": "",
+    "original_source_headline": "Oficial: Raphinha firmará mañana hasta 2030",
+    "source_name": "Mundo Deportivo",
+    "source_grounded": true,
+    "evidence_scope": "claim",
+    "evidence_spans": [
+      {
+        "field": "summary",
+        "start": 0,
+        "end": 172,
+        "text": "El FC Barcelona confirmó oficialmente l o que ya apuntamos esta mañana : que Raphinha firmará mañana su nuevo contrato una vez quedaron cerrados todos los flecos del mismo."
+      }
+    ],
+    "transfer_type": "extension",
+    "transfer_status": "rumor",
+    "player_name": "Raphinha",
+    "club_name": "FC Barcelona",
+    "from_club": null,
+    "body": "## Vertragsverlängerung bei Barcelona könnte bevorstehen\n\nLaut Mundo Deportivo könnte Raphinha eine Einigung über eine Vertragsverlängerung beim FC Barcelona erzielt haben, nachdem alle offenen Punkte geklärt wurden."
+  },
+  {
+    "id": "e1a08800-f981-5532-a670-71270c0b1295",
+    "source_headline": "Al-Ittihad se positionne sur Abdoul Koné\nAbdoul Koné plaît en Arabie saoudite.\nSelon nos informations, Al-Ittihad est intéressé par le défenseur central du RB Leipzig en vue du prochain mercato hivernal.",
+    "source_summary": "",
+    "original_source_headline": "Al-Ittihad se positionne sur Abdoul Koné",
+    "source_name": "Foot Mercato",
+    "source_grounded": true,
+    "evidence_scope": "claim",
+    "evidence_spans": [
+      {
+        "field": "headline",
+        "start": 0,
+        "end": 40,
+        "text": "Al-Ittihad se positionne sur Abdoul Koné"
+      },
+      {
+        "field": "summary",
+        "start": 0,
+        "end": 37,
+        "text": "Abdoul Koné plaît en Arabie saoudite."
+      },
+      {
+        "field": "summary",
+        "start": 38,
+        "end": 162,
+        "text": "Selon nos informations, Al-Ittihad est intéressé par le défenseur central du RB Leipzig en vue du prochain mercato hivernal."
+      }
+    ],
+    "transfer_type": "permanent",
+    "transfer_status": "rumor",
+    "player_name": "Abdoul Koné",
+    "club_name": "Al-Ittihad",
+    "from_club": null,
+    "body": "## Abdoul Koné im Fokus von Al-Ittihad\n\nLaut Foot Mercato soll Al-Ittihad an Abdoul Koné interessiert sein. Dem Bericht zufolge spielt Abdoul Koné bei RB Leipzig."
+  },
+  {
+    "id": "3c40ae59-d8cb-5290-9e2a-cdfe461f2809",
+    "source_headline": "Sharp signs for Rushden\nBilly Sharp comes out of retirement to join Northern Premier League side AFC Rushden & Diamonds",
+    "source_summary": "",
+    "original_source_headline": "Retired Sheff Utd legend Sharp signs for Rushden",
+    "source_name": "BBC Sport",
+    "source_grounded": true,
+    "evidence_scope": "claim",
+    "evidence_spans": [
+      {
+        "field": "headline",
+        "start": 25,
+        "end": 48,
+        "text": "Sharp signs for Rushden"
+      },
+      {
+        "field": "summary",
+        "start": 53,
+        "end": 148,
+        "text": "Billy Sharp comes out of retirement to join Northern Premier League side AFC Rushden & Diamonds"
+      }
+    ],
+    "transfer_type": "permanent",
+    "transfer_status": "done",
+    "player_name": "Billy Sharp",
+    "club_name": "AFC Rushden & Diamonds",
+    "from_club": null,
+    "body": "## Billy Sharp wechselt zu AFC Rushden & Diamonds  \nLaut BBC Sport schließt sich Billy Sharp dem AFC Rushden & Diamonds an. Billy Sharp kehrt aus dem Ruhestand zurück."
+  },
+  {
+    "id": "49114e86-649f-5543-9222-ba501df8c793",
+    "source_headline": "AC Milan : Christian Pulišić prolonge jusqu’en 2031",
+    "source_summary": "C’est désormais officiel : Christian Pulisic poursuit son aventure avec l’AC Milan. Le club lombard a annoncé ce vendredi la prolongation de contrat de l’international américain jusqu’au 30 juin 2031. (…)",
+    "original_source_headline": "AC Milan : Christian Pulišić prolonge jusqu’en 2031",
+    "source_name": "Foot Mercato",
+    "source_grounded": true,
+    "evidence_scope": "full",
+    "evidence_spans": [],
+    "transfer_type": "extension",
+    "transfer_status": "official",
+    "player_name": "Christian Pulisic",
+    "club_name": "AC Milan",
+    "from_club": null,
+    "body": "## Vertragsverlängerung von Christian Pulisic beim AC Milan\n\nChristian Pulisic hat seinen Vertrag beim AC Milan bis zum 30. Juni 2031 verlängert. Der Klub hat diese Vertragsverlängerung am Freitag offiziell bekannt gegeben. \n\nQuelle: Foot Mercato"
+  }
+]

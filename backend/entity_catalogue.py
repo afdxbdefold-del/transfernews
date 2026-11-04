@@ -8,7 +8,9 @@ from entity_recognition import PLAYERS_DB, CLUBS_DB
 # A database with only one claimant does not make these names unambiguous.
 # "Gabriel" can even be a different player's surname, as in "JJ Gabriel".
 AMBIGUOUS_PLAYER_ALIASES = frozenset({"gabriel"})
-AMBIGUOUS_CLUB_ALIASES = frozenset({"united"})
+# A city mention (for example Roland-Garros in Paris) is not PSG. Keep this
+# reserved even if a historical database row supplies it as that club's alias.
+AMBIGUOUS_CLUB_ALIASES = frozenset({"united", "paris"})
 
 
 def normalize_alias(value):

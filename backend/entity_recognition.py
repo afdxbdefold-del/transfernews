@@ -565,7 +565,6 @@ CLUBS_DB = {
     "fcb": {"name": "FC Bayern München", "country": "GER", "league": "Bundesliga", "popularity": 95},
     "psg": {"name": "Paris Saint-Germain", "country": "FRA", "league": "Ligue 1", "popularity": 94},
     "paris saint-germain": {"name": "Paris Saint-Germain", "country": "FRA", "league": "Ligue 1", "popularity": 94},
-    "paris": {"name": "Paris Saint-Germain", "country": "FRA", "league": "Ligue 1", "popularity": 94},
     "manchester united": {"name": "Manchester United", "country": "ENG", "league": "Premier League", "popularity": 93},
     "man united": {"name": "Manchester United", "country": "ENG", "league": "Premier League", "popularity": 93},
     "man utd": {"name": "Manchester United", "country": "ENG", "league": "Premier League", "popularity": 93},

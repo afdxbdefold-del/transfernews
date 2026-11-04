@@ -8,7 +8,7 @@ Only source_headline/source_summary are evidence; prior generated bodies are not
 import re
 import unicodedata
 from transfer_evidence import (corroborated_english_signing, is_french_interest_claim,
-                               validate_french_interest_roles)
+                               validate_french_interest_roles, rewrite_article_identity)
 
 
 def _text(value):
@@ -233,6 +233,10 @@ def validate_source_rewrite(rewrite, article, catalogues=None):
     publisher = article.get("source_name") or article.get("primary_source") or ""
     if not _attributed(rewrite, publisher):
         return False, "missing_named_source_attribution"
+    if article.get("source_grounded"):
+        valid, reason = rewrite_article_identity(rewrite, article, catalogues)
+        if not valid:
+            return valid, reason
     if is_french_interest_claim(article) and not validate_french_interest_roles(rewrite, article, catalogues):
         return False, "unsupported_interest_roles"
     text = _text(rewrite)
